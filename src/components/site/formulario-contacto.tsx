@@ -3,7 +3,8 @@
 import { useActionState } from "react";
 import { Campo, Area } from "@/components/ui/campo";
 import { Boton } from "@/components/ui/boton";
-import { enviarMensaje, RESULTADO_INICIAL } from "@/lib/acciones/mensajes";
+import { enviarMensaje } from "@/lib/acciones/mensajes";
+import { INICIAL } from "@/lib/acciones/resultado";
 import type { MensajeOrigen } from "@/types/database";
 
 interface FormularioContactoProps {
@@ -23,7 +24,7 @@ export function FormularioContacto({
   textoBoton = "Enviar mensaje",
   placeholderMensaje,
 }: FormularioContactoProps) {
-  const [resultado, accion, enviando] = useActionState(enviarMensaje, RESULTADO_INICIAL);
+  const [resultado, accion, enviando] = useActionState(enviarMensaje, INICIAL);
 
   if (resultado.estado === "ok") {
     return (

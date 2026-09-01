@@ -84,21 +84,21 @@ export type PaginaRow = {
 };
 
 /** Contenido de la página «Sobre mí», tal como lo guarda el panel. */
-export interface SobreMiContenido {
+export type SobreMiContenido = {
   titulo: string;
   biografia: string;
   cita: string | null;
   retrato_path: string | null;
   retrato_alt: string | null;
-}
+};
 
 /** Contenido de la página «Clases». */
-export interface ClasesContenido {
+export type ClasesContenido = {
   titulo: string;
   introduccion: string;
   tecnicas: string[];
   nota: string | null;
-}
+};
 
 /**
  * Forma mínima que `@supabase/supabase-js` necesita para tipar `.from(...)`.
@@ -106,8 +106,17 @@ export interface ClasesContenido {
  * son opcionales al escribir.
  */
 type Escribible<T, Generadas extends keyof T> = Aplanado<
-  Omit<T, Generadas> & Partial<Pick<T, Generadas>>
+  Omit<T, Generadas | ClavesNulables<T>> & Partial<Pick<T, Generadas | ClavesNulables<T>>>
 >;
+
+/**
+ * Columnas que aceptan `null`. En Postgres una columna nulable sin default se
+ * puede omitir al insertar (queda en `null`), así que en `Insert` son
+ * opcionales igual que las que tienen default.
+ */
+type ClavesNulables<T> = {
+  [K in keyof T]-?: null extends T[K] ? K : never;
+}[keyof T];
 
 /**
  * Colapsa una intersección en un único tipo de objeto.

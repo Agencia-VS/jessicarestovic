@@ -10,19 +10,22 @@ import { navPublica } from "@/lib/site-config";
  * pantalla completa con los enlaces en grande.
  */
 export function NavMovil() {
-  const [abierto, setAbierto] = useState(false);
   const pathname = usePathname();
   const panelId = useId();
 
-  // Cerrar al navegar.
-  useEffect(() => setAbierto(false), [pathname]);
+  // Guardamos la ruta en que se abrió el menú, en vez de un booleano: al
+  // navegar, `pathname` cambia y el menú se cierra solo — también con el botón
+  // «atrás» del navegador, y sin un efecto que llame a setState.
+  const [abiertoEn, setAbiertoEn] = useState<string | null>(null);
+  const abierto = abiertoEn === pathname;
+  const setAbierto = (valor: boolean) => setAbiertoEn(valor ? pathname : null);
 
   // Cerrar con Escape y bloquear el scroll de fondo mientras está abierto.
   useEffect(() => {
     if (!abierto) return;
 
     const alPresionar = (evento: KeyboardEvent) => {
-      if (evento.key === "Escape") setAbierto(false);
+      if (evento.key === "Escape") setAbiertoEn(null);
     };
     document.addEventListener("keydown", alPresionar);
 
@@ -39,7 +42,7 @@ export function NavMovil() {
     <div className="md:hidden">
       <button
         type="button"
-        onClick={() => setAbierto((previo) => !previo)}
+        onClick={() => setAbierto(!abierto)}
         aria-expanded={abierto}
         aria-controls={panelId}
         aria-label={abierto ? "Cerrar menú" : "Abrir menú"}

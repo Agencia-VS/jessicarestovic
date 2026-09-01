@@ -4,18 +4,7 @@ import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { supabaseConfigurado } from "@/lib/supabase/env";
 import { erroresPorCampo, mensajeSchema } from "@/lib/validacion";
-
-export interface ResultadoFormulario {
-  estado: "inicial" | "ok" | "error";
-  /** Mensaje para mostrar arriba del formulario. */
-  aviso?: string;
-  /** Errores por campo. */
-  errores?: Record<string, string>;
-  /** Valores enviados, para no perderlos si algo falló. */
-  valores?: Record<string, string>;
-}
-
-export const RESULTADO_INICIAL: ResultadoFormulario = { estado: "inicial" };
+import type { Resultado } from "./resultado";
 
 /**
  * Recibe un envío de Contacto o Clases y lo guarda como mensaje.
@@ -25,9 +14,9 @@ export const RESULTADO_INICIAL: ResultadoFormulario = { estado: "inicial" };
  * separados en Wix; acá quedan unificados en una bandeja, etiquetados).
  */
 export async function enviarMensaje(
-  _previo: ResultadoFormulario,
+  _previo: Resultado,
   formData: FormData,
-): Promise<ResultadoFormulario> {
+): Promise<Resultado> {
   const valores = {
     nombre: String(formData.get("nombre") ?? ""),
     email: String(formData.get("email") ?? ""),

@@ -35,6 +35,16 @@ export function Galeria({ grupos }: GaleriaProps) {
   // Lista plana en el mismo orden en que se ven, para navegar con las flechas.
   const obrasVisibles = useMemo(() => visibles.flatMap((grupo) => grupo.obras), [visibles]);
 
+  // Índice en que empieza cada grupo dentro de `obrasVisibles`, para que al
+  // abrir una obra el lightbox arranque en la correcta.
+  const inicios = useMemo(
+    () =>
+      visibles.map((_, indice) =>
+        visibles.slice(0, indice).reduce((total, grupo) => total + grupo.obras.length, 0),
+      ),
+    [visibles],
+  );
+
   const cambiarSerie = (slug: string) => {
     setSerieActiva(slug);
     setAbierta(null);
@@ -51,18 +61,12 @@ export function Galeria({ grupos }: GaleriaProps) {
     );
   }
 
-  // El offset acumulado da a cada obra su índice dentro de `obrasVisibles`.
-  let offset = 0;
-
   return (
     <>
       <FiltroSeries opciones={opciones} activo={serieActiva} onCambiar={cambiarSerie} />
 
       <div className="gutter flex flex-col gap-22 pt-18 pb-8">
         {visibles.map((grupo, indiceGrupo) => {
-          const offsetGrupo = offset;
-          offset += grupo.obras.length;
-
           return (
             <section key={grupo.id} aria-labelledby={`serie-${grupo.slug}`}>
               <div className="flex items-baseline justify-between gap-8 border-b border-line pb-3.5">
@@ -78,7 +82,7 @@ export function Galeria({ grupos }: GaleriaProps) {
               <div className="pt-7.5">
                 <ReticulaObras
                   obras={grupo.obras}
-                  offset={offsetGrupo}
+                  offset={inicios[indiceGrupo] ?? 0}
                   onAbrir={setAbierta}
                   primeraPrioritaria={indiceGrupo === 0}
                 />
