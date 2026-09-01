@@ -1,0 +1,113 @@
+@import "tailwindcss";
+
+/* ---------------------------------------------------------------------------
+   Dirección A — «Sala blanca»
+   La obra colgada en una pared: fondo hueso, una pieza a la vez, tipografía
+   casi invisible. El sitio se compromete con un solo tono claro a propósito —
+   la dirección «Grafito» se descartó porque las piezas ya oscuras se pierden
+   sobre negro.
+   --------------------------------------------------------------------------- */
+
+@theme {
+  /* Superficies */
+  --color-paper: #fcfbf8;
+  --color-paper-alt: #faf9f6;
+
+  /* Tinta */
+  --color-ink: #1c1b19;
+  --color-body: #57534d;
+  --color-muted: #8c877f;
+  --color-faint: #b4aea5;
+  --color-label: #a9a29a;
+  --color-inactive: #bdb7ae;
+
+  /* Trazos */
+  --color-line: #e4e0d8;
+  --color-line-soft: #eeebe4;
+
+  /* Estados */
+  --color-danger: #9b3b2f;
+  --color-danger-soft: #f6e9e6;
+  --color-success: #3f6b52;
+  --color-success-soft: #e8f0ea;
+
+  /* Tonos de referencia de la retícula (bloques sin foto todavía) */
+  --color-ref-arena: #dcd4c6;
+  --color-ref-piedra: #c9cdcc;
+  --color-ref-hueso: #e0dace;
+  --color-ref-gris: #c4c8c6;
+
+  /* Tipografía */
+  --font-sans: var(--font-schibsted), "Helvetica Neue", Helvetica, Arial, sans-serif;
+  --font-display: var(--font-instrument), Georgia, serif;
+  --font-signature: var(--font-italianno), cursive;
+
+  /* Ritmo horizontal del layout: 72px en escritorio, 24px en móvil */
+  --spacing-gutter: 1.5rem;
+}
+
+@layer base {
+  :root {
+    color-scheme: light;
+  }
+
+  html {
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    background-color: var(--color-paper);
+    color: var(--color-ink);
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+
+  /* Enlaces: sin subrayado, el hover apaga el tono. Igual que el mockup. */
+  a {
+    color: inherit;
+    text-decoration: none;
+  }
+
+  :focus-visible {
+    outline: 1.5px solid var(--color-ink);
+    outline-offset: 3px;
+  }
+
+  ::selection {
+    background: var(--color-line);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+}
+
+@utility gutter {
+  /* El margen lateral del mockup: 24px en móvil, 72px desde tablet. */
+  padding-inline: 1.5rem;
+
+  @media (width >= 48rem) {
+    padding-inline: 4.5rem;
+  }
+}
+
+@utility eyebrow {
+  /* Etiquetas y navegación: versalitas espaciadas, 12px. */
+  font-size: 0.75rem;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+}
+
+@utility caption {
+  /* Pie de obra: título + técnica, 11.5px. */
+  font-size: 0.719rem;
+  line-height: 1.5;
+}
