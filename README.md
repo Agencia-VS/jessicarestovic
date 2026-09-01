@@ -12,7 +12,7 @@ depender de nadie.
 | --- | --- |
 | **Next.js 16** (App Router, Turbopack) | Sitio público y panel, con optimización de imágenes incorporada |
 | **React 19** | Interactividad: galería, formularios, carga de fotos |
-| **TypeScript 6** | Tipos en todo, incluido el esquema de la base |
+| **TypeScript 6.0.3** | Tipos en todo, incluido el esquema de la base |
 | **Tailwind CSS 4** | Sistema de diseño en tokens (`src/app/globals.css`) |
 | **Supabase** | Postgres, autenticación del panel y almacenamiento de imágenes |
 | **Vercel** | Hosting, CDN y despliegue automático |
@@ -118,9 +118,20 @@ src/
   junto a los ayudantes de servidor, `next/headers` terminaría en el bundle
   del navegador.
 - **El panel es `force-dynamic`**: nunca se cachea.
-- **TypeScript 6, no 7.** TypeScript 7.0 ya está publicado y el proyecto
-  compila con él, pero `typescript-eslint` todavía no lo soporta, así que el
-  lint se cae. Se puede subir en cuanto salga ese soporte.
+- **TypeScript 6.0.3, no 7.** Next.js 16.3.4 soporta TypeScript 7 sin
+  problema: el proyecto compila con `7.0.2`, tanto en `tsc --noEmit` como en
+  `next build`. El bloqueo está en el lint. `typescript-eslint@8.69.0` —la
+  última publicada, y también su canary `8.69.1-alpha.0`— declara
+  `"typescript": ">=4.8.4 <6.1.0"` y lanza un error duro con TS 7. Como
+  `eslint-config-next` la carga al inicializar, con TS 7 no corre ninguna
+  configuración de lint, ni siquiera `core-web-vitals` por separado. Anidar
+  TS 6 solo para el linter tampoco sirve: el fallo se muda a `ts-api-utils`,
+  que resuelve TypeScript desde la raíz. Así que 6.0.3 es el techo real del
+  ecosistema hoy, no una versión elegida por comodidad. Para subir a 7 cuando
+  `typescript-eslint` publique soporte basta cambiar la versión en
+  `package.json`.
+- **ESLint 9.39.5, no 10.** El `eslint-plugin-react` que trae
+  `eslint-config-next` 16 usa la API antigua de contexto y falla con ESLint 10.
 
 ## Contenido
 
