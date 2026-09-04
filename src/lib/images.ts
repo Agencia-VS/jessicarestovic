@@ -140,3 +140,20 @@ export function proporcion(ancho: number | null, alto: number | null): number {
   if (ancho && alto && ancho > 0 && alto > 0) return ancho / alto;
   return 4 / 5;
 }
+
+/** Techo suave del mosaico: nada más alto que ~2:1 ni más ancho que 3.2:1. */
+const MAS_ALTA = 0.55;
+const MAS_ANCHA = 3.2;
+
+/**
+ * La misma proporción, con un tope para el mosaico.
+ *
+ * La foto dicta la altura de su tarjeta, pero sin límite una pieza muy
+ * alargada se comería una columna entera. Con el tope, la foto se sigue viendo
+ * completa —`object-contain` sobre el mismo fondo del sitio, así el aire de los
+ * costados no se nota— y la columna conserva su ritmo. En la vista ampliada la
+ * proporción es exacta, sin tope.
+ */
+export function proporcionEnMosaico(ancho: number | null, alto: number | null): number {
+  return Math.min(MAS_ANCHA, Math.max(MAS_ALTA, proporcion(ancho, alto)));
+}

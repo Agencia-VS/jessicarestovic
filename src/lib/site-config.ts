@@ -66,14 +66,26 @@ export interface NavItem {
   label: string;
 }
 
-/** Navegación pública — el mapa de páginas del brief (§05). */
+/**
+ * Navegación pública.
+ *
+ * No hay índice general de obra: cada serie se entra desde la exposición en
+ * que se mostró, que es como quedó el diseño —la trayectoria es la puerta al
+ * cuerpo de obra, no una galería suelta.
+ */
 export const navPublica: readonly NavItem[] = [
-  { href: "/obra", label: "Obra" },
   { href: "/exposiciones", label: "Exposiciones" },
+  { href: "/trabajos-recientes", label: "Trabajos recientes" },
   { href: "/sobre-mi", label: "Sobre mí" },
   { href: "/clases", label: "Clases" },
   { href: "/contacto", label: "Contacto" },
 ] as const;
+
+/**
+ * Las páginas de serie viven bajo `/serie/…` y se llega a ellas desde una
+ * exposición. En el menú marcan «Exposiciones», que es de donde vienen.
+ */
+export const SECCION_DE_SERIE = "/exposiciones";
 
 /** Navegación del panel — las secciones del brief (§07). */
 export const navAdmin: readonly NavItem[] = [

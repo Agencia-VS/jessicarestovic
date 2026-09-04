@@ -18,6 +18,7 @@ import type {
   Obra,
   Serie,
   SerieConObras,
+  SerieDetalle,
   SobreMiContenido,
 } from "./tipos";
 
@@ -155,10 +156,73 @@ export async function listarGaleriaPorSerie(): Promise<SerieConObras[]> {
   return grupos;
 }
 
+/**
+ * Las últimas obras cargadas, para «Trabajos recientes». El orden es el de
+ * subida —lo último que Jessica fotografió en el taller aparece primero— y no
+ * el `orden` manual, que gobierna la retícula de cada serie.
+ */
+export async function listarObrasRecientes(limite = 12): Promise<Obra[]> {
+  if (!supabaseConfigurado()) return DEMO_OBRAS.slice(0, limite);
+  const supabase = await createClient();
+
+  const { data } = await supabase
+    .from("obra")
+    .select(SELECT_OBRA)
+    .eq("publicada", true)
+    .order("creado_en", { ascending: false })
+    .limit(limite);
+
+  return (data ?? []) as unknown as Obra[];
+}
+
+/**
+ * La técnica de una serie, deducida de sus piezas: la que más se repite.
+ *
+ * La serie no guarda técnica propia —la obra sí— así que en vez de pedirle a
+ * Jessica el mismo dato dos veces, la página de serie lo lee de sus obras.
+ */
+function tecnicaDominante(obras: Obra[]): string | null {
+  const cuenta = new Map<string, number>();
+  for (const { tecnica } of obras) {
+    if (tecnica) cuenta.set(tecnica, (cuenta.get(tecnica) ?? 0) + 1);
+  }
+
+  let dominante: string | null = null;
+  let maximo = 0;
+  for (const [tecnica, veces] of cuenta) {
+    if (veces > maximo) {
+      dominante = tecnica;
+      maximo = veces;
+    }
+  }
+  return dominante;
+}
+
+/**
+ * La página de una serie: sus obras publicadas, la técnica que comparten y la
+ * exposición que la mostró, que es el enlace de vuelta.
+ */
+export async function obtenerSerieDetalle(slug: string): Promise<SerieDetalle | null> {
+  const [series, exposiciones] = await Promise.all([listarSeries(), listarExposiciones()]);
+
+  const serie = series.find((candidata) => candidata.slug === slug);
+  if (!serie) return null;
+
+  const obras = (await listarObrasPublicadas()).filter((obra) => obra.serie_id === serie.id);
+  const exposicion = exposiciones.find((expo) => expo.serie?.id === serie.id) ?? null;
+
+  return {
+    ...serie,
+    obras,
+    tecnica: tecnicaDominante(obras),
+    exposicion: exposicion ? { titulo: exposicion.titulo, slug: exposicion.slug } : null,
+  };
+}
+
 // --- Exposiciones ----------------------------------------------------------
 
-/** Columnas de `exposicion` con sus fotos. */
-const SELECT_EXPO = "*, fotos:exposicion_foto (*)";
+/** Columnas de `exposicion` con sus fotos y la serie que expuso. */
+const SELECT_EXPO = "*, fotos:exposicion_foto (*), serie:serie_id (id, nombre, slug)";
 
 function ordenarFotos(expo: Exposicion): Exposicion {
   return { ...expo, fotos: [...expo.fotos].sort((a, b) => a.orden - b.orden) };
@@ -183,6 +247,23 @@ export async function obtenerExposicion(id: string): Promise<Exposicion | null> 
   const supabase = await createClient();
 
   const { data } = await supabase.from("exposicion").select(SELECT_EXPO).eq("id", id).maybeSingle();
+  return data ? ordenarFotos(data as unknown as Exposicion) : null;
+}
+
+/** La exposición que pide una URL como `/exposiciones/volumenes`. */
+export async function obtenerExposicionPorSlug(slug: string): Promise<Exposicion | null> {
+  if (!supabaseConfigurado()) {
+    return DEMO_EXPOSICIONES.find((expo) => expo.slug === slug) ?? null;
+  }
+  const supabase = await createClient();
+
+  const { data } = await supabase
+    .from("exposicion")
+    .select(SELECT_EXPO)
+    .eq("slug", slug)
+    .eq("publicada", true)
+    .maybeSingle();
+
   return data ? ordenarFotos(data as unknown as Exposicion) : null;
 }
 

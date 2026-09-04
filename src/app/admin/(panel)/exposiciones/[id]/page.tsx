@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation";
 import { EncabezadoPanel } from "@/components/admin/encabezado-panel";
 import { FormularioExposicion } from "@/components/admin/formulario-exposicion";
-import { obtenerExposicion } from "@/lib/data/consultas";
+import { listarSeries, obtenerExposicion } from "@/lib/data/consultas";
 
 export const metadata = { title: "Editar exposición" };
 
@@ -11,7 +11,7 @@ export default async function EditarExposicionPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const exposicion = await obtenerExposicion(id);
+  const [exposicion, series] = await Promise.all([obtenerExposicion(id), listarSeries()]);
 
   if (!exposicion) notFound();
 
@@ -21,7 +21,7 @@ export default async function EditarExposicionPage({
         titulo={exposicion.titulo}
         detalle="Las fotos que subas se agregan a las que ya están cargadas."
       />
-      <FormularioExposicion exposicion={exposicion} />
+      <FormularioExposicion series={series} exposicion={exposicion} />
     </>
   );
 }

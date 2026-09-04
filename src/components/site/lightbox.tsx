@@ -1,12 +1,11 @@
 "use client";
 
-import Image from "next/image";
 import { useCallback, useEffect } from "react";
-import { proporcion, urlImagen } from "@/lib/images";
 import type { Obra } from "@/lib/data/tipos";
-import { datosObra } from "./obra-pie";
+import { Foto } from "./foto";
 
 interface LightboxProps {
+  /** La secuencia que recorren las flechas: el filtro o la serie visible. */
   obras: Obra[];
   /** Índice de la obra abierta, o `null` si está cerrado. */
   indice: number | null;
@@ -15,8 +14,12 @@ interface LightboxProps {
 }
 
 /**
- * Vista ampliada de una obra. Es una capa sobre la galería, no una página
+ * Vista ampliada de una obra. Es una capa sobre la retícula, no una página
  * aparte (§05), así que el visitante no pierde el lugar donde iba.
+ *
+ * Recorre solo la secuencia con la que se abrió —las piezas de esa serie, o
+ * las del filtro activo— y acá la proporción es exacta: sin el tope del
+ * mosaico, la obra se ve tal como es.
  */
 export function Lightbox({ obras, indice, onCerrar, onCambiar }: LightboxProps) {
   const abierto = indice !== null;
@@ -51,68 +54,74 @@ export function Lightbox({ obras, indice, onCerrar, onCambiar }: LightboxProps) 
 
   if (!abierto || !obra) return null;
 
-  const datos = datosObra(obra);
+  const lineas = [
+    { clave: "Año", valor: obra.anio ? String(obra.anio) : "—" },
+    { clave: "Técnica", valor: obra.tecnica ?? "—" },
+    { clave: "Dimensiones", valor: obra.dimensiones ?? "—" },
+  ];
 
   return (
     <div
       role="dialog"
       aria-modal="true"
       aria-label={`${obra.titulo}, vista ampliada`}
-      className="fixed inset-0 z-50 flex flex-col bg-paper"
+      className="fixed inset-0 z-90 flex flex-col bg-paper-alt"
     >
-      <div className="flex h-16 shrink-0 items-center justify-between gutter">
-        <span className="caption text-muted">
+      <div className="flex shrink-0 items-baseline justify-between gap-5 px-[clamp(1.25rem,4vw,3rem)] py-[clamp(1rem,2.2vw,1.625rem)]">
+        <span className="eyebrow text-faint">
           {indice + 1} / {obras.length}
         </span>
         <button
           type="button"
           onClick={onCerrar}
-          className="flex size-12 items-center justify-end text-ink transition-colors hover:text-muted"
-          aria-label="Cerrar vista ampliada"
+          className="eyebrow border-b border-rule-soft pb-[3px] tracking-[0.18em] transition-colors hover:border-accent hover:text-accent"
         >
-          <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true">
-            <line x1="2" y1="2" x2="18" y2="18" stroke="currentColor" strokeWidth="1.2" />
-            <line x1="18" y1="2" x2="2" y2="18" stroke="currentColor" strokeWidth="1.2" />
-          </svg>
+          Cerrar
         </button>
       </div>
 
-      <div className="relative flex min-h-0 flex-1 items-center justify-center px-6 md:px-24">
-        <div
-          className="relative max-h-full w-full"
-          style={{ aspectRatio: proporcion(obra.imagen_ancho, obra.imagen_alto) }}
-        >
-          <Image
-            src={urlImagen(obra.imagen_path)}
+      <div className="flex min-h-0 flex-1 items-center gap-[clamp(0.625rem,2vw,1.75rem)] px-[clamp(0.875rem,3vw,2.5rem)]">
+        {obras.length > 1 && <Paso direccion="anterior" onClick={() => irA(-1)} />}
+
+        <div className="flex h-full min-w-0 flex-1 items-center justify-center">
+          <Foto
+            path={obra.imagen_path}
             alt={obra.imagen_alt}
-            fill
-            sizes="(max-width: 768px) 100vw, 80vw"
-            priority
-            className="object-contain"
+            ancho={obra.imagen_ancho}
+            alto={obra.imagen_alto}
+            variante="exacta"
+            sizes="(max-width: 48rem) 100vw, 80vw"
+            prioridad
+            className="h-[min(72vh,53.75rem)] max-h-full w-auto max-w-full shrink-0"
           />
         </div>
 
-        {obras.length > 1 && (
-          <>
-            <BotonPaso direccion="anterior" onClick={() => irA(-1)} />
-            <BotonPaso direccion="siguiente" onClick={() => irA(1)} />
-          </>
-        )}
+        {obras.length > 1 && <Paso direccion="siguiente" onClick={() => irA(1)} />}
       </div>
 
-      <div className="gutter flex shrink-0 flex-wrap gap-x-5 gap-y-1 py-8">
-        <span className="caption text-ink">{obra.titulo}</span>
-        {datos.map((dato) => (
-          <span key={dato} className="caption text-muted">
-            {dato}
+      <div className="flex shrink-0 flex-wrap items-end justify-between gap-4 px-[clamp(1.25rem,4vw,3rem)] pt-[clamp(1rem,2.4vw,1.875rem)] pb-[clamp(1.25rem,3vw,2.375rem)]">
+        <div className="flex min-w-0 flex-col gap-1.5">
+          <span className="font-display text-[clamp(1.375rem,2.4vw,2rem)] leading-[1.15] font-light italic">
+            {obra.titulo}
           </span>
-        ))}
+          {obra.serie && <span className="eyebrow text-muted">{obra.serie.nombre}</span>}
+        </div>
+
+        <div className="flex flex-wrap gap-[clamp(1rem,2.6vw,2.5rem)]">
+          {lineas.map(({ clave, valor }) => (
+            <div key={clave} className="flex flex-col gap-[3px]">
+              <span className="etiqueta text-label">{clave}</span>
+              <span className="text-[0.8125rem] font-light text-body">{valor}</span>
+            </div>
+          ))}
+        </div>
       </div>
     </div>
   );
 }
 
-function BotonPaso({
+/** Las flechas: el mismo serif del sitio, no un icono. */
+function Paso({
   direccion,
   onClick,
 }: {
@@ -126,17 +135,9 @@ function BotonPaso({
       type="button"
       onClick={onClick}
       aria-label={esAnterior ? "Obra anterior" : "Obra siguiente"}
-      className={`absolute inset-y-0 flex w-16 items-center text-muted transition-colors hover:text-ink md:w-24 ${
-        esAnterior ? "left-0 justify-start" : "right-0 justify-end"
-      }`}
+      className="shrink-0 font-display text-[clamp(1.5rem,2.6vw,2.125rem)] leading-none font-extralight text-label transition-colors hover:text-ink"
     >
-      <svg width="12" height="20" viewBox="0 0 12 20" fill="none" aria-hidden="true">
-        <path
-          d={esAnterior ? "M10 1 L2 10 L10 19" : "M2 1 L10 10 L2 19"}
-          stroke="currentColor"
-          strokeWidth="1.2"
-        />
-      </svg>
+      {esAnterior ? "‹" : "›"}
     </button>
   );
 }

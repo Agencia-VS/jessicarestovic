@@ -19,13 +19,42 @@ depender de nadie.
 
 ## Diseño
 
-Dirección **A — «Sala blanca»**, tomando de la dirección B la estructura por
-series: fondo hueso, una obra a la vez, tipografía casi invisible y la firma
-manuscrita como logotipo. Las obras **nunca se recortan** — cada pieza conserva
-su proporción real, tanto en la retícula como en la vista ampliada.
+El del canvas de Claude Design: fondo crudo, grafito y **un solo acento
+ciruela**, reservado para enlaces y estados activos — nunca compitiendo con el
+color real de las obras. Menos interfaz visible, tipografía silenciosa y la
+obra siempre protagonista.
 
-Tipografías: *Schibsted Grotesk* (texto), *Instrument Serif* (nombres de serie)
-e *Italianno* (la firma).
+Las obras **nunca se recortan**: cada pieza conserva su proporción real, y es
+la foto la que dicta el alto de su tarjeta. En la retícula hay un tope suave
+(nada más alto que ~2:1 ni más ancho que 3.2:1) para que una pieza alargada no
+se coma una columna entera; en la vista ampliada la proporción es exacta. La
+retícula son columnas CSS, no una grilla de cuadrados: las alturas son
+distintas a propósito.
+
+Tipografías: *Public Sans* (texto de apoyo, navegación, pies de obra) y
+*Newsreader* (títulos, nombres de obra y párrafos de presentación). El
+logotipo es la firma manuscrita de Jessica, en AVIF con un PNG transparente de
+respaldo (`public/firma-jessica.*`).
+
+Los tokens de color, las tipografías y las utilidades (`marco`, `gutter`,
+`eyebrow`, `etiqueta`, `pie`, `ficha`, `mosaico`, `aparece`) viven en
+`src/app/globals.css`.
+
+### Mapa de páginas
+
+No hay índice general de obra: la trayectoria es la puerta al cuerpo de obra.
+Se entra a una serie desde la exposición que la mostró, y la página de serie
+vuelve a esa exposición.
+
+| Página | Qué muestra |
+| --- | --- |
+| `/` | Una imagen de portada y una sola línea de texto |
+| `/exposiciones` | Índice de muestras: una portada por exposición, con su total de imágenes |
+| `/exposiciones/[slug]` | Una muestra: ficha, texto y todas sus vistas de montaje |
+| `/serie/[slug]` | Una serie: descripción, ficha, sus piezas y navegación entre series |
+| `/trabajos-recientes` | Lo último cargado, sin importar la serie |
+| `/sobre-mi` · `/clases` · `/contacto` | Biografía, talleres y contacto |
+| `/privacidad` | Qué datos recogen los formularios y para qué |
 
 ## Puesta en marcha
 
@@ -64,6 +93,7 @@ O pegando cada archivo en el **SQL Editor** del panel de Supabase, en orden:
 | `0002_rls_storage.sql` | Políticas de acceso y el bucket `obras` para las imágenes |
 | `0003_contenido_inicial.sql` | Las 7 series y 7 exposiciones reales del sitio actual |
 | `0004_configuracion.sql` | Datos de contacto y frase de portada, editables desde el panel |
+| `0005_exposicion_serie.sql` | La serie que expuso cada muestra, las medidas de las fotos de sala y las técnicas de Clases con descripción |
 
 ### 3. Crear el acceso de Jessica
 
@@ -84,12 +114,14 @@ Importar el repositorio en Vercel y cargar las tres variables de entorno
 ```
 src/
 ├── app/
-│   ├── page.tsx              Inicio — obra destacada
-│   ├── obra/                 Galería por serie, con vista ampliada
-│   ├── exposiciones/         Listado cronológico, expandible con fotos
+│   ├── page.tsx              Inicio — la imagen de portada
+│   ├── exposiciones/         Índice de muestras y la página de cada una
+│   ├── serie/[slug]/         Una serie con sus piezas y vista ampliada
+│   ├── trabajos-recientes/   Lo último cargado
 │   ├── sobre-mi/             Biografía y retrato
 │   ├── clases/               Talleres y formulario de interés
-│   ├── contacto/             WhatsApp, correo, Instagram y formulario
+│   ├── contacto/             Correo, WhatsApp, Instagram y formulario
+│   ├── privacidad/           Qué datos se recogen y para qué
 │   └── admin/
 │       ├── login/            Acceso (fuera del marco del panel)
 │       └── (panel)/          Obras, Series, Exposiciones, Sobre mí, Clases,
@@ -161,6 +193,10 @@ Falta cargar desde el panel:
 - La biografía de «Sobre mí» y el retrato (el texto de `/about` sirve casi tal
   cual).
 - Revisar el texto de «Clases».
+- Marcar una obra como **destacada**: es la que hace de portada del Inicio.
+- Los **años** de las muestras. Hoy solo «Volúmenes» (2013) tiene fecha; el
+  resto aparece con «—» y el listado no puede ordenarse cronológicamente de
+  verdad hasta tenerlos.
 
 ## Comandos
 

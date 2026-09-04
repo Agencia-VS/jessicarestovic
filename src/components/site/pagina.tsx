@@ -25,21 +25,34 @@ export async function Pagina({ children, comoTitulo = false }: PaginaProps) {
   );
 }
 
-interface EncabezadoProps {
+interface SeccionProps {
   titulo: string;
-  bajada?: string | null;
+  /** El conteo que va a la derecha del título: «7 exposiciones». */
+  conteo?: string;
+  children: React.ReactNode;
 }
 
-/** Encabezado de sección: el título de la página y una bajada opcional. */
-export function Encabezado({ titulo, bajada }: EncabezadoProps) {
+/**
+ * Una sección con título: el nombre a la izquierda en serif grande, el conteo
+ * alineado a su base a la derecha, y una línea que separa del contenido.
+ */
+export function Seccion({ titulo, conteo, children }: SeccionProps) {
   return (
-    <div className="gutter pt-14 pb-2 md:pt-18">
-      <h1 className="font-display text-4xl leading-tight md:text-5xl">{titulo}</h1>
-      {bajada && (
-        <p className="mt-5 max-w-[52ch] text-[0.9375rem] leading-relaxed text-body text-pretty">
-          {bajada}
-        </p>
-      )}
+    <div className="marco gutter pt-[clamp(2.5rem,5.5vw,5.375rem)] pb-[clamp(3.5rem,7vw,6.875rem)]">
+      <div className="flex flex-wrap items-baseline justify-between gap-6 pb-[clamp(1.625rem,3.4vw,2.875rem)]">
+        <Titulo>{titulo}</Titulo>
+        {conteo && <span className="eyebrow text-faint">{conteo}</span>}
+      </div>
+      {children}
     </div>
+  );
+}
+
+/** El título de una página: serif editorial, liviano y muy grande. */
+export function Titulo({ children }: { children: React.ReactNode }) {
+  return (
+    <h1 className="font-display text-[clamp(2.125rem,4.6vw,4rem)] leading-none font-light -tracking-[0.02em]">
+      {children}
+    </h1>
   );
 }

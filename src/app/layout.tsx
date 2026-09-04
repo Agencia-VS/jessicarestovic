@@ -1,29 +1,22 @@
 import type { Metadata, Viewport } from "next";
-import { Instrument_Serif, Italianno, Schibsted_Grotesk } from "next/font/google";
+import { Newsreader, Public_Sans } from "next/font/google";
 import { siteConfig } from "@/lib/site-config";
 import "./globals.css";
 
-/** Texto y navegación. */
-const schibsted = Schibsted_Grotesk({
+/** Texto de apoyo, navegación y pies de obra. */
+const publicSans = Public_Sans({
   subsets: ["latin"],
-  weight: ["400", "500"],
-  variable: "--font-schibsted",
+  weight: ["300", "400", "500"],
+  variable: "--font-public-sans",
   display: "swap",
 });
 
-/** Nombres de serie en el índice. */
-const instrument = Instrument_Serif({
+/** Títulos, nombres de obra y párrafos de presentación. */
+const newsreader = Newsreader({
   subsets: ["latin"],
-  weight: "400",
-  variable: "--font-instrument",
-  display: "swap",
-});
-
-/** La firma manuscrita que hace de logotipo (§06). */
-const italianno = Italianno({
-  subsets: ["latin"],
-  weight: "400",
-  variable: "--font-italianno",
+  weight: ["200", "300", "400"],
+  style: ["normal", "italic"],
+  variable: "--font-newsreader",
   display: "swap",
 });
 
@@ -47,7 +40,7 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: "#FCFBF8",
+  themeColor: "#F5F2ED",
   colorScheme: "light",
 };
 
@@ -55,7 +48,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html
       lang={siteConfig.lang}
-      className={`${schibsted.variable} ${instrument.variable} ${italianno.variable}`}
+      className={`${publicSans.variable} ${newsreader.variable}`}
     >
       <body>{children}</body>
     </html>

@@ -7,6 +7,8 @@ interface Seleccion {
   archivo: File;
   previa: string;
   problema: string | null;
+  /** Medidas reales, que viajan con el formulario para guardarse. */
+  medidas: { ancho: number; alto: number } | null;
 }
 
 /**
@@ -45,24 +47,25 @@ export function SubirFotos({ nombre = "fotos" }: { nombre?: string }) {
   const alElegir = (archivos: FileList | null) => {
     const lista = Array.from(archivos ?? []).map((archivo) => {
       const problema = validarArchivo(archivo, "exposicion");
-      return { archivo, previa: URL.createObjectURL(archivo), problema };
+      return { archivo, previa: URL.createObjectURL(archivo), problema, medidas: null };
     });
 
     setSeleccion(lista);
 
-    // Validamos las medidas cuando cada imagen termina de cargar.
+    // Leemos las medidas de cada imagen al cargar: sirven para validarlas y
+    // para guardarlas, que es lo que después reserva su espacio en la página.
     lista.forEach(({ archivo, previa }, indice) => {
       const imagen = new Image();
       imagen.onload = () => {
-        const problema = validarDimensiones(
-          imagen.naturalWidth,
-          imagen.naturalHeight,
-          "exposicion",
-        );
-        if (!problema) return;
+        const ancho = imagen.naturalWidth;
+        const alto = imagen.naturalHeight;
+        const problema = validarDimensiones(ancho, alto, "exposicion");
+
         setSeleccion((previaLista) =>
           previaLista.map((item, i) =>
-            i === indice && item.archivo === archivo ? { ...item, problema } : item,
+            i === indice && item.archivo === archivo
+              ? { ...item, problema: problema ?? item.problema, medidas: { ancho, alto } }
+              : item,
           ),
         );
       };
@@ -114,7 +117,7 @@ export function SubirFotos({ nombre = "fotos" }: { nombre?: string }) {
 
       {seleccion.length > 0 && (
         <ul className="flex flex-col gap-5">
-          {seleccion.map(({ archivo, previa, problema }, indice) => (
+          {seleccion.map(({ archivo, previa, problema, medidas }, indice) => (
             <li key={`${archivo.name}-${indice}`} className="flex gap-4">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img src={previa} alt="" className="h-24 w-32 shrink-0 object-cover" />
@@ -130,6 +133,16 @@ export function SubirFotos({ nombre = "fotos" }: { nombre?: string }) {
                   placeholder="Vista de sala, montaje…"
                   className="w-full border-b border-line bg-transparent py-2 text-sm placeholder:text-faint focus:border-ink focus:outline-none"
                 />
+                {medidas && (
+                  <>
+                    <input
+                      type="hidden"
+                      name={`foto_ancho_${indice}`}
+                      value={medidas.ancho}
+                    />
+                    <input type="hidden" name={`foto_alto_${indice}`} value={medidas.alto} />
+                  </>
+                )}
                 {problema && (
                   <p role="alert" className="caption text-danger">
                     {problema}

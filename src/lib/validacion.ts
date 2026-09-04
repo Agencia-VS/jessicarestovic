@@ -40,6 +40,7 @@ export const obraSchema = z.object({
 
 export const exposicionSchema = z.object({
   titulo: texto(200).min(1, "La exposición necesita un título."),
+  serie_id: z.string().uuid().nullable().optional(),
   lugar: texto(200).optional().or(z.literal("")),
   anio: z.coerce
     .number()
