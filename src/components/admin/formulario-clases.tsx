@@ -40,7 +40,7 @@ export function FormularioClases({ contenido }: { contenido: ClasesContenido }) 
         rows={5}
         defaultValue={contenido.tecnicas.join("\n")}
         error={errores.tecnicas}
-        ayuda="Una técnica por línea."
+        ayuda="Una técnica por línea. Para agregarle una descripción corta, escribe «Acuarela — Papel, aguadas, transparencia»."
       />
 
       <Campo

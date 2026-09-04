@@ -18,14 +18,26 @@ export interface Serie extends SerieRow {
   obrasPublicadas: number;
 }
 
-/** Una serie con sus obras, para la galería agrupada de `/obra`. */
+/** Una serie con sus obras. */
 export interface SerieConObras extends Serie {
   obras: Obra[];
 }
 
-/** Una exposición con sus fotos de sala. */
+/** Una exposición con sus fotos de sala y la serie que expuso. */
 export interface Exposicion extends ExposicionRow {
   fotos: ExposicionFotoRow[];
+  serie: { id: string; nombre: string; slug: string } | null;
+}
+
+/**
+ * Una serie tal como la muestra su página: sus obras, la técnica deducida de
+ * ellas y la muestra por la que se entró.
+ */
+export interface SerieDetalle extends SerieConObras {
+  /** La técnica que comparte la mayoría de sus piezas, si hay alguna. */
+  tecnica: string | null;
+  /** La exposición que la mostró, para el enlace de vuelta. */
+  exposicion: { titulo: string; slug: string } | null;
 }
 
 export type { ClasesContenido, ExposicionFotoRow, MensajeRow, SobreMiContenido };

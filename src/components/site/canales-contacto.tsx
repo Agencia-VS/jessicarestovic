@@ -1,49 +1,48 @@
-import { siteConfig, whatsappUrl } from "@/lib/site-config";
-
-const { contacto } = siteConfig;
-
-interface Canal {
-  etiqueta: string;
-  valor: string;
-  href: string;
-  externo: boolean;
-}
+import type { Contacto } from "@/lib/site-config";
 
 /**
- * Los canales directos. WhatsApp primero: es el que Jessica usa de verdad y
- * reemplaza al widget de chat de Wix (§12).
+ * Los canales directos, en serif grande: son el contenido de la página de
+ * Contacto, no una lista de datos al costado.
+ *
+ * El teléfono abre WhatsApp, que es el canal que Jessica usa de verdad y el
+ * que reemplaza al widget de chat de Wix (§12) — de ahí que el `aria-label`
+ * lo diga, para que nadie llegue ahí por sorpresa.
  */
-export function CanalesContacto({ mensajeWhatsapp }: { mensajeWhatsapp?: string }) {
-  const canales: Canal[] = [
+export function CanalesContacto({ contacto }: { contacto: Contacto }) {
+  const canales = [
     {
-      etiqueta: "WhatsApp",
-      valor: contacto.telefono,
-      href: whatsappUrl(mensajeWhatsapp),
+      texto: contacto.email,
+      href: `mailto:${contacto.email}`,
+      etiqueta: `Escribir a ${contacto.email}`,
+      externo: false,
+    },
+    {
+      texto: contacto.telefono,
+      href: contacto.whatsappUrl,
+      etiqueta: `Escribir por WhatsApp al ${contacto.telefono}`,
       externo: true,
     },
-    { etiqueta: "Correo", valor: contacto.email, href: `mailto:${contacto.email}`, externo: false },
     {
-      etiqueta: "Instagram",
-      valor: contacto.instagram,
+      texto: contacto.instagram,
       href: contacto.instagramUrl,
+      etiqueta: `Ver ${contacto.instagram} en Instagram`,
       externo: true,
     },
   ];
 
   return (
-    <ul className="flex flex-col border-t border-line">
-      {canales.map(({ etiqueta, valor, href, externo }) => (
-        <li key={etiqueta} className="border-b border-line">
-          <a
-            href={href}
-            {...(externo ? { target: "_blank", rel: "noopener noreferrer" } : {})}
-            className="group flex items-baseline justify-between gap-6 py-4.5 transition-colors hover:text-muted"
-          >
-            <span className="eyebrow text-muted group-hover:text-ink">{etiqueta}</span>
-            <span className="text-[0.9375rem] text-ink group-hover:text-muted">{valor}</span>
-          </a>
-        </li>
+    <div className="flex flex-col gap-[clamp(0.875rem,1.8vw,1.375rem)]">
+      {canales.map(({ texto, href, etiqueta, externo }) => (
+        <a
+          key={href}
+          href={href}
+          aria-label={etiqueta}
+          {...(externo ? { target: "_blank", rel: "noopener noreferrer" } : {})}
+          className="self-start border-b border-rule-soft pb-[3px] font-display text-[clamp(1.125rem,1.9vw,1.5625rem)] font-light transition-colors hover:border-accent hover:text-accent"
+        >
+          {texto}
+        </a>
       ))}
-    </ul>
+    </div>
   );
 }

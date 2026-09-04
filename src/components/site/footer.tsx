@@ -1,60 +1,55 @@
 import Link from "next/link";
-import { navPublica, siteConfig, whatsappUrl } from "@/lib/site-config";
-
-const { contacto } = siteConfig;
+import { siteConfig, type Contacto } from "@/lib/site-config";
+import { supabaseConfigurado } from "@/lib/supabase/env";
+import { Firma } from "./firma";
 
 /**
- * Pie del sitio. Cierra con los dos canales que Jessica usa de verdad —
- * WhatsApp y correo (§12: «alcanza con WhatsApp y email»)— más Instagram,
- * que es de donde llega buena parte de su público.
+ * Pie del sitio: la firma apagada y los enlaces mínimos. Cierra sin repetir
+ * el menú —está fijo arriba— y suma lo que el sitio en Wix no tenía: un enlace
+ * a la política de privacidad (§03).
  */
-export function Footer() {
+export function Footer({ contacto }: { contacto: Contacto }) {
   return (
-    <footer className="gutter mt-24 border-t border-line pt-10 pb-16">
-      <div className="flex flex-col gap-10 md:flex-row md:justify-between">
-        <div className="flex flex-col gap-3">
-          <span className="font-signature text-4xl leading-[0.9]">{siteConfig.nombre}</span>
-          <span className="eyebrow text-muted">{siteConfig.rol}</span>
-        </div>
+    <footer className="border-t border-line">
+      <div className="marco gutter flex flex-wrap items-baseline justify-between gap-4.5 py-[clamp(1.625rem,3.2vw,2.75rem)]">
+        <Firma lugar="pie" className="opacity-55" />
 
-        <nav aria-label="Secciones" className="flex flex-col gap-2">
-          {navPublica.map(({ href, label }) => (
-            <Link key={href} href={href} className="caption text-muted transition-colors hover:text-ink">
-              {label}
-            </Link>
-          ))}
-        </nav>
-
-        <div className="flex flex-col gap-2">
-          <a
-            href={whatsappUrl(`Hola Jessica, te escribo desde tu sitio.`)}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="caption text-muted transition-colors hover:text-ink"
-          >
-            WhatsApp {contacto.telefono}
-          </a>
+        <div className="flex flex-wrap items-baseline gap-x-[clamp(0.875rem,2.2vw,2rem)] gap-y-2">
           <a
             href={`mailto:${contacto.email}`}
-            className="caption text-muted transition-colors hover:text-ink"
+            className="eyebrow tracking-[0.14em] text-muted transition-colors hover:text-ink"
           >
-            {contacto.email}
+            Email
           </a>
           <a
             href={contacto.instagramUrl}
             target="_blank"
             rel="noopener noreferrer"
-            className="caption text-muted transition-colors hover:text-ink"
+            className="eyebrow tracking-[0.14em] text-muted transition-colors hover:text-ink"
           >
-            Instagram {contacto.instagram}
+            Instagram
           </a>
+          <Link
+            href="/privacidad"
+            className="eyebrow tracking-[0.14em] text-muted transition-colors hover:text-ink"
+          >
+            Privacidad
+          </Link>
+          <span className="eyebrow tracking-[0.14em] text-label">
+            © {new Date().getFullYear()} {siteConfig.nombre}
+          </span>
         </div>
       </div>
 
-      <p className="caption mt-12 text-faint">
-        © {new Date().getFullYear()} {siteConfig.nombre}. Todas las obras reproducidas en este sitio
-        son de su autoría.
-      </p>
+      {/* Mientras no haya base de datos, lo que se ve son bloques de
+          referencia. Decirlo evita que se confundan con su obra. */}
+      {!supabaseConfigurado() && (
+        <div className="marco gutter pb-8">
+          <p className="ficha text-label">
+            Vista de diseño: las imágenes son bloques de color de referencia, no obra de la artista.
+          </p>
+        </div>
+      )}
     </footer>
   );
 }

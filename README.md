@@ -19,13 +19,42 @@ depender de nadie.
 
 ## Diseño
 
-Dirección **A — «Sala blanca»**, tomando de la dirección B la estructura por
-series: fondo hueso, una obra a la vez, tipografía casi invisible y la firma
-manuscrita como logotipo. Las obras **nunca se recortan** — cada pieza conserva
-su proporción real, tanto en la retícula como en la vista ampliada.
+El del canvas de Claude Design: fondo crudo, grafito y **un solo acento
+ciruela**, reservado para enlaces y estados activos — nunca compitiendo con el
+color real de las obras. Menos interfaz visible, tipografía silenciosa y la
+obra siempre protagonista.
 
-Tipografías: *Schibsted Grotesk* (texto), *Instrument Serif* (nombres de serie)
-e *Italianno* (la firma).
+Las obras **nunca se recortan**: cada pieza conserva su proporción real, y es
+la foto la que dicta el alto de su tarjeta. En la retícula hay un tope suave
+(nada más alto que ~2:1 ni más ancho que 3.2:1) para que una pieza alargada no
+se coma una columna entera; en la vista ampliada la proporción es exacta. La
+retícula son columnas CSS, no una grilla de cuadrados: las alturas son
+distintas a propósito.
+
+Tipografías: *Public Sans* (texto de apoyo, navegación, pies de obra) y
+*Newsreader* (títulos, nombres de obra y párrafos de presentación). El
+logotipo es la firma manuscrita de Jessica, en AVIF con un PNG transparente de
+respaldo (`public/firma-jessica.*`).
+
+Los tokens de color, las tipografías y las utilidades (`marco`, `gutter`,
+`eyebrow`, `etiqueta`, `pie`, `ficha`, `mosaico`, `aparece`) viven en
+`src/app/globals.css`.
+
+### Mapa de páginas
+
+No hay índice general de obra: la trayectoria es la puerta al cuerpo de obra.
+Se entra a una serie desde la exposición que la mostró, y la página de serie
+vuelve a esa exposición.
+
+| Página | Qué muestra |
+| --- | --- |
+| `/` | Una imagen de portada y una sola línea de texto |
+| `/exposiciones` | Índice de muestras: una portada por exposición, con su total de imágenes |
+| `/exposiciones/[slug]` | Una muestra: ficha, texto y todas sus vistas de montaje |
+| `/serie/[slug]` | Una serie: descripción, ficha, sus piezas y navegación entre series |
+| `/trabajos-recientes` | Lo último cargado, sin importar la serie |
+| `/sobre-mi` · `/clases` · `/contacto` | Biografía, talleres y contacto |
+| `/privacidad` | Qué datos recogen los formularios y para qué |
 
 ## Puesta en marcha
 
@@ -63,6 +92,8 @@ O pegando cada archivo en el **SQL Editor** del panel de Supabase, en orden:
 | `0001_schema.sql` | Tablas: series, obras, exposiciones, mensajes y páginas editables |
 | `0002_rls_storage.sql` | Políticas de acceso y el bucket `obras` para las imágenes |
 | `0003_contenido_inicial.sql` | Las 7 series y 7 exposiciones reales del sitio actual |
+| `0004_configuracion.sql` | Datos de contacto y frase de portada, editables desde el panel |
+| `0005_exposicion_serie.sql` | La serie que expuso cada muestra, las medidas de las fotos de sala y las técnicas de Clases con descripción |
 
 ### 3. Crear el acceso de Jessica
 
@@ -83,22 +114,25 @@ Importar el repositorio en Vercel y cargar las tres variables de entorno
 ```
 src/
 ├── app/
-│   ├── page.tsx              Inicio — obra destacada
-│   ├── obra/                 Galería por serie, con vista ampliada
-│   ├── exposiciones/         Listado cronológico, expandible con fotos
+│   ├── page.tsx              Inicio — la imagen de portada
+│   ├── exposiciones/         Índice de muestras y la página de cada una
+│   ├── serie/[slug]/         Una serie con sus piezas y vista ampliada
+│   ├── trabajos-recientes/   Lo último cargado
 │   ├── sobre-mi/             Biografía y retrato
 │   ├── clases/               Talleres y formulario de interés
-│   ├── contacto/             WhatsApp, correo, Instagram y formulario
+│   ├── contacto/             Correo, WhatsApp, Instagram y formulario
+│   ├── privacidad/           Qué datos se recogen y para qué
 │   └── admin/
 │       ├── login/            Acceso (fuera del marco del panel)
-│       └── (panel)/          Obras, Series, Exposiciones, Sobre mí, Clases, Mensajes
+│       └── (panel)/          Obras, Series, Exposiciones, Sobre mí, Clases,
+│                              Mensajes y Configuración
 ├── components/
 │   ├── site/                 Componentes del sitio público
 │   ├── admin/                Componentes del panel
 │   └── ui/                   Primitivas compartidas (campos, botones, estados)
 ├── lib/
 │   ├── acciones/             Server Actions (una por entidad)
-│   ├── data/                 Consultas y tipos de dominio
+│   ├── data/                 Consultas, tipos de dominio y contenido de demo
 │   ├── supabase/             Clientes (navegador, servidor, sesión)
 │   ├── images.ts             Especificación de imágenes y validación
 │   ├── site-config.ts        Identidad, navegación y datos de contacto
@@ -133,6 +167,20 @@ src/
 - **ESLint 9.39.5, no 10.** El `eslint-plugin-react` que trae
   `eslint-config-next` 16 usa la API antigua de contexto y falla con ESLint 10.
 
+## Vista de diseño sin base de datos
+
+Mientras Supabase no esté configurado, el sitio público no se muestra vacío:
+responde con el contenido de referencia de `src/lib/data/demo.ts`, que replica
+el canvas —las mismas series, proporciones y tonos— para poder revisar el
+diseño antes de que exista una sola foto. Las imágenes de `public/demo/` son
+bloques de color, no obra de la artista, y el pie lo dice explícitamente.
+
+En cuanto se configuran las variables de Supabase, las consultas dejan de mirar
+ahí y el contenido real toma su lugar. No hay forma de que ambos convivan.
+
+El panel, en cambio, sí se muestra vacío: no tendría sentido editar obras que
+no existen.
+
 ## Contenido
 
 Las 7 series y 7 exposiciones se siembran con los datos reales del sitio
@@ -145,6 +193,10 @@ Falta cargar desde el panel:
 - La biografía de «Sobre mí» y el retrato (el texto de `/about` sirve casi tal
   cual).
 - Revisar el texto de «Clases».
+- Marcar una obra como **destacada**: es la que hace de portada del Inicio.
+- Los **años** de las muestras. Hoy solo «Volúmenes» (2013) tiene fecha; el
+  resto aparece con «—» y el listado no puede ordenarse cronológicamente de
+  verdad hasta tenerlos.
 
 ## Comandos
 
@@ -158,6 +210,12 @@ npm run typecheck  # TypeScript sin emitir
 
 ## Contacto de Jessica
 
-Los datos viven en `src/lib/site-config.ts`, en un solo lugar:
-correo `jessicarestoviclucic@gmail.com`, WhatsApp `+56 9 8747 2258` e Instagram
-[@jessica_restovic](https://www.instagram.com/jessica_restovic/).
+Los datos de contacto y la frase de portada se editan desde **Configuración**
+en el panel: correo, teléfono, Instagram y cita. Jessica completa un campo por
+cosa —nunca una URL—, y el sitio deriva el enlace de WhatsApp de los dígitos
+del teléfono y el de Instagram del usuario.
+
+`src/lib/site-config.ts` guarda los valores por defecto
+(`jessicarestoviclucic@gmail.com`, `+56 9 8747 2258`,
+[@jessica_restovic](https://www.instagram.com/jessica_restovic/)), que se usan
+mientras no haya base de datos conectada.
