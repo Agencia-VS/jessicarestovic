@@ -8,6 +8,8 @@
  * después: que la foto tenga resolución suficiente y no pese demasiado.
  */
 
+import { normalizarUrl } from "./url";
+
 const MB = 1024 * 1024;
 
 export interface EspecImagen {
@@ -124,7 +126,7 @@ export const BUCKET_IMAGENES = "obras";
 export function urlImagen(path: string): string {
   if (path.startsWith("/") || path.startsWith("http")) return path;
 
-  const base = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const base = normalizarUrl(process.env.NEXT_PUBLIC_SUPABASE_URL);
   if (!base) return path;
   return `${base}/storage/v1/object/public/${BUCKET_IMAGENES}/${path}`;
 }

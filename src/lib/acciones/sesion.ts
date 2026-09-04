@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { supabaseConfigurado } from "@/lib/supabase/env";
 import { fallo, ok, type Resultado } from "./resultado";
+import { siteConfig } from "@/lib/site-config";
 
 /** Ruta a la que se entra después de iniciar sesión. */
 const DESTINO = "/admin/obras";
@@ -62,10 +63,10 @@ export async function recuperarContrasena(
   }
 
   const supabase = await createClient();
-  const origen = process.env.NEXT_PUBLIC_SITE_URL ?? "";
-
+  // `siteConfig.url` ya viene normalizada y con respaldo: el enlace del correo
+  // tiene que ser absoluto para que funcione fuera del navegador.
   await supabase.auth.resetPasswordForEmail(email, {
-    redirectTo: `${origen}/admin/login`,
+    redirectTo: `${siteConfig.url}/admin/login`,
   });
 
   // Respuesta igual exista o no la cuenta, por la misma razón que arriba.

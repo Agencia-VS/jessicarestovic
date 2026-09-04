@@ -1,3 +1,5 @@
+import { urlORespaldo } from "./url";
+
 /**
  * Fuente única de verdad para los datos del sitio: identidad, navegación y
  * contacto. Todo lo que aparece en más de un lugar vive acá.
@@ -11,7 +13,9 @@ export const siteConfig = {
   rol: "Artista visual",
   descripcion:
     "Obra de Jessica Restović, artista visual: series en grafito sobre tela, ensambles y volúmenes. Galería, exposiciones y talleres.",
-  url: process.env.NEXT_PUBLIC_SITE_URL ?? "https://jessicarestovic.com",
+  // `??` no bastaba: en Vercel la variable puede existir vacía, y esa cadena
+  // vacía llegaba hasta el `new URL()` de `metadataBase` y tumbaba el build.
+  url: urlORespaldo(process.env.NEXT_PUBLIC_SITE_URL, "https://jessicarestovic.com"),
   locale: "es_CL",
   lang: "es",
   cita:
