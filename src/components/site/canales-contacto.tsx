@@ -1,6 +1,4 @@
-import { siteConfig, whatsappUrl } from "@/lib/site-config";
-
-const { contacto } = siteConfig;
+import type { Contacto } from "@/lib/site-config";
 
 interface Canal {
   etiqueta: string;
@@ -13,12 +11,12 @@ interface Canal {
  * Los canales directos. WhatsApp primero: es el que Jessica usa de verdad y
  * reemplaza al widget de chat de Wix (§12).
  */
-export function CanalesContacto({ mensajeWhatsapp }: { mensajeWhatsapp?: string }) {
+export function CanalesContacto({ contacto }: { contacto: Contacto }) {
   const canales: Canal[] = [
     {
       etiqueta: "WhatsApp",
       valor: contacto.telefono,
-      href: whatsappUrl(mensajeWhatsapp),
+      href: contacto.whatsappUrl,
       externo: true,
     },
     { etiqueta: "Correo", valor: contacto.email, href: `mailto:${contacto.email}`, externo: false },

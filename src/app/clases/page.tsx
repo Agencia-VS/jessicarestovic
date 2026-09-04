@@ -2,7 +2,8 @@ import type { Metadata } from "next";
 import { Pagina, Encabezado } from "@/components/site/pagina";
 import { FormularioContacto } from "@/components/site/formulario-contacto";
 import { CanalesContacto } from "@/components/site/canales-contacto";
-import { obtenerClases } from "@/lib/data/consultas";
+import { obtenerClases, obtenerConfiguracion } from "@/lib/data/consultas";
+import { derivarContacto } from "@/lib/site-config";
 
 export const revalidate = 300;
 
@@ -14,7 +15,11 @@ export const metadata: Metadata = {
 };
 
 export default async function ClasesPage() {
-  const { titulo, introduccion, tecnicas, nota } = await obtenerClases();
+  const [{ titulo, introduccion, tecnicas, nota }, config] = await Promise.all([
+    obtenerClases(),
+    obtenerConfiguracion(),
+  ]);
+  const contacto = derivarContacto(config, "Hola Jessica, me interesan tus talleres.");
 
   return (
     <Pagina>
@@ -42,7 +47,7 @@ export default async function ClasesPage() {
 
           <div className="flex flex-col gap-4">
             <h2 className="eyebrow text-label">O escríbeme directo</h2>
-            <CanalesContacto mensajeWhatsapp="Hola Jessica, me interesan tus talleres." />
+            <CanalesContacto contacto={contacto} />
           </div>
         </div>
 

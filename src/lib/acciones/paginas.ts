@@ -11,8 +11,17 @@ import {
   subirImagen,
   type Resultado,
 } from "./comun";
-import { clasesSchema, erroresPorCampo, sobreMiSchema } from "@/lib/validacion";
-import type { ClasesContenido, SobreMiContenido } from "@/types/database";
+import {
+  clasesSchema,
+  configuracionSchema,
+  erroresPorCampo,
+  sobreMiSchema,
+} from "@/lib/validacion";
+import type {
+  ClasesContenido,
+  ConfiguracionContenido,
+  SobreMiContenido,
+} from "@/types/database";
 
 /** Guarda «Sobre mí»: retrato y biografía en un solo formulario (§07). */
 export async function guardarSobreMi(
@@ -120,4 +129,36 @@ export async function guardarClases(
   revalidatePath("/clases");
   revalidatePath("/admin/clases");
   return ok("Página «Clases» actualizada.");
+}
+
+/** Guarda los datos de contacto y la cita de portada. */
+export async function guardarConfiguracion(
+  _previo: Resultado,
+  formData: FormData,
+): Promise<Resultado> {
+  const analisis = configuracionSchema.safeParse({
+    email: String(formData.get("email") ?? ""),
+    telefono: String(formData.get("telefono") ?? ""),
+    instagram: String(formData.get("instagram") ?? ""),
+    cita: String(formData.get("cita") ?? ""),
+  });
+
+  if (!analisis.success) {
+    return fallo("Revisa los campos marcados.", erroresPorCampo(analisis.error));
+  }
+
+  const supabase = await clienteConSesion();
+  if (!supabase) return SIN_SESION;
+
+  const contenido: ConfiguracionContenido = analisis.data;
+
+  const { error } = await supabase
+    .from("pagina")
+    .upsert({ clave: "configuracion", contenido }, { onConflict: "clave" });
+
+  if (error) return fallo("No pudimos guardar los cambios. Vuelve a intentar en un momento.");
+
+  // El contacto aparece en el pie de todas las páginas.
+  revalidatePath("/", "layout");
+  return ok("Datos de contacto actualizados.");
 }

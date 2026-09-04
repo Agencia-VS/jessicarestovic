@@ -2,7 +2,6 @@
 
 import { useTransition } from "react";
 import { eliminarMensaje, marcarLeido } from "@/lib/acciones/mensajes-admin";
-import { whatsappUrl } from "@/lib/site-config";
 import { Confirmar } from "./confirmar";
 import type { MensajeRow } from "@/lib/data/tipos";
 
@@ -10,6 +9,18 @@ const ORIGEN: Record<MensajeRow["origen"], string> = {
   contacto: "Contacto",
   clases: "Clases",
 };
+
+/**
+ * Enlace para responder por WhatsApp a quien escribió.
+ *
+ * Antes esto armaba el enlace con el número de Jessica, así que al tocarlo se
+ * abría una conversación con ella misma en vez de con la persona.
+ */
+function whatsappDe(telefono: string, nombre: string): string {
+  const digitos = telefono.replace(/\D/g, "");
+  const texto = encodeURIComponent(`Hola ${nombre}, recibí tu mensaje desde mi sitio.`);
+  return `https://wa.me/${digitos}?text=${texto}`;
+}
 
 const FECHA = new Intl.DateTimeFormat("es-CL", {
   day: "numeric",
@@ -61,7 +72,7 @@ export function BandejaMensajes({ mensajes }: { mensajes: MensajeRow[] }) {
 
                 {telefono && (
                   <a
-                    href={whatsappUrl(`Hola ${nombre}, recibí tu mensaje desde mi sitio.`)}
+                    href={whatsappDe(telefono, nombre)}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="caption text-muted underline underline-offset-4 transition-colors hover:text-ink"

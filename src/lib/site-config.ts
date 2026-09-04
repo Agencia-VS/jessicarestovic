@@ -1,39 +1,64 @@
 import { urlORespaldo } from "./url";
+import type { ConfiguracionContenido } from "@/types/database";
 
 /**
  * Fuente única de verdad para los datos del sitio: identidad, navegación y
  * contacto. Todo lo que aparece en más de un lugar vive acá.
  */
 
-/** Número de WhatsApp en formato internacional, solo dígitos (para wa.me). */
-const WHATSAPP_E164 = "56987472258";
+/**
+ * Valores por defecto de la configuración editable. Se usan mientras no haya
+ * base de datos conectada, y como respaldo si un campo quedara vacío.
+ */
+export const CONFIGURACION_POR_DEFECTO: ConfiguracionContenido = {
+  email: "jessicarestoviclucic@gmail.com",
+  telefono: "+56 9 8747 2258",
+  instagram: "@jessica_restovic",
+  cita:
+    "Un trabajo obsesivo en que el tiempo y el ritmo pausado del hacer es el gestor de espacios íntimos.",
+};
 
 export const siteConfig = {
   nombre: "Jessica Restović",
   rol: "Artista visual",
   descripcion:
     "Obra de Jessica Restović, artista visual: series en grafito sobre tela, ensambles y volúmenes. Galería, exposiciones y talleres.",
-  // `??` no bastaba: en Vercel la variable puede existir vacía, y esa cadena
-  // vacía llegaba hasta el `new URL()` de `metadataBase` y tumbaba el build.
   url: urlORespaldo(process.env.NEXT_PUBLIC_SITE_URL, "https://jessicarestovic.com"),
   locale: "es_CL",
   lang: "es",
-  cita:
-    "Un trabajo obsesivo en que el tiempo y el ritmo pausado del hacer es el gestor de espacios íntimos.",
-  contacto: {
-    email: "jessicarestoviclucic@gmail.com",
-    telefono: "+56 9 8747 2258",
-    whatsapp: WHATSAPP_E164,
-    whatsappUrl: `https://wa.me/${WHATSAPP_E164}`,
-    instagram: "@jessica_restovic",
-    instagramUrl: "https://www.instagram.com/jessica_restovic/",
-  },
 } as const;
 
-/** Mensaje precargado al abrir WhatsApp desde el sitio. */
-export function whatsappUrl(mensaje?: string): string {
-  const base = siteConfig.contacto.whatsappUrl;
-  return mensaje ? `${base}?text=${encodeURIComponent(mensaje)}` : base;
+/** Los datos de contacto ya listos para pintar en la página. */
+export interface Contacto {
+  email: string;
+  telefono: string;
+  whatsappUrl: string;
+  instagram: string;
+  instagramUrl: string;
+  cita: string;
+}
+
+/**
+ * Deriva los enlaces a partir de lo que Jessica escribió: el de WhatsApp sale
+ * de los dígitos del teléfono y el de Instagram, del usuario. Así ella
+ * completa un campo por cosa y no una URL.
+ */
+export function derivarContacto(
+  config: ConfiguracionContenido,
+  mensajeWhatsapp?: string,
+): Contacto {
+  const digitos = config.telefono.replace(/\D/g, "");
+  const usuario = config.instagram.replace(/^@+/, "");
+  const wa = `https://wa.me/${digitos}`;
+
+  return {
+    email: config.email,
+    telefono: config.telefono,
+    whatsappUrl: mensajeWhatsapp ? `${wa}?text=${encodeURIComponent(mensajeWhatsapp)}` : wa,
+    instagram: `@${usuario}`,
+    instagramUrl: `https://www.instagram.com/${usuario}/`,
+    cita: config.cita,
+  };
 }
 
 export interface NavItem {
@@ -58,4 +83,5 @@ export const navAdmin: readonly NavItem[] = [
   { href: "/admin/sobre-mi", label: "Sobre mí" },
   { href: "/admin/clases", label: "Clases" },
   { href: "/admin/mensajes", label: "Mensajes" },
+  { href: "/admin/configuracion", label: "Configuración" },
 ] as const;

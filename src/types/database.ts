@@ -8,7 +8,7 @@
 
 export type MensajeOrigen = "contacto" | "clases";
 
-export type PaginaClave = "sobre-mi" | "clases";
+export type PaginaClave = "sobre-mi" | "clases" | "configuracion";
 
 export type SerieRow = {
   id: string;
@@ -90,6 +90,21 @@ export type SobreMiContenido = {
   cita: string | null;
   retrato_path: string | null;
   retrato_alt: string | null;
+};
+
+/**
+ * Datos de contacto y textos que Jessica administra desde «Configuración».
+ * El enlace de WhatsApp y la URL de Instagram se derivan de estos valores, así
+ * ella completa un solo campo por cosa.
+ */
+export type ConfiguracionContenido = {
+  email: string;
+  /** Tal como se lee, por ejemplo «+56 9 8747 2258». */
+  telefono: string;
+  /** Usuario con arroba, por ejemplo «@jessica_restovic». */
+  instagram: string;
+  /** La frase que cierra la portada. */
+  cita: string;
 };
 
 /** Contenido de la página «Clases». */

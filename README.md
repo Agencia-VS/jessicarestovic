@@ -63,6 +63,7 @@ O pegando cada archivo en el **SQL Editor** del panel de Supabase, en orden:
 | `0001_schema.sql` | Tablas: series, obras, exposiciones, mensajes y páginas editables |
 | `0002_rls_storage.sql` | Políticas de acceso y el bucket `obras` para las imágenes |
 | `0003_contenido_inicial.sql` | Las 7 series y 7 exposiciones reales del sitio actual |
+| `0004_configuracion.sql` | Datos de contacto y frase de portada, editables desde el panel |
 
 ### 3. Crear el acceso de Jessica
 
@@ -91,14 +92,15 @@ src/
 │   ├── contacto/             WhatsApp, correo, Instagram y formulario
 │   └── admin/
 │       ├── login/            Acceso (fuera del marco del panel)
-│       └── (panel)/          Obras, Series, Exposiciones, Sobre mí, Clases, Mensajes
+│       └── (panel)/          Obras, Series, Exposiciones, Sobre mí, Clases,
+│                              Mensajes y Configuración
 ├── components/
 │   ├── site/                 Componentes del sitio público
 │   ├── admin/                Componentes del panel
 │   └── ui/                   Primitivas compartidas (campos, botones, estados)
 ├── lib/
 │   ├── acciones/             Server Actions (una por entidad)
-│   ├── data/                 Consultas y tipos de dominio
+│   ├── data/                 Consultas, tipos de dominio y contenido de demo
 │   ├── supabase/             Clientes (navegador, servidor, sesión)
 │   ├── images.ts             Especificación de imágenes y validación
 │   ├── site-config.ts        Identidad, navegación y datos de contacto
@@ -133,6 +135,20 @@ src/
 - **ESLint 9.39.5, no 10.** El `eslint-plugin-react` que trae
   `eslint-config-next` 16 usa la API antigua de contexto y falla con ESLint 10.
 
+## Vista de diseño sin base de datos
+
+Mientras Supabase no esté configurado, el sitio público no se muestra vacío:
+responde con el contenido de referencia de `src/lib/data/demo.ts`, que replica
+el canvas —las mismas series, proporciones y tonos— para poder revisar el
+diseño antes de que exista una sola foto. Las imágenes de `public/demo/` son
+bloques de color, no obra de la artista, y el pie lo dice explícitamente.
+
+En cuanto se configuran las variables de Supabase, las consultas dejan de mirar
+ahí y el contenido real toma su lugar. No hay forma de que ambos convivan.
+
+El panel, en cambio, sí se muestra vacío: no tendría sentido editar obras que
+no existen.
+
 ## Contenido
 
 Las 7 series y 7 exposiciones se siembran con los datos reales del sitio
@@ -158,6 +174,12 @@ npm run typecheck  # TypeScript sin emitir
 
 ## Contacto de Jessica
 
-Los datos viven en `src/lib/site-config.ts`, en un solo lugar:
-correo `jessicarestoviclucic@gmail.com`, WhatsApp `+56 9 8747 2258` e Instagram
-[@jessica_restovic](https://www.instagram.com/jessica_restovic/).
+Los datos de contacto y la frase de portada se editan desde **Configuración**
+en el panel: correo, teléfono, Instagram y cita. Jessica completa un campo por
+cosa —nunca una URL—, y el sitio deriva el enlace de WhatsApp de los dígitos
+del teléfono y el de Instagram del usuario.
+
+`src/lib/site-config.ts` guarda los valores por defecto
+(`jessicarestoviclucic@gmail.com`, `+56 9 8747 2258`,
+[@jessica_restovic](https://www.instagram.com/jessica_restovic/)), que se usan
+mientras no haya base de datos conectada.

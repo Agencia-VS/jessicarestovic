@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { ayudaImagen, validarArchivo, validarDimensiones } from "@/lib/images";
 
 interface Seleccion {
@@ -17,7 +17,23 @@ interface Seleccion {
  * descripción de cada uno.
  */
 export function SubirFotos({ nombre = "fotos" }: { nombre?: string }) {
+  const inputRef = useRef<HTMLInputElement>(null);
   const [seleccion, setSeleccion] = useState<Seleccion[]>([]);
+  const [arrastrando, setArrastrando] = useState(false);
+
+  /** Las fotos soltadas se dejan en el input real para que viajen con el form. */
+  const alSoltar = (evento: React.DragEvent) => {
+    evento.preventDefault();
+    setArrastrando(false);
+
+    const archivos = evento.dataTransfer.files;
+    if (!archivos?.length || !inputRef.current) return;
+
+    const lista = new DataTransfer();
+    for (const archivo of archivos) lista.items.add(archivo);
+    inputRef.current.files = lista.files;
+    alElegir(lista.files);
+  };
 
   useEffect(
     () => () => {
@@ -56,21 +72,45 @@ export function SubirFotos({ nombre = "fotos" }: { nombre?: string }) {
 
   return (
     <div className="flex flex-col gap-4">
-      <label className="flex flex-col gap-2">
-        <span className="eyebrow text-muted">
-          Fotos de sala
-          <span className="ml-2 normal-case tracking-normal text-faint">opcional</span>
+      <span className="eyebrow text-muted">
+        Fotos de sala
+        <span className="ml-2 normal-case tracking-normal text-faint">opcional</span>
+      </span>
+
+      {/* Misma zona de arrastre que el formulario de obra, para que subir
+          fotos se sienta igual en todo el panel. */}
+      <label
+        onDragOver={(e) => {
+          e.preventDefault();
+          setArrastrando(true);
+        }}
+        onDragLeave={() => setArrastrando(false)}
+        onDrop={alSoltar}
+        className={`flex cursor-pointer flex-col items-center justify-center gap-3 border border-dashed px-5 py-8 text-center transition-colors ${
+          arrastrando ? "border-ink bg-line-soft" : "border-line hover:border-faint"
+        }`}
+      >
+        <span className="caption text-muted">
+          {seleccion.length > 0
+            ? `${seleccion.length} ${seleccion.length === 1 ? "foto elegida" : "fotos elegidas"}`
+            : "Arrastra las fotos acá, o toca para elegirlas"}
         </span>
+
         <input
+          ref={inputRef}
           type="file"
           name={nombre}
           multiple
           accept="image/jpeg,image/png,image/webp,image/avif"
           onChange={(e) => alElegir(e.target.files)}
-          className="caption w-full border border-dashed border-line px-4 py-3 text-muted file:mr-4 file:border-0 file:bg-transparent file:text-ink"
+          className="sr-only"
         />
-        <span className="caption text-faint">{ayudaImagen("exposicion")}</span>
+
+        <span className="caption text-ink underline underline-offset-4">
+          {seleccion.length > 0 ? "Elegir otras" : "Elegir fotos"}
+        </span>
       </label>
+      <span className="caption text-faint">{ayudaImagen("exposicion")}</span>
 
       {seleccion.length > 0 && (
         <ul className="flex flex-col gap-5">

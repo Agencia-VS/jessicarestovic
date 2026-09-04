@@ -4,10 +4,12 @@ import Link from "next/link";
 import { useState } from "react";
 import type { Obra } from "@/lib/data/tipos";
 import { ObraImagen } from "./obra-imagen";
-import { siteConfig } from "@/lib/site-config";
+
 
 interface InicioDestacadasProps {
   obras: Obra[];
+  /** La frase que cierra la portada, editable desde el panel. */
+  cita: string;
 }
 
 /**
@@ -15,7 +17,7 @@ interface InicioDestacadasProps {
  * destacó varias, se pasa entre ellas sin salir de la página — el ritmo
  * pausado de la dirección «Sala blanca», no un carrusel automático.
  */
-export function InicioDestacadas({ obras }: InicioDestacadasProps) {
+export function InicioDestacadas({ obras, cita }: InicioDestacadasProps) {
   const [indice, setIndice] = useState(0);
   const obra = obras[indice];
 
@@ -58,7 +60,7 @@ export function InicioDestacadas({ obras }: InicioDestacadasProps) {
       <div className="gutter pb-16">
         <div className="flex flex-col items-start justify-between gap-6 border-t border-line pt-6.5 md:flex-row md:items-baseline md:gap-12">
           <p className="max-w-[52ch] text-[0.9375rem] leading-relaxed text-body text-pretty">
-            «{siteConfig.cita}»
+            «{cita}»
           </p>
           <Link
             href="/obra"

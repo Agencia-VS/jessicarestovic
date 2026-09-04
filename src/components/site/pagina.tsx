@@ -1,5 +1,7 @@
 import { Header } from "./header";
 import { Footer } from "./footer";
+import { obtenerConfiguracion } from "@/lib/data/consultas";
+import { derivarContacto } from "@/lib/site-config";
 
 interface PaginaProps {
   children: React.ReactNode;
@@ -11,12 +13,14 @@ interface PaginaProps {
  * Envoltura de todas las páginas públicas: cabecera, contenido y pie, con el
  * alto mínimo de pantalla para que el pie no suba en páginas cortas.
  */
-export function Pagina({ children, comoTitulo = false }: PaginaProps) {
+export async function Pagina({ children, comoTitulo = false }: PaginaProps) {
+  const contacto = derivarContacto(await obtenerConfiguracion());
+
   return (
     <div className="flex min-h-dvh flex-col bg-paper">
       <Header comoTitulo={comoTitulo} />
       <main className="flex flex-1 flex-col">{children}</main>
-      <Footer />
+      <Footer contacto={contacto} />
     </div>
   );
 }

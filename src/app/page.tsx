@@ -2,20 +2,22 @@ import Link from "next/link";
 import { Pagina } from "@/components/site/pagina";
 import { InicioDestacadas } from "@/components/site/inicio-destacadas";
 import { EstadoVacio } from "@/components/ui/estado-vacio";
-import { listarObrasDestacadas } from "@/lib/data/consultas";
-import { siteConfig } from "@/lib/site-config";
+import { listarObrasDestacadas, obtenerConfiguracion } from "@/lib/data/consultas";
 
 // El contenido lo administra Jessica: revalidamos cada 5 minutos para que una
 // obra nueva aparezca sola, sin volver a desplegar.
 export const revalidate = 300;
 
 export default async function InicioPage() {
-  const destacadas = await listarObrasDestacadas();
+  const [destacadas, config] = await Promise.all([
+    listarObrasDestacadas(),
+    obtenerConfiguracion(),
+  ]);
 
   return (
     <Pagina comoTitulo>
       {destacadas.length > 0 ? (
-        <InicioDestacadas obras={destacadas} />
+        <InicioDestacadas obras={destacadas} cita={config.cita} />
       ) : (
         <div className="gutter flex flex-1 flex-col justify-center py-20">
           <EstadoVacio
@@ -27,7 +29,7 @@ export default async function InicioPage() {
             </Link>
           </EstadoVacio>
           <p className="mt-10 max-w-[52ch] text-[0.9375rem] leading-relaxed text-body text-pretty">
-            «{siteConfig.cita}»
+            «{config.cita}»
           </p>
         </div>
       )}

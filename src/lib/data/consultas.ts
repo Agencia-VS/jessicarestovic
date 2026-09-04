@@ -1,5 +1,16 @@
 import { createClient } from "@/lib/supabase/server";
 import { supabaseConfigurado } from "@/lib/supabase/env";
+import {
+  DEMO_CLASES,
+  DEMO_DESTACADAS,
+  DEMO_EXPOSICIONES,
+  DEMO_GALERIA,
+  DEMO_OBRAS,
+  DEMO_SERIES,
+  DEMO_SOBRE_MI,
+} from "./demo";
+import { CONFIGURACION_POR_DEFECTO } from "@/lib/site-config";
+import type { ConfiguracionContenido, PaginaClave } from "@/types/database";
 import type {
   ClasesContenido,
   Exposicion,
@@ -13,9 +24,11 @@ import type {
 /**
  * Consultas del sitio y del panel.
  *
- * Todas toleran que Supabase no esté configurado todavía: devuelven vacío en
- * vez de lanzar, para que el sitio muestre su estado vacío durante el montaje
- * inicial y el build no dependa de credenciales.
+ * Mientras Supabase no esté configurado, el sitio público responde con el
+ * contenido de referencia de `demo.ts` en vez de con nada: así el diseño se
+ * puede revisar antes de que exista una sola foto, y el build no depende de
+ * credenciales. El panel, en cambio, sigue vacío —no tendría sentido editar
+ * obras que no existen— y su estado vacío explica qué falta.
  */
 
 /** Columnas de `obra` más la serie asociada — una sola forma para toda la app. */
@@ -24,7 +37,7 @@ const SELECT_OBRA = "*, serie:serie_id (id, nombre, slug)";
 // --- Series ----------------------------------------------------------------
 
 export async function listarSeries(): Promise<Serie[]> {
-  if (!supabaseConfigurado()) return [];
+  if (!supabaseConfigurado()) return DEMO_SERIES;
   const supabase = await createClient();
 
   const [{ data: series }, { data: obras }] = await Promise.all([
@@ -46,7 +59,7 @@ export async function listarSeries(): Promise<Serie[]> {
 // --- Obras -----------------------------------------------------------------
 
 export async function listarObrasPublicadas(): Promise<Obra[]> {
-  if (!supabaseConfigurado()) return [];
+  if (!supabaseConfigurado()) return DEMO_OBRAS;
   const supabase = await createClient();
 
   const { data } = await supabase
@@ -61,7 +74,7 @@ export async function listarObrasPublicadas(): Promise<Obra[]> {
 
 /** Obras destacadas para el Inicio, en el orden que fijó Jessica. */
 export async function listarObrasDestacadas(limite = 8): Promise<Obra[]> {
-  if (!supabaseConfigurado()) return [];
+  if (!supabaseConfigurado()) return DEMO_DESTACADAS.slice(0, limite);
   const supabase = await createClient();
 
   const { data } = await supabase
@@ -104,6 +117,8 @@ export async function obtenerObra(id: string): Promise<Obra | null> {
  * sitio actual.
  */
 export async function listarGaleriaPorSerie(): Promise<SerieConObras[]> {
+  if (!supabaseConfigurado()) return DEMO_GALERIA;
+
   const [series, obras] = await Promise.all([listarSeries(), listarObrasPublicadas()]);
 
   const porSerie = new Map<string, Obra[]>();
@@ -150,7 +165,7 @@ function ordenarFotos(expo: Exposicion): Exposicion {
 }
 
 export async function listarExposiciones(soloPublicadas = true): Promise<Exposicion[]> {
-  if (!supabaseConfigurado()) return [];
+  if (!supabaseConfigurado()) return soloPublicadas ? DEMO_EXPOSICIONES : [];
   const supabase = await createClient();
 
   let consulta = supabase.from("exposicion").select(SELECT_EXPO);
@@ -210,8 +225,9 @@ const CLASES_VACIO: ClasesContenido = {
   nota: null,
 };
 
-async function obtenerPagina<T>(clave: "sobre-mi" | "clases", vacio: T): Promise<T> {
+async function obtenerPagina<T>(clave: PaginaClave, vacio: T): Promise<T> {
   if (!supabaseConfigurado()) return vacio;
+
   const supabase = await createClient();
 
   const { data } = await supabase
@@ -224,9 +240,18 @@ async function obtenerPagina<T>(clave: "sobre-mi" | "clases", vacio: T): Promise
 }
 
 export function obtenerSobreMi(): Promise<SobreMiContenido> {
-  return obtenerPagina("sobre-mi", SOBRE_MI_VACIO);
+  return obtenerPagina("sobre-mi", supabaseConfigurado() ? SOBRE_MI_VACIO : DEMO_SOBRE_MI);
 }
 
 export function obtenerClases(): Promise<ClasesContenido> {
-  return obtenerPagina("clases", CLASES_VACIO);
+  return obtenerPagina("clases", supabaseConfigurado() ? CLASES_VACIO : DEMO_CLASES);
+}
+
+/**
+ * Datos de contacto y cita de portada. A diferencia de las otras páginas, acá
+ * el respaldo son los valores por defecto y no un vacío: el sitio siempre
+ * necesita un correo y un teléfono que mostrar.
+ */
+export function obtenerConfiguracion(): Promise<ConfiguracionContenido> {
+  return obtenerPagina("configuracion", CONFIGURACION_POR_DEFECTO);
 }

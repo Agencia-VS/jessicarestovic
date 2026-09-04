@@ -2,7 +2,8 @@ import type { Metadata } from "next";
 import { Pagina, Encabezado } from "@/components/site/pagina";
 import { CanalesContacto } from "@/components/site/canales-contacto";
 import { FormularioContacto } from "@/components/site/formulario-contacto";
-import { siteConfig } from "@/lib/site-config";
+import { derivarContacto, siteConfig } from "@/lib/site-config";
+import { obtenerConfiguracion } from "@/lib/data/consultas";
 
 export const metadata: Metadata = {
   title: "Contacto",
@@ -10,7 +11,14 @@ export const metadata: Metadata = {
   alternates: { canonical: "/contacto" },
 };
 
-export default function ContactoPage() {
+export const revalidate = 300;
+
+export default async function ContactoPage() {
+  const contacto = derivarContacto(
+    await obtenerConfiguracion(),
+    "Hola Jessica, te escribo desde tu sitio por una consulta.",
+  );
+
   return (
     <Pagina>
       <Encabezado
@@ -19,7 +27,7 @@ export default function ContactoPage() {
       />
 
       <div className="gutter grid grid-cols-1 gap-14 pt-10 pb-8 md:grid-cols-2 md:gap-18">
-        <CanalesContacto mensajeWhatsapp="Hola Jessica, te escribo desde tu sitio por una consulta." />
+        <CanalesContacto contacto={contacto} />
         <FormularioContacto
           origen="contacto"
           placeholderMensaje="Cuéntame en qué te puedo ayudar."

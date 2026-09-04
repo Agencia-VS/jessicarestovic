@@ -60,6 +60,13 @@ export const sobreMiSchema = z.object({
   retrato_alt: texto(300).optional().or(z.literal("")),
 });
 
+export const configuracionSchema = z.object({
+  email: texto(200).pipe(z.string().email("Revisa el correo: parece incompleto.")),
+  telefono: texto(40).min(8, "Escribe el teléfono con su código de país."),
+  instagram: texto(60).min(2, "Escribe tu usuario de Instagram."),
+  cita: texto(400).min(1, "La frase de portada no puede quedar vacía."),
+});
+
 export const clasesSchema = z.object({
   titulo: texto(120).min(1, "El título no puede quedar vacío."),
   introduccion: texto(3000).min(1, "Escribe la presentación de los talleres."),
