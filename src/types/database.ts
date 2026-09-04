@@ -45,6 +45,8 @@ export type ExposicionRow = {
   lugar: string | null;
   anio: number | null;
   descripcion: string | null;
+  /** La serie que expuso, si la muestra fue de una sola. */
+  serie_id: string | null;
   publicada: boolean;
   orden: number;
   creado_en: string;
@@ -56,6 +58,9 @@ export type ExposicionFotoRow = {
   exposicion_id: string;
   imagen_path: string;
   imagen_alt: string;
+  /** Medidas reales de la foto, para reservar su espacio sin recortarla. */
+  imagen_ancho: number | null;
+  imagen_alto: number | null;
   orden: number;
   creado_en: string;
 };
@@ -176,7 +181,15 @@ export type Database = {
           "id" | "publicada" | "orden" | "creado_en" | "actualizado_en"
         >;
         Update: Partial<ExposicionRow>;
-        Relationships: [];
+        Relationships: [
+          {
+            foreignKeyName: "exposicion_serie_id_fkey";
+            columns: ["serie_id"];
+            isOneToOne: false;
+            referencedRelation: "serie";
+            referencedColumns: ["id"];
+          },
+        ];
       };
       exposicion_foto: {
         Row: ExposicionFotoRow;

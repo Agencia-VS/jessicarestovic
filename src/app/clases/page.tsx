@@ -1,9 +1,7 @@
 import type { Metadata } from "next";
-import { Pagina, Encabezado } from "@/components/site/pagina";
-import { FormularioContacto } from "@/components/site/formulario-contacto";
-import { CanalesContacto } from "@/components/site/canales-contacto";
-import { obtenerClases, obtenerConfiguracion } from "@/lib/data/consultas";
-import { derivarContacto } from "@/lib/site-config";
+import { Pagina, Titulo } from "@/components/site/pagina";
+import { InteresClases } from "@/components/site/interes-clases";
+import { obtenerClases } from "@/lib/data/consultas";
 
 export const revalidate = 300;
 
@@ -14,51 +12,55 @@ export const metadata: Metadata = {
   alternates: { canonical: "/clases" },
 };
 
+/**
+ * Cada técnica se escribe en el panel como «Nombre — descripción», una por
+ * línea. Acá se parte en dos para armar la fila: el nombre en serif grande a
+ * la izquierda, la descripción menuda a la derecha.
+ */
+function partirTecnica(linea: string): { nombre: string; detalle: string | null } {
+  const [nombre, ...resto] = linea.split(/\s+—\s+/);
+  return { nombre: nombre?.trim() ?? linea, detalle: resto.join(" — ").trim() || null };
+}
+
 export default async function ClasesPage() {
-  const [{ titulo, introduccion, tecnicas, nota }, config] = await Promise.all([
-    obtenerClases(),
-    obtenerConfiguracion(),
-  ]);
-  const contacto = derivarContacto(config, "Hola Jessica, me interesan tus talleres.");
+  const { titulo, introduccion, tecnicas, nota } = await obtenerClases();
 
   return (
     <Pagina>
-      <Encabezado titulo={titulo} bajada={introduccion || null} />
+      <div className="mx-auto flex w-full max-w-[65rem] flex-col gap-[clamp(2rem,4vw,4rem)] gutter pt-[clamp(2.5rem,5.5vw,5.375rem)] pb-[clamp(3.5rem,7vw,6.875rem)]">
+        <div className="flex flex-col gap-[clamp(1.25rem,2.4vw,2rem)]">
+          <Titulo>{titulo}</Titulo>
 
-      <div className="gutter grid grid-cols-1 gap-14 pt-10 pb-8 md:grid-cols-2 md:gap-18">
-        <div className="flex flex-col gap-10">
+          {introduccion && (
+            <p className="max-w-[52ch] font-display text-[clamp(1.0625rem,1.6vw,1.375rem)] leading-[1.7] font-light text-prose text-pretty">
+              {introduccion}
+            </p>
+          )}
+
           {tecnicas.length > 0 && (
-            <div className="flex flex-col gap-4">
-              <h2 className="eyebrow text-label">Técnicas</h2>
-              <ul className="flex flex-col border-t border-line">
-                {tecnicas.map((tecnica) => (
-                  <li
-                    key={tecnica}
-                    className="border-b border-line py-4 text-[1.0625rem] leading-snug"
+            <div className="flex flex-col border-t border-line">
+              {tecnicas.map((linea) => {
+                const { nombre, detalle } = partirTecnica(linea);
+
+                return (
+                  <div
+                    key={linea}
+                    className="flex items-baseline justify-between gap-5 border-b border-line py-[clamp(0.9375rem,1.8vw,1.5rem)]"
                   >
-                    {tecnica}
-                  </li>
-                ))}
-              </ul>
+                    <span className="font-display text-[clamp(1.25rem,2vw,1.6875rem)] font-light -tracking-[0.01em]">
+                      {nombre}
+                    </span>
+                    {detalle && <span className="ficha text-right text-muted">{detalle}</span>}
+                  </div>
+                );
+              })}
             </div>
           )}
 
-          {nota && <p className="caption max-w-[44ch] text-muted">{nota}</p>}
-
-          <div className="flex flex-col gap-4">
-            <h2 className="eyebrow text-label">O escríbeme directo</h2>
-            <CanalesContacto contacto={contacto} />
-          </div>
+          {nota && <p className="ficha max-w-[44ch] text-muted">{nota}</p>}
         </div>
 
-        <div className="flex flex-col gap-4">
-          <h2 className="eyebrow text-label">Quiero información</h2>
-          <FormularioContacto
-            origen="clases"
-            textoBoton="Quiero información"
-            placeholderMensaje="Cuéntame qué técnica te interesa y tu disponibilidad."
-          />
-        </div>
+        <InteresClases />
       </div>
     </Pagina>
   );

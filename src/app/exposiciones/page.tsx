@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
-import { Pagina, Encabezado } from "@/components/site/pagina";
-import { ExposicionItem } from "@/components/site/exposicion-item";
+import { Pagina, Seccion } from "@/components/site/pagina";
+import { FiltrosExposiciones } from "@/components/site/filtros-exposiciones";
+import { PortadasExposiciones } from "@/components/site/mosaico-vistas";
 import { EstadoVacio } from "@/components/ui/estado-vacio";
 import { listarExposiciones } from "@/lib/data/consultas";
 
@@ -18,25 +19,26 @@ export default async function ExposicionesPage() {
 
   return (
     <Pagina>
-      <Encabezado
+      <Seccion
         titulo="Exposiciones"
-        bajada="Muestras y ferias, de la más reciente a la más antigua. Las que tienen fotos de sala se despliegan al tocarlas."
-      />
-
-      <div className="gutter pt-10 pb-8">
+        conteo={
+          exposiciones.length > 0
+            ? `${exposiciones.length} ${exposiciones.length === 1 ? "exposición" : "exposiciones"}`
+            : undefined
+        }
+      >
         {exposiciones.length > 0 ? (
-          <ul className="border-t border-line">
-            {exposiciones.map((exposicion) => (
-              <ExposicionItem key={exposicion.id} exposicion={exposicion} />
-            ))}
-          </ul>
+          <>
+            <FiltrosExposiciones exposiciones={exposiciones} activo={null} />
+            <PortadasExposiciones exposiciones={exposiciones} />
+          </>
         ) : (
           <EstadoVacio
             titulo="Todavía no hay exposiciones publicadas"
             detalle="Las exposiciones se cargan desde el panel, con su lugar, año y fotos de sala."
           />
         )}
-      </div>
+      </Seccion>
     </Pagina>
   );
 }
