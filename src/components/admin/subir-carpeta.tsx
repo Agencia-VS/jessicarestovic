@@ -4,7 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { borrarSubidaPendiente, prepararSubidaImagen } from "@/lib/acciones/subida-directa";
 import { crearObrasEnLote } from "@/lib/acciones/obras";
-import { ayudaImagen, validarArchivo, validarDimensiones } from "@/lib/images";
+import { advertirDimensiones, ayudaImagen, validarArchivo } from "@/lib/images";
 import { slugify } from "@/lib/validacion";
 import { subirArchivoPorUrl } from "@/lib/subida-directa";
 import type { Exposicion, ObraEnLoteEntrada } from "@/lib/data/tipos";
@@ -26,6 +26,7 @@ interface Fila {
   previa: string;
   titulo: string;
   problema: string | null;
+  advertencia: string | null;
   medidas: { ancho: number; alto: number } | null;
   ruta: string | null;
   progreso: number;
@@ -213,6 +214,7 @@ export function SubirCarpeta({
         previa: URL.createObjectURL(archivo),
         titulo: titulo.titulo,
         problema: problemaArchivo ?? titulo.problema,
+        advertencia: null,
         medidas: null,
         ruta: null,
         progreso: 0,
@@ -245,7 +247,7 @@ export function SubirCarpeta({
         const medidas = { ancho: imagen.naturalWidth, alto: imagen.naturalHeight };
         actualizarFila(fila.id, {
           medidas,
-          problema: validarDimensiones(medidas.ancho, medidas.alto, "obra"),
+          advertencia: advertirDimensiones(medidas.ancho, medidas.alto, "obra"),
         });
       };
       imagen.onerror = () => {
@@ -474,6 +476,7 @@ export function SubirCarpeta({
                     {fila.medidas && <p className="caption text-faint">{fila.medidas.ancho} × {fila.medidas.alto} px</p>}
                     {fila.subiendo && <p className="caption text-muted">Subiendo… {fila.progreso}%</p>}
                     {fila.problema && <p className="caption mt-1 text-danger">{fila.problema}</p>}
+                    {fila.advertencia && <p className="caption mt-1 text-muted">{fila.advertencia}</p>}
                   </div>
                 </li>
               ))}

@@ -2,13 +2,14 @@
 
 import { useEffect, useRef, useState } from "react";
 import { borrarSubidaPendiente, prepararSubidaImagen } from "@/lib/acciones/subida-directa";
-import { ayudaImagen, validarArchivo, validarDimensiones } from "@/lib/images";
+import { advertirDimensiones, ayudaImagen, validarArchivo } from "@/lib/images";
 import { subirArchivoPorUrl } from "@/lib/subida-directa";
 
 interface Seleccion {
   archivo: File;
   previa: string;
   problema: string | null;
+  advertencia: string | null;
   medidas: { ancho: number; alto: number } | null;
   ruta: string | null;
   progreso: number;
@@ -97,6 +98,7 @@ export function SubirFotos({ nombre = "fotos", alCambiarEstado }: SubirFotosProp
       archivo,
       previa: URL.createObjectURL(archivo),
       problema: validarArchivo(archivo, "exposicion"),
+      advertencia: null,
       medidas: null,
       ruta: null,
       progreso: 0,
@@ -111,9 +113,11 @@ export function SubirFotos({ nombre = "fotos", alCambiarEstado }: SubirFotosProp
         if (id !== version.current) return;
         const ancho = imagen.naturalWidth;
         const alto = imagen.naturalHeight;
-        const problema = validarDimensiones(ancho, alto, "exposicion");
-        actualizar(indice, { problema, medidas: { ancho, alto } });
-        if (!problema) void subir(item, indice, id);
+        actualizar(indice, {
+          advertencia: advertirDimensiones(ancho, alto, "exposicion"),
+          medidas: { ancho, alto },
+        });
+        void subir(item, indice, id);
       };
       imagen.onerror = () => {
         if (id === version.current) {
@@ -209,6 +213,9 @@ export function SubirFotos({ nombre = "fotos", alCambiarEstado }: SubirFotosProp
                   <p role="alert" className="caption text-danger">
                     {item.problema}
                   </p>
+                )}
+                {item.advertencia && (
+                  <p className="caption text-muted">{item.advertencia}</p>
                 )}
               </div>
             </li>
