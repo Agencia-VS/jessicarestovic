@@ -1,31 +1,16 @@
-import type { Exposicion, FotoDeSala, Obra, Serie, SerieConObras } from "./tipos";
+import type { Exposicion, FotoDeSala, Obra } from "./tipos";
 import type { ClasesContenido, SobreMiContenido } from "@/types/database";
 
 /**
  * Contenido de referencia para cuando todavía no hay base de datos conectada.
  *
- * Sin esto, un despliegue recién montado se ve como una sucesión de cajas
- * vacías y no se puede juzgar el diseño. Con esto se ve tal como el canvas:
- * las mismas series, las mismas exposiciones y el mismo mosaico de alturas
- * variables, con los tonos —grafito, hueso, arena y gris frío— que se usaron
- * para diseñarlo.
- *
- * Son bloques de color, no la obra de Jessica, y el pie del sitio lo dice. En
- * cuanto Supabase queda configurado, las consultas dejan de mirar acá y el
- * contenido real toma su lugar; no hay forma de que ambos convivan.
- *
- * Las series y exposiciones son las mismas siete que siembra
- * `0003_contenido_inicial.sql`, así que la vista de diseño anticipa lo que
- * Jessica verá cuando conecte la base y antes de subir una sola foto.
+ * La exposición es la definición primaria: sus piezas viven dentro de ella y
+ * un conjunto con nombre permite conservar «Espacios Íntimos» sin convertirlo
+ * en una segunda entidad. Las imágenes son bloques de color, no la obra real.
  */
 
 const AHORA = "2026-01-01T00:00:00.000Z";
 
-/**
- * Los bloques disponibles, con sus medidas reales. Cada obra declara las
- * medidas del archivo que usa: así el bloque llena su marco exacto y el
- * mosaico se ve con las alturas que tendrá con fotos de verdad.
- */
 const BLOQUES = {
   cuadrado: { archivo: "ensambles-01", ancho: 1800, alto: 1800 },
   cuadradoII: { archivo: "ensambles-03", ancho: 1800, alto: 1800 },
@@ -40,132 +25,159 @@ const BLOQUES = {
 } as const;
 
 type Bloque = keyof typeof BLOQUES;
-
 const TODOS_LOS_BLOQUES = Object.keys(BLOQUES) as Bloque[];
 
-interface DefinicionSerie {
-  slug: string;
-  nombre: string;
-  descripcion: string | null;
-  /** Un título y un bloque por pieza. */
-  piezas: [titulo: string, bloque: Bloque][];
-  tecnica?: string;
-  anio?: number;
+interface DefinicionPieza {
+  titulo: string;
+  bloque: Bloque;
+  conjunto?: string;
 }
 
-/** Las siete series de la auditoría, con las piezas que muestra el canvas. */
-const DEFINICIONES: DefinicionSerie[] = [
+interface DefinicionExpo {
+  slug: string;
+  titulo: string;
+  lugar: string | null;
+  anio: number | null;
+  descripcion: string | null;
+  vistas: number;
+  tecnica?: string;
+  piezas: DefinicionPieza[];
+}
+
+/** Las siete exposiciones de la auditoría, en el orden editorial sembrado. */
+const EXPOS: DefinicionExpo[] = [
   {
-    slug: "ensambles-al-cubo",
-    nombre: "Ensambles al Cubo",
-    descripcion:
-      "Un trabajo obsesivo en que el tiempo y el ritmo pausado del hacer es el gestor de espacios íntimos.",
-    tecnica: "Óleo sobre tela",
-    piezas: [
-      ["Ensambles al Cubo I", "cuadrado"],
-      ["Ensambles al Cubo II", "vertical"],
-      ["Ensambles al Cubo III", "cuadradoII"],
-      ["Ensambles al Cubo IV", "horizontal"],
-      ["Ensambles al Cubo V", "cuadradoIII"],
-      ["Ensambles al Cubo VI", "verticalII"],
-    ],
-  },
-  {
-    slug: "espacios-intimos",
-    nombre: "Espacios Íntimos",
-    descripcion: "Series pequeñas, hechas para mirarse de cerca.",
-    tecnica: "Grafito sobre tela",
-    piezas: [
-      ["Espacios Íntimos I", "verticalIII"],
-      ["Espacios Íntimos II", "verticalIV"],
-      ["Espacios Íntimos III", "verticalV"],
-      ["Espacios Íntimos IV", "retrato"],
-    ],
+    slug: "fundacion-guayasamin",
+    titulo: "Fundación Guayasamín",
+    lugar: "Quito, Ecuador",
+    anio: null,
+    descripcion: "Dos obras de 1,6 × 1,6 m, óleo sobre tela.",
+    vistas: 4,
+    piezas: [],
   },
   {
     slug: "sur",
-    nombre: "Sur",
+    titulo: "Sur",
+    lugar: null,
+    anio: null,
     descripcion: "Serie en grafito sobre tela inspirada en la Patagonia.",
+    vistas: 7,
     tecnica: "Grafito sobre tela",
     piezas: [
-      ["Sur I", "horizontal"],
-      ["Sur II", "cuadrado"],
+      { titulo: "Sur I", bloque: "horizontal" },
+      { titulo: "Sur II", bloque: "cuadrado" },
     ],
   },
   {
-    slug: "de-lo-residual",
-    nombre: "De lo Residual",
-    descripcion: "Huellas del tiempo sobre distintas superficies.",
+    slug: "ensambles-al-cubo",
+    titulo: "Ensambles al cubo",
+    lugar: null,
+    anio: null,
+    descripcion: "Muestra de la serie de ensambles en óleo sobre tela.",
+    vistas: 34,
+    tecnica: "Óleo sobre tela",
     piezas: [
-      ["De lo Residual I", "horizontal"],
-      ["De lo Residual II", "cuadradoII"],
-      ["De lo Residual III", "verticalII"],
+      { titulo: "Ensambles al Cubo I", bloque: "cuadrado" },
+      { titulo: "Ensambles al Cubo II", bloque: "vertical" },
+      { titulo: "Ensambles al Cubo III", bloque: "cuadradoII" },
+      { titulo: "Ensambles al Cubo IV", bloque: "horizontal" },
+      { titulo: "Ensambles al Cubo V", bloque: "cuadradoIII" },
+      { titulo: "Ensambles al Cubo VI", bloque: "verticalII" },
+      { titulo: "Espacios Íntimos I", bloque: "verticalIII", conjunto: "Espacios Íntimos" },
+      { titulo: "Espacios Íntimos II", bloque: "verticalIV", conjunto: "Espacios Íntimos" },
+      { titulo: "Espacios Íntimos III", bloque: "verticalV", conjunto: "Espacios Íntimos" },
+      { titulo: "Espacios Íntimos IV", bloque: "retrato", conjunto: "Espacios Íntimos" },
+    ],
+  },
+  {
+    slug: "de-lo-residual-y-lo-efimero",
+    titulo: "De lo residual y lo efímero",
+    lugar: null,
+    anio: null,
+    descripcion: "Huellas del tiempo sobre distintas superficies.",
+    vistas: 6,
+    piezas: [
+      { titulo: "De lo Residual I", bloque: "horizontal" },
+      { titulo: "De lo Residual II", bloque: "cuadradoII" },
+      { titulo: "De lo Residual III", bloque: "verticalII" },
     ],
   },
   {
     slug: "de-lo-precario",
-    nombre: "De lo Precario",
+    titulo: "De lo precario",
+    lugar: null,
+    anio: null,
     descripcion: "Materiales simples y frágiles como lenguaje.",
+    vistas: 21,
     piezas: [
-      ["De lo Precario I", "vertical"],
-      ["De lo Precario II", "cuadradoIII"],
+      { titulo: "De lo Precario I", bloque: "vertical" },
+      { titulo: "De lo Precario II", bloque: "cuadradoIII" },
     ],
   },
   {
     slug: "volumenes",
-    nombre: "Volúmenes",
-    descripcion: "Serie expuesta en la Feria La Porfía, 2013.",
+    titulo: "Volúmenes",
+    lugar: "Feria La Porfía",
     anio: 2013,
+    descripcion: "Serie expuesta en la Feria La Porfía.",
+    vistas: 8,
     piezas: [
-      ["Volúmenes I", "verticalIV"],
-      ["Volúmenes II", "cuadrado"],
+      { titulo: "Volúmenes I", bloque: "verticalIV" },
+      { titulo: "Volúmenes II", bloque: "cuadrado" },
     ],
   },
   {
     slug: "a-partir-de-lo-simple",
-    nombre: "A partir de lo simple",
+    titulo: "A partir de lo simple",
+    lugar: null,
+    anio: null,
     descripcion: "Documentación de proceso: obra en curso y obra terminada.",
+    vistas: 5,
     piezas: [
-      ["A partir de lo simple I", "verticalV"],
-      ["A partir de lo simple II", "cuadradoII"],
-      ["A partir de lo simple III", "horizontal"],
+      { titulo: "A partir de lo simple I", bloque: "verticalV" },
+      { titulo: "A partir de lo simple II", bloque: "cuadradoII" },
+      { titulo: "A partir de lo simple III", bloque: "horizontal" },
     ],
   },
 ];
 
-const SERIES: Serie[] = DEFINICIONES.map((definicion, indice) => ({
-  id: `demo-serie-${definicion.slug}`,
-  nombre: definicion.nombre,
-  slug: definicion.slug,
-  descripcion: definicion.descripcion,
+const EXPOSICIONES_BASE = EXPOS.map((expo, indice) => ({
+  id: `demo-expo-${expo.slug}`,
+  titulo: expo.titulo,
+  slug: expo.slug,
+  lugar: expo.lugar,
+  anio: expo.anio,
+  descripcion: expo.descripcion,
+  publicada: true,
   orden: indice + 1,
   creado_en: AHORA,
   actualizado_en: AHORA,
-  obrasPublicadas: definicion.piezas.length,
 }));
 
-/** Las obras de todas las series, en el orden en que se muestran. */
-const OBRAS: Obra[] = DEFINICIONES.flatMap((definicion, indiceSerie) => {
-  const serie = SERIES[indiceSerie]!;
+const OBRAS: Obra[] = EXPOS.flatMap((definicion, indiceExpo) => {
+  const exposicion = EXPOSICIONES_BASE[indiceExpo]!;
 
-  return definicion.piezas.map(([titulo, clave], indicePieza): Obra => {
-    const bloque = BLOQUES[clave];
-
+  return definicion.piezas.map((pieza, indicePieza): Obra => {
+    const bloque = BLOQUES[pieza.bloque];
     return {
       id: `demo-obra-${definicion.slug}-${indicePieza + 1}`,
-      titulo,
-      serie_id: serie.id,
-      serie: { id: serie.id, nombre: serie.nombre, slug: serie.slug },
-      anio: definicion.anio ?? null,
+      titulo: pieza.titulo,
+      exposicion_id: exposicion.id,
+      conjunto: pieza.conjunto ?? null,
+      exposicion: {
+        id: exposicion.id,
+        titulo: exposicion.titulo,
+        slug: exposicion.slug,
+        publicada: exposicion.publicada,
+      },
+      anio: definicion.anio,
       tecnica: definicion.tecnica ?? null,
       dimensiones: null,
       imagen_path: `/demo/${bloque.archivo}.avif`,
-      // Las de referencia son archivos locales: la ruta ya es la URL.
       imagenUrl: `/demo/${bloque.archivo}.avif`,
-      imagen_alt: `${titulo} — bloque de color de referencia, no la obra real`,
+      imagen_alt: `${pieza.titulo} — bloque de color de referencia, no la obra real`,
       imagen_ancho: bloque.ancho,
       imagen_alto: bloque.alto,
-      // La portada del Inicio: una sola, horizontal, como pide la spec (§08).
       destacada: definicion.slug === "ensambles-al-cubo" && indicePieza === 3,
       publicada: true,
       orden: indicePieza,
@@ -175,114 +187,18 @@ const OBRAS: Obra[] = DEFINICIONES.flatMap((definicion, indiceSerie) => {
   });
 });
 
-export const DEMO_SERIES: Serie[] = SERIES;
-
 export const DEMO_OBRAS: Obra[] = OBRAS;
 
 export const DEMO_DESTACADAS: Obra[] = OBRAS.filter((obra) => obra.destacada);
 
-export const DEMO_GALERIA: SerieConObras[] = SERIES.map((serie) => ({
-  ...serie,
-  obras: OBRAS.filter((obra) => obra.serie_id === serie.id),
-}));
-
-interface DefinicionExpo {
-  slug: string;
-  titulo: string;
-  lugar: string | null;
-  anio: number | null;
-  descripcion: string | null;
-  /** Cuántas vistas de sala tiene la muestra, según los números de Jessica. */
-  vistas: number;
-  /** Los slugs de las series que expuso. Puede ser más de una, o ninguna. */
-  series?: string[];
-}
-
-/**
- * Las siete exposiciones de la auditoría, con el número de imágenes que
- * Jessica contó para cada una.
- */
-const EXPOS: DefinicionExpo[] = [
-  {
-    slug: "ensambles-al-cubo",
-    titulo: "Ensambles al cubo",
-    lugar: null,
-    anio: null,
-    descripcion: "Muestra de la serie de ensambles en óleo sobre tela.",
-    vistas: 34,
-    // La muestra reunió las dos series: la homónima y «Espacios Íntimos».
-    series: ["ensambles-al-cubo", "espacios-intimos"],
-  },
-  {
-    slug: "de-lo-precario",
-    titulo: "De lo precario",
-    lugar: null,
-    anio: null,
-    descripcion: "Materiales simples y frágiles como lenguaje.",
-    vistas: 21,
-    series: ["de-lo-precario"],
-  },
-  {
-    slug: "volumenes",
-    titulo: "Volúmenes",
-    lugar: "Feria La Porfía",
-    anio: 2013,
-    descripcion: "Serie expuesta en la Feria La Porfía.",
-    vistas: 8,
-    series: ["volumenes"],
-  },
-  {
-    slug: "sur",
-    titulo: "Sur",
-    lugar: null,
-    anio: null,
-    descripcion: "Serie en grafito sobre tela inspirada en la Patagonia.",
-    vistas: 7,
-    series: ["sur"],
-  },
-  {
-    slug: "de-lo-residual-y-lo-efimero",
-    titulo: "De lo residual y lo efímero",
-    lugar: null,
-    anio: null,
-    descripcion: "Huellas del tiempo sobre distintas superficies.",
-    vistas: 6,
-    series: ["de-lo-residual"],
-  },
-  {
-    slug: "a-partir-de-lo-simple",
-    titulo: "A partir de lo simple",
-    lugar: null,
-    anio: null,
-    descripcion: "Documentación de proceso: obra en curso y obra terminada.",
-    vistas: 5,
-    series: ["a-partir-de-lo-simple"],
-  },
-  {
-    slug: "fundacion-guayasamin",
-    titulo: "Fundación Guayasamín",
-    lugar: "Quito, Ecuador",
-    anio: null,
-    descripcion: "Dos obras de 1,6 × 1,6 m, óleo sobre tela.",
-    vistas: 4,
-  },
-];
-
-/**
- * Vistas de sala de referencia: los mismos bloques, rotando. El ciclo arranca
- * corrido en cada muestra para que las portadas no salgan todas con la misma
- * proporción y el mosaico se vea como se va a ver con fotos de verdad.
- */
 function vistasDe(expo: DefinicionExpo, desde: number): FotoDeSala[] {
   return Array.from({ length: expo.vistas }, (_, indice) => {
     const clave = TODOS_LOS_BLOQUES[(desde + indice) % TODOS_LOS_BLOQUES.length]!;
     const bloque = BLOQUES[clave];
-
     return {
       id: `demo-foto-${expo.slug}-${indice + 1}`,
       exposicion_id: `demo-expo-${expo.slug}`,
       imagen_path: `/demo/${bloque.archivo}.avif`,
-      // Las de referencia son archivos locales: la ruta ya es la URL.
       imagenUrl: `/demo/${bloque.archivo}.avif`,
       imagen_alt: `Vista de montaje ${indice + 1} de ${expo.titulo} — bloque de referencia, no la sala real`,
       imagen_ancho: bloque.ancho,
@@ -293,35 +209,21 @@ function vistasDe(expo: DefinicionExpo, desde: number): FotoDeSala[] {
   });
 }
 
-export const DEMO_EXPOSICIONES: Exposicion[] = EXPOS.map((expo, indice) => {
-  const series = (expo.series ?? [])
-    .map((slug) => SERIES.find((s) => s.slug === slug))
-    .filter((serie): serie is (typeof SERIES)[number] => serie !== undefined)
-    .map(({ id, nombre, slug }) => ({ id, nombre, slug }));
-
-  return {
-    id: `demo-expo-${expo.slug}`,
-    titulo: expo.titulo,
-    slug: expo.slug,
-    lugar: expo.lugar,
-    anio: expo.anio,
-    descripcion: expo.descripcion,
-    series,
-    publicada: true,
-    orden: indice,
-    creado_en: AHORA,
-    actualizado_en: AHORA,
-    fotos: vistasDe(expo, indice * 3),
-  };
-});
+export const DEMO_EXPOSICIONES: Exposicion[] = EXPOSICIONES_BASE.map((exposicion, indice) => ({
+  ...exposicion,
+  obrasPublicadas: OBRAS.filter(
+    (obra) => obra.exposicion_id === exposicion.id && obra.publicada,
+  ).length,
+  fotos: vistasDe(EXPOS[indice]!, indice * 3),
+}));
 
 export const DEMO_SOBRE_MI: SobreMiContenido = {
   titulo: "Sobre mí",
   biografia:
     "Este texto es un marcador: la biografía real se carga desde el panel, en «Sobre mí».\n\n" +
-    "Trabajo por series. Cada una parte de un material y una pregunta: el óleo sobre tela en " +
-    "Ensambles al Cubo, el grafito en Sur, las superficies gastadas de De lo Residual. La obra " +
-    "se acumula despacio, en el taller, y las series se cierran cuando dejan de tener algo que decir.",
+    "Trabajo por conjuntos de obra. Cada uno parte de un material y una pregunta: el óleo sobre tela en " +
+    "Ensambles al Cubo, el grafito en Sur y las superficies gastadas de De lo residual. La obra " +
+    "se acumula despacio, en el taller, y cada conjunto se cierra cuando deja de tener algo que decir.",
   cita:
     "Un trabajo obsesivo en que el tiempo y el ritmo pausado del hacer es el gestor de espacios íntimos.",
   retrato_path: null,

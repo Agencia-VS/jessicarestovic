@@ -5,7 +5,7 @@ import type { Obra } from "@/lib/data/tipos";
 import { Foto } from "./foto";
 
 interface LightboxProps {
-  /** La secuencia que recorren las flechas: el filtro o la serie visible. */
+  /** La secuencia que recorren las flechas: el conjunto visible. */
   obras: Obra[];
   /** Índice de la obra abierta, o `null` si está cerrado. */
   indice: number | null;
@@ -17,7 +17,7 @@ interface LightboxProps {
  * Vista ampliada de una obra. Es una capa sobre la retícula, no una página
  * aparte (§05), así que el visitante no pierde el lugar donde iba.
  *
- * Recorre solo la secuencia con la que se abrió —las piezas de esa serie, o
+ * Recorre solo la secuencia con la que se abrió —las piezas de ese conjunto, o
  * las del filtro activo— y acá la proporción es exacta: sin el tope del
  * mosaico, la obra se ve tal como es.
  */
@@ -104,7 +104,9 @@ export function Lightbox({ obras, indice, onCerrar, onCambiar }: LightboxProps) 
           <span className="font-display text-[clamp(1.375rem,2.4vw,2rem)] leading-[1.15] font-light italic">
             {obra.titulo}
           </span>
-          {obra.serie && <span className="eyebrow text-muted">{obra.serie.nombre}</span>}
+          {obra.exposicion && (
+            <span className="eyebrow text-muted">{obra.exposicion.titulo}</span>
+          )}
         </div>
 
         <div className="flex flex-wrap gap-[clamp(1rem,2.6vw,2.5rem)]">

@@ -8,7 +8,7 @@ import { Lightbox } from "./lightbox";
 interface GaleriaObrasProps {
   obras: Obra[];
   /** Qué se lee bajo el título de cada pieza. */
-  pie?: "serie" | "ficha";
+  pie?: "exposicion" | "ficha";
 }
 
 /**
@@ -18,7 +18,7 @@ interface GaleriaObrasProps {
  * cae donde quepa y conserva su proporción, en vez de calzar en una fila de
  * cuadrados.
  */
-export function GaleriaObras({ obras, pie = "serie" }: GaleriaObrasProps) {
+export function GaleriaObras({ obras, pie = "exposicion" }: GaleriaObrasProps) {
   const [abierta, setAbierta] = useState<number | null>(null);
 
   return (
@@ -28,7 +28,7 @@ export function GaleriaObras({ obras, pie = "serie" }: GaleriaObrasProps) {
           <FiguraObra
             key={obra.id}
             obra={obra}
-            pie={pie === "serie" ? (obra.serie?.nombre ?? "") : fichaDe(obra)}
+            pie={pie === "exposicion" ? (obra.exposicion?.titulo ?? "Sin exposición") : fichaDe(obra)}
             onAbrir={() => setAbierta(indice)}
             prioridad={indice === 0}
           />

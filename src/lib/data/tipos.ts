@@ -4,20 +4,25 @@ import type {
   ExposicionRow,
   MensajeRow,
   ObraRow,
-  SerieRow,
   SobreMiContenido,
 } from "@/types/database";
 
 /**
- * Una obra con el nombre de su serie y la URL de su foto ya resueltos.
- *
- * La URL viene resuelta desde el servidor a propósito: así los componentes de
- * cliente del panel muestran la foto sin necesitar la URL de Supabase, que por
- * eso puede quedar como variable de entorno privada.
+ * Una obra con la muestra a la que pertenece y la URL de su foto ya
+ * resueltos. La relación puede ser nula: una obra puede sobrevivir a la
+ * eliminación de su exposición.
  */
 export interface Obra extends ObraRow {
-  serie: { id: string; nombre: string; slug: string } | null;
+  exposicion: ExposicionBreve | null;
   imagenUrl: string;
+}
+
+/** Identificación mínima de una exposición para rotular una obra. */
+export interface ExposicionBreve {
+  id: string;
+  titulo: string;
+  slug: string;
+  publicada: boolean;
 }
 
 /** Una foto de sala con su URL ya resuelta, por el mismo motivo. */
@@ -25,44 +30,24 @@ export interface FotoDeSala extends ExposicionFotoRow {
   imagenUrl: string;
 }
 
-/** Una serie con la cuenta de obras publicadas que la componen. */
-export interface Serie extends SerieRow {
+/** Una exposición con sus fotos de sala. */
+export interface Exposicion extends ExposicionRow {
+  fotos: FotoDeSala[];
   obrasPublicadas: number;
 }
 
-/** Una serie con sus obras. */
-export interface SerieConObras extends Serie {
+/** Un bloque de obras de una exposición, con conjunto opcional. */
+export interface GrupoDeObras {
+  nombre: string | null;
   obras: Obra[];
 }
 
-/** Identificación mínima de una serie, para los enlaces cruzados. */
-export interface SerieBreve {
-  id: string;
-  nombre: string;
-  slug: string;
-}
-
-/**
- * Una exposición con sus fotos de sala y las series que expuso.
- *
- * Son varias a propósito: «Ensambles al Cubo» mostró dos, y una muestra
- * colectiva puede reunir más. La lista vacía es el caso de «Fundación
- * Guayasamín», que expuso piezas sueltas.
- */
-export interface Exposicion extends ExposicionRow {
-  fotos: FotoDeSala[];
-  series: SerieBreve[];
-}
-
-/**
- * Una serie tal como la muestra su página: sus obras, la técnica deducida de
- * ellas y las muestras en que se expuso.
- */
-export interface SerieDetalle extends SerieConObras {
+/** Una exposición tal como la muestra su página de obras. */
+export interface ExposicionDetalle extends Exposicion {
+  obras: Obra[];
+  grupos: GrupoDeObras[];
   /** La técnica que comparte la mayoría de sus piezas, si hay alguna. */
   tecnica: string | null;
-  /** Las muestras que la expusieron, de la más reciente a la más antigua. */
-  exposiciones: { titulo: string; slug: string }[];
 }
 
 export type { ClasesContenido, ExposicionFotoRow, MensajeRow, SobreMiContenido };

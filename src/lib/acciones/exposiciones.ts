@@ -11,56 +11,17 @@ import {
   ok,
   SIN_SESION,
   subirImagen,
-  type Cliente,
   type Resultado,
 } from "./comun";
 import { erroresPorCampo, exposicionSchema, slugify } from "@/lib/validacion";
 
 function revalidarExposiciones(): void {
   revalidatePath("/exposiciones");
-  // La página de cada muestra y las de serie muestran el enlace cruzado
-  // («Ver la serie», «← Volúmenes»), así que se refrescan juntas.
   revalidatePath("/exposiciones/[slug]", "page");
-  revalidatePath("/serie/[slug]", "page");
+  revalidatePath("/exposiciones/[slug]/obras", "page");
+  revalidatePath("/trabajos-recientes");
   revalidatePath("/admin/exposiciones");
-}
-
-/**
- * Las series que expuso la muestra. Llegan como varias casillas con el mismo
- * nombre, así que se leen todas y se descartan repetidas.
- */
-function leerSeries(formData: FormData): string[] {
-  const ids = formData.getAll("series").map((valor) => String(valor).trim());
-  return [...new Set(ids.filter(Boolean))];
-}
-
-/**
- * Reemplaza el conjunto de series de una exposición por el que llega del
- * formulario. Se borra y se vuelve a insertar en vez de comparar diferencias:
- * son un puñado de filas y así el orden queda siempre igual al de la lista.
- */
-async function guardarSeries(
-  supabase: Cliente,
-  exposicionId: string,
-  seriesIds: string[],
-): Promise<string | null> {
-  const { error: errorBorrado } = await supabase
-    .from("exposicion_serie")
-    .delete()
-    .eq("exposicion_id", exposicionId);
-
-  if (errorBorrado) return "No pudimos actualizar las series de la exposición.";
-  if (seriesIds.length === 0) return null;
-
-  const { error } = await supabase.from("exposicion_serie").insert(
-    seriesIds.map((serieId, orden) => ({
-      exposicion_id: exposicionId,
-      serie_id: serieId,
-      orden,
-    })),
-  );
-
-  return error ? "No pudimos guardar las series de la exposición." : null;
+  revalidatePath("/admin/trabajos-recientes");
 }
 
 function leerCampos(formData: FormData) {
@@ -70,7 +31,6 @@ function leerCampos(formData: FormData) {
     anio: enteroONulo(formData.get("anio")),
     descripcion: String(formData.get("descripcion") ?? ""),
     publicada: booleano(formData.get("publicada")),
-    orden: enteroONulo(formData.get("orden")) ?? 0,
   });
 
   if (!analisis.success) return { errores: erroresPorCampo(analisis.error) } as const;
@@ -84,17 +44,59 @@ function leerCampos(formData: FormData) {
       anio: d.anio ?? null,
       descripcion: d.descripcion ? d.descripcion : null,
       publicada: d.publicada,
-      orden: d.orden,
     },
   } as const;
 }
 
+/** El final de la lista editorial, para nuevas exposiciones. */
+async function siguienteOrden(
+  supabase: NonNullable<Awaited<ReturnType<typeof clienteConSesion>>>,
+): Promise<number> {
+  const { data } = await supabase
+    .from("exposicion")
+    .select("orden")
+    .order("orden", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  return (data?.orden ?? 0) + 1;
+}
+
 /**
- * Sube las fotos de sala nuevas y las asocia a la exposición.
- * El texto alternativo de cada una llega en `foto_alt_<i>`.
+ * Alta rápida desde el formulario de obra. La exposición nace oculta para no
+ * publicar una ficha incompleta si Jessica cancela el alta de la obra.
  */
+export async function crearExposicionRapida(
+  titulo: string,
+): Promise<{ id: string; titulo: string; slug: string } | { error: string }> {
+  const limpio = titulo.trim();
+  if (limpio.length < 2) return { error: "La exposición necesita un título." };
+
+  const supabase = await clienteConSesion();
+  if (!supabase) return { error: "Tu sesión expiró. Vuelve a entrar." };
+
+  const slug = slugify(limpio);
+  const { data, error } = await supabase
+    .from("exposicion")
+    .insert({
+      titulo: limpio,
+      slug,
+      publicada: false,
+      orden: await siguienteOrden(supabase),
+    })
+    .select("id")
+    .single();
+
+  if (error || !data) {
+    return { error: "No pudimos crear la exposición. ¿Ya existe una con ese título?" };
+  }
+
+  revalidarExposiciones();
+  return { id: data.id, titulo: limpio, slug };
+}
+
+/** Sube las fotos de sala nuevas y las asocia a la exposición. */
 async function guardarFotos(
-  supabase: Cliente,
+  supabase: NonNullable<Awaited<ReturnType<typeof clienteConSesion>>>,
   exposicionId: string,
   formData: FormData,
   desdeOrden: number,
@@ -111,7 +113,7 @@ async function guardarFotos(
 
     const alt =
       String(formData.get(`foto_alt_${indice}`) ?? "").trim() ||
-      `Vista de sala de la exposición`;
+      "Vista de sala de la exposición";
 
     const { error } = await supabase.from("exposicion_foto").insert({
       exposicion_id: exposicionId,
@@ -143,16 +145,13 @@ export async function crearExposicion(
 
   const { data, error } = await supabase
     .from("exposicion")
-    .insert(campos.datos)
+    .insert({ ...campos.datos, orden: await siguienteOrden(supabase) })
     .select("id")
     .single();
 
   if (error || !data) {
     return fallo("No pudimos crear la exposición. ¿Ya existe una con ese título?");
   }
-
-  const problemaSeries = await guardarSeries(supabase, data.id, leerSeries(formData));
-  if (problemaSeries) return fallo(problemaSeries);
 
   const problemaFotos = await guardarFotos(supabase, data.id, formData, 0);
   if (problemaFotos) return fallo(problemaFotos);
@@ -180,9 +179,6 @@ export async function editarExposicion(
     .select("id", { count: "exact", head: true })
     .eq("exposicion_id", id);
 
-  const problemaSeries = await guardarSeries(supabase, id, leerSeries(formData));
-  if (problemaSeries) return fallo(problemaSeries);
-
   const problemaFotos = await guardarFotos(supabase, id, formData, count ?? 0);
   if (problemaFotos) return fallo(problemaFotos);
 
@@ -194,7 +190,6 @@ export async function eliminarExposicion(id: string): Promise<void> {
   const supabase = await clienteConSesion();
   if (!supabase) return;
 
-  // Las fotos se van por cascada en la base; los archivos hay que borrarlos.
   const { data: fotos } = await supabase
     .from("exposicion_foto")
     .select("imagen_path")
@@ -232,5 +227,17 @@ export async function alternarExposicionPublicada(
   if (!supabase) return;
 
   await supabase.from("exposicion").update({ publicada }).eq("id", id);
+  revalidarExposiciones();
+}
+
+/** Guarda el orden editorial de la lista de exposiciones. */
+export async function reordenarExposiciones(ids: string[]): Promise<void> {
+  const supabase = await clienteConSesion();
+  if (!supabase) return;
+
+  await Promise.all(
+    ids.map((id, indice) => supabase.from("exposicion").update({ orden: indice + 1 }).eq("id", id)),
+  );
+
   revalidarExposiciones();
 }

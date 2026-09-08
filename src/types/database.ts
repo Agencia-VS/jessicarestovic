@@ -10,20 +10,11 @@ export type MensajeOrigen = "contacto" | "clases";
 
 export type PaginaClave = "sobre-mi" | "clases" | "configuracion";
 
-export type SerieRow = {
-  id: string;
-  nombre: string;
-  slug: string;
-  descripcion: string | null;
-  orden: number;
-  creado_en: string;
-  actualizado_en: string;
-};
-
 export type ObraRow = {
   id: string;
   titulo: string;
-  serie_id: string | null;
+  exposicion_id: string | null;
+  conjunto: string | null;
   anio: number | null;
   tecnica: string | null;
   dimensiones: string | null;
@@ -61,18 +52,6 @@ export type ExposicionFotoRow = {
   imagen_alto: number | null;
   orden: number;
   creado_en: string;
-};
-
-export type ExposicionSerieRow = {
-  exposicion_id: string;
-  serie_id: string;
-  orden: number;
-};
-
-export type ExposicionObraRow = {
-  exposicion_id: string;
-  obra_id: string;
-  orden: number;
 };
 
 export type MensajeRow = {
@@ -155,12 +134,6 @@ type Aplanado<T> = { [K in keyof T]: T[K] };
 export type Database = {
   public: {
     Tables: {
-      serie: {
-        Row: SerieRow;
-        Insert: Escribible<SerieRow, "id" | "orden" | "creado_en" | "actualizado_en">;
-        Update: Partial<SerieRow>;
-        Relationships: [];
-      };
       obra: {
         Row: ObraRow;
         Insert: Escribible<
@@ -170,10 +143,10 @@ export type Database = {
         Update: Partial<ObraRow>;
         Relationships: [
           {
-            foreignKeyName: "obra_serie_id_fkey";
-            columns: ["serie_id"];
+            foreignKeyName: "obra_exposicion_id_fkey";
+            columns: ["exposicion_id"];
             isOneToOne: false;
-            referencedRelation: "serie";
+            referencedRelation: "exposicion";
             referencedColumns: ["id"];
           },
         ];
@@ -197,48 +170,6 @@ export type Database = {
             columns: ["exposicion_id"];
             isOneToOne: false;
             referencedRelation: "exposicion";
-            referencedColumns: ["id"];
-          },
-        ];
-      };
-      exposicion_serie: {
-        Row: ExposicionSerieRow;
-        Insert: Escribible<ExposicionSerieRow, "orden">;
-        Update: Partial<ExposicionSerieRow>;
-        Relationships: [
-          {
-            foreignKeyName: "exposicion_serie_exposicion_id_fkey";
-            columns: ["exposicion_id"];
-            isOneToOne: false;
-            referencedRelation: "exposicion";
-            referencedColumns: ["id"];
-          },
-          {
-            foreignKeyName: "exposicion_serie_serie_id_fkey";
-            columns: ["serie_id"];
-            isOneToOne: false;
-            referencedRelation: "serie";
-            referencedColumns: ["id"];
-          },
-        ];
-      };
-      exposicion_obra: {
-        Row: ExposicionObraRow;
-        Insert: Escribible<ExposicionObraRow, "orden">;
-        Update: Partial<ExposicionObraRow>;
-        Relationships: [
-          {
-            foreignKeyName: "exposicion_obra_exposicion_id_fkey";
-            columns: ["exposicion_id"];
-            isOneToOne: false;
-            referencedRelation: "exposicion";
-            referencedColumns: ["id"];
-          },
-          {
-            foreignKeyName: "exposicion_obra_obra_id_fkey";
-            columns: ["obra_id"];
-            isOneToOne: false;
-            referencedRelation: "obra";
             referencedColumns: ["id"];
           },
         ];

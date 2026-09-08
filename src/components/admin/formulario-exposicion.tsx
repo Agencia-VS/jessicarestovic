@@ -4,31 +4,22 @@ import { useActionState, useTransition } from "react";
 import { Campo, Area, Interruptor } from "@/components/ui/campo";
 import { Boton, BotonEnlace } from "@/components/ui/boton";
 import { SubirFotos } from "./subir-fotos";
-import { CasillasSeries } from "./casillas-series";
 import { Aviso } from "./aviso";
 import { Confirmar } from "./confirmar";
 import { INICIAL } from "@/lib/acciones/resultado";
-import {
-  crearExposicion,
-  editarExposicion,
-  eliminarFoto,
-} from "@/lib/acciones/exposiciones";
-import type { Exposicion, Serie } from "@/lib/data/tipos";
+import { crearExposicion, editarExposicion, eliminarFoto } from "@/lib/acciones/exposiciones";
+import type { Exposicion, Obra } from "@/lib/data/tipos";
 
 interface FormularioExposicionProps {
-  /** Las series existentes, para marcar cuáles expuso esta muestra. */
-  series: Serie[];
-  /** Cuando viene una exposición, el formulario edita en vez de crear. */
   exposicion?: Exposicion;
+  /** Obras que ya pertenecen a la muestra, para el bloque de solo lectura. */
+  obras?: Obra[];
 }
 
 /** El mismo formulario para crear y editar una exposición. */
-export function FormularioExposicion({ series, exposicion }: FormularioExposicionProps) {
+export function FormularioExposicion({ exposicion, obras = [] }: FormularioExposicionProps) {
   const editando = Boolean(exposicion);
-  const accionBase = exposicion
-    ? editarExposicion.bind(null, exposicion.id)
-    : crearExposicion;
-
+  const accionBase = exposicion ? editarExposicion.bind(null, exposicion.id) : crearExposicion;
   const [resultado, accion, guardando] = useActionState(accionBase, INICIAL);
   const [, iniciar] = useTransition();
   const errores = resultado.errores ?? {};
@@ -43,11 +34,6 @@ export function FormularioExposicion({ series, exposicion }: FormularioExposicio
         requerido
         defaultValue={exposicion?.titulo}
         error={errores.titulo}
-      />
-
-      <CasillasSeries
-        series={series}
-        seleccionadas={exposicion?.series.map(({ id }) => id) ?? []}
       />
 
       <div className="grid grid-cols-1 gap-7 sm:grid-cols-2">
@@ -79,7 +65,43 @@ export function FormularioExposicion({ series, exposicion }: FormularioExposicio
         ayuda="Se muestra al desplegar la exposición en el listado."
       />
 
-      {/* Fotos ya cargadas, con la opción de quitarlas. */}
+      {exposicion && (
+        <div className="flex flex-col gap-3 border-t border-line pt-6">
+          <div className="flex flex-wrap items-baseline justify-between gap-3">
+            <span className="eyebrow text-muted">
+              Obras de esta muestra
+              <span className="ml-2 normal-case tracking-normal text-faint">
+                {obras.length}
+              </span>
+            </span>
+            <BotonEnlace
+              href={`/admin/trabajos-recientes/nueva?exposicion=${exposicion.id}`}
+              variante="secundario"
+            >
+              Subir una obra a esta muestra
+            </BotonEnlace>
+          </div>
+          {obras.length > 0 ? (
+            <ul className="border-t border-line-soft">
+              {obras.map((obra) => (
+                <li
+                  key={obra.id}
+                  className="flex items-baseline justify-between gap-4 border-b border-line-soft py-3"
+                >
+                  <span className="text-sm text-ink">{obra.titulo}</span>
+                  <span className="caption text-muted">
+                    {obra.conjunto ?? "Sin conjunto"}
+                    {!obra.publicada && " · Oculta"}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p className="caption text-faint">Todavía no hay obras asignadas a esta muestra.</p>
+          )}
+        </div>
+      )}
+
       {exposicion && exposicion.fotos.length > 0 && (
         <div className="flex flex-col gap-3">
           <span className="eyebrow text-muted">Fotos cargadas</span>
@@ -87,11 +109,7 @@ export function FormularioExposicion({ series, exposicion }: FormularioExposicio
             {exposicion.fotos.map((foto) => (
               <li key={foto.id} className="flex flex-col gap-2">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src={foto.imagenUrl}
-                  alt={foto.imagen_alt}
-                  className="aspect-3/2 w-full object-cover"
-                />
+                <img src={foto.imagenUrl} alt={foto.imagen_alt} className="aspect-3/2 w-full object-cover" />
                 <Confirmar
                   nombre="esta foto"
                   etiqueta="Quitar"

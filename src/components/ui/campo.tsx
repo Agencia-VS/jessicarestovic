@@ -92,7 +92,9 @@ export function Area({ etiqueta, nombre, error, ayuda, requerido, rows = 5, ...r
   );
 }
 
-interface SelectProps extends CampoBaseProps {
+interface SelectProps
+  extends CampoBaseProps,
+    Pick<React.ComponentPropsWithoutRef<"select">, "value" | "onChange" | "disabled"> {
   opciones: { valor: string; etiqueta: string }[];
   defaultValue?: string;
 }
@@ -106,6 +108,9 @@ export function Select({
   requerido,
   opciones,
   defaultValue,
+  value,
+  onChange,
+  disabled,
 }: SelectProps) {
   const id = useId();
   const idError = `${id}-error`;
@@ -121,6 +126,9 @@ export function Select({
         name={nombre}
         required={requerido}
         defaultValue={defaultValue}
+        value={value}
+        onChange={onChange}
+        disabled={disabled}
         aria-invalid={error ? true : undefined}
         aria-describedby={error ? idError : undefined}
         className={CLASES_CONTROL}

@@ -23,7 +23,7 @@ export default async function PanelLayout({ children }: { children: React.ReactN
       <div className="mx-auto flex max-w-6xl flex-col gap-8 px-6 py-8 md:flex-row md:gap-14 md:px-10 md:py-12">
         <div className="flex shrink-0 flex-col gap-7 md:w-44">
           <div className="flex items-baseline justify-between gap-4 md:flex-col md:items-start md:gap-1">
-            <Link href="/admin/obras" aria-label={`${siteConfig.nombre} — Panel`}>
+            <Link href="/admin/trabajos-recientes" aria-label={`${siteConfig.nombre} — Panel`}>
               <Firma lugar="panel" />
             </Link>
             <BotonSalir />

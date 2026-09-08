@@ -2,21 +2,20 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { SECCION_DE_SERIE, type NavItem } from "@/lib/site-config";
+import type { NavItem } from "@/lib/site-config";
 
 /**
  * Enlace de la navegación: la sección activa queda en tinta plena con un
  * subrayado del acento; el resto, al 50% hasta que se pasa el cursor.
  *
- * Una página de serie marca «Exposiciones»: es de donde se entró, y así el
- * visitante no siente que se salió del sitio.
+ * El segundo nivel de obras vive bajo «Exposiciones», por lo que la ruta
+ * anidada conserva automáticamente la sección activa.
  */
 export function NavEnlace({ href, label }: NavItem) {
   const pathname = usePathname();
 
   const enSeccion = pathname === href || pathname.startsWith(`${href}/`);
-  const desdeSerie = href === SECCION_DE_SERIE && pathname.startsWith("/serie/");
-  const activo = enSeccion || desdeSerie;
+  const activo = enSeccion;
 
   return (
     <Link

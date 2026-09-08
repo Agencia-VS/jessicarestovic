@@ -20,25 +20,30 @@ import { erroresPorCampo, obraSchema, slugify } from "@/lib/validacion";
 /** Rutas que dependen de las obras. */
 function revalidarObras(): void {
   revalidatePath("/");
-  revalidatePath("/obra");
-  revalidatePath("/admin/obras");
+  revalidatePath("/trabajos-recientes");
+  revalidatePath("/exposiciones");
+  revalidatePath("/exposiciones/[slug]", "page");
+  revalidatePath("/exposiciones/[slug]/obras", "page");
+  revalidatePath("/admin/trabajos-recientes");
+  revalidatePath("/admin/exposiciones");
+  revalidatePath("/admin/exposiciones/[id]", "page");
 }
 
 /**
- * Lee y valida los campos comunes de una obra.
- * Devuelve los datos listos para guardar, o los errores por campo.
+ * Lee y valida los campos comunes de una obra. `orden` no forma parte del
+ * formulario: al crear se asigna al final y al editar se conserva.
  */
 function leerCampos(formData: FormData) {
   const crudos = {
     titulo: String(formData.get("titulo") ?? ""),
-    serie_id: textoONulo(formData.get("serie_id")),
+    exposicion_id: textoONulo(formData.get("exposicion_id")),
+    conjunto: String(formData.get("conjunto") ?? ""),
     anio: enteroONulo(formData.get("anio")),
     tecnica: String(formData.get("tecnica") ?? ""),
     dimensiones: String(formData.get("dimensiones") ?? ""),
     imagen_alt: String(formData.get("imagen_alt") ?? ""),
     destacada: booleano(formData.get("destacada")),
     publicada: booleano(formData.get("publicada")),
-    orden: enteroONulo(formData.get("orden")) ?? 0,
   };
 
   const analisis = obraSchema.safeParse(crudos);
@@ -50,16 +55,51 @@ function leerCampos(formData: FormData) {
   return {
     datos: {
       titulo: d.titulo,
-      serie_id: d.serie_id ?? null,
+      exposicion_id: d.exposicion_id ?? null,
+      conjunto: d.conjunto ? d.conjunto : null,
       anio: d.anio ?? null,
       tecnica: d.tecnica ? d.tecnica : null,
       dimensiones: d.dimensiones ? d.dimensiones : null,
       imagen_alt: d.imagen_alt,
       destacada: d.destacada,
       publicada: d.publicada,
-      orden: d.orden,
     },
   } as const;
+}
+
+/** Canoniza la ortografía si ya existe ese conjunto en la misma exposición. */
+async function canonizarConjunto(
+  supabase: NonNullable<Awaited<ReturnType<typeof clienteConSesion>>>,
+  exposicionId: string | null,
+  conjunto: string | null,
+): Promise<string | null> {
+  const limpio = conjunto?.trim() || null;
+  if (!limpio) return null;
+
+  let consulta = supabase.from("obra").select("conjunto").not("conjunto", "is", null);
+  consulta = exposicionId
+    ? consulta.eq("exposicion_id", exposicionId)
+    : consulta.is("exposicion_id", null);
+  const { data } = await consulta;
+
+  const slug = slugify(limpio);
+  const existente = data?.find(
+    ({ conjunto: valor }) => valor && slugify(valor) === slug,
+  )?.conjunto;
+  return existente ?? limpio;
+}
+
+/** Asigna una obra nueva al final del grupo de su exposición. */
+async function siguienteOrden(
+  supabase: NonNullable<Awaited<ReturnType<typeof clienteConSesion>>>,
+  exposicionId: string | null,
+): Promise<number> {
+  let consulta = supabase.from("obra").select("orden").order("orden", { ascending: false }).limit(1);
+  consulta = exposicionId
+    ? consulta.eq("exposicion_id", exposicionId)
+    : consulta.is("exposicion_id", null);
+  const { data } = await consulta.maybeSingle();
+  return (data?.orden ?? -1) + 1;
 }
 
 /** Medidas que el navegador leyó de la foto antes de subirla. */
@@ -80,23 +120,29 @@ export async function crearObra(_previo: Resultado, formData: FormData): Promise
   const supabase = await clienteConSesion();
   if (!supabase) return SIN_SESION;
 
+  const conjunto = await canonizarConjunto(
+    supabase,
+    campos.datos.exposicion_id,
+    campos.datos.conjunto,
+  );
   const subida = await subirImagen(supabase, archivo, "obras");
   if ("error" in subida) return fallo(subida.error);
 
   const { error } = await supabase.from("obra").insert({
     ...campos.datos,
+    conjunto,
+    orden: await siguienteOrden(supabase, campos.datos.exposicion_id),
     ...leerMedidas(formData),
     imagen_path: subida.path,
   });
 
   if (error) {
-    // Si la fila no se creó, la foto subida quedaría huérfana.
     await borrarImagen(supabase, subida.path);
     return fallo("No pudimos publicar la obra. Vuelve a intentar en un momento.");
   }
 
   revalidarObras();
-  redirect("/admin/obras?aviso=obra-creada");
+  redirect("/admin/trabajos-recientes?aviso=obra-creada");
 }
 
 export async function editarObra(
@@ -118,7 +164,12 @@ export async function editarObra(
 
   if (!actual) return fallo("Esa obra ya no existe.");
 
-  // Si viene una foto nueva, reemplaza la anterior.
+  const conjunto = await canonizarConjunto(
+    supabase,
+    campos.datos.exposicion_id,
+    campos.datos.conjunto,
+  );
+
   const archivo = archivoDe(formData, "imagen");
   let imagen: { imagen_path: string; imagen_ancho: number | null; imagen_alto: number | null } | null =
     null;
@@ -131,7 +182,7 @@ export async function editarObra(
 
   const { error } = await supabase
     .from("obra")
-    .update({ ...campos.datos, ...(imagen ?? {}) })
+    .update({ ...campos.datos, conjunto, ...(imagen ?? {}) })
     .eq("id", id);
 
   if (error) {
@@ -139,7 +190,6 @@ export async function editarObra(
     return fallo("No pudimos guardar los cambios. Vuelve a intentar en un momento.");
   }
 
-  // Recién ahora que la fila apunta a la foto nueva, borramos la vieja.
   if (imagen && actual.imagen_path !== imagen.imagen_path) {
     await borrarImagen(supabase, actual.imagen_path);
   }
@@ -182,10 +232,7 @@ export async function alternarDestacada(id: string, destacada: boolean): Promise
   revalidarObras();
 }
 
-/**
- * Guarda el orden nuevo tras arrastrar y soltar en la grilla. Recibe los ids
- * en el orden final, así Jessica nunca escribe un número de orden a mano.
- */
+/** Guarda el orden de una sola exposición; el orden es posicional dentro de ella. */
 export async function reordenarObras(ids: string[]): Promise<void> {
   const supabase = await clienteConSesion();
   if (!supabase) return;
@@ -195,30 +242,4 @@ export async function reordenarObras(ids: string[]): Promise<void> {
   );
 
   revalidarObras();
-}
-
-/**
- * Crea una serie desde el formulario de obra, sin salir de él («crear serie
- * nueva» del paso 3, §07). Devuelve el id para dejarla ya seleccionada.
- */
-export async function crearSerieRapida(nombre: string): Promise<{ id: string } | { error: string }> {
-  const limpio = nombre.trim();
-  if (limpio.length < 2) return { error: "La serie necesita un nombre." };
-
-  const supabase = await clienteConSesion();
-  if (!supabase) return { error: "Tu sesión expiró. Vuelve a entrar." };
-
-  const { data, error } = await supabase
-    .from("serie")
-    .insert({ nombre: limpio, slug: slugify(limpio) })
-    .select("id")
-    .single();
-
-  if (error || !data) {
-    return { error: "No pudimos crear la serie. ¿Ya existe una con ese nombre?" };
-  }
-
-  revalidatePath("/admin/obras");
-  revalidatePath("/admin/series");
-  return { id: data.id };
 }

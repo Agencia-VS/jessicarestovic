@@ -43,16 +43,16 @@ Los tokens de color, las tipografías y las utilidades (`marco`, `gutter`,
 ### Mapa de páginas
 
 No hay índice general de obra: la trayectoria es la puerta al cuerpo de obra.
-Se entra a una serie desde la exposición que la mostró, y la página de serie
-vuelve a esa exposición.
+Cada exposición contiene su cuerpo de obra; los conjuntos con nombre viven
+dentro de esa muestra y no son otra entidad.
 
 | Página | Qué muestra |
 | --- | --- |
 | `/` | Una imagen de portada y una sola línea de texto |
 | `/exposiciones` | Índice de muestras: una portada por exposición, con su total de imágenes |
 | `/exposiciones/[slug]` | Una muestra: ficha, texto y todas sus vistas de montaje |
-| `/serie/[slug]` | Una serie: descripción, ficha, sus piezas y navegación entre series |
-| `/trabajos-recientes` | Lo último cargado, sin importar la serie |
+| `/exposiciones/[slug]/obras` | Las obras de una muestra, agrupadas por conjunto |
+| `/trabajos-recientes` | Lo último cargado, sin importar la exposición |
 | `/sobre-mi` · `/clases` · `/contacto` | Biografía, talleres y contacto |
 | `/privacidad` | Qué datos recogen los formularios y para qué |
 
@@ -81,7 +81,7 @@ exponen. Ver «Variables privadas» más abajo.
 ### 2. Aplicar las migraciones
 
 **La forma más rápida:** abrir el **SQL Editor** del panel de Supabase y pegar
-`supabase/puesta-en-marcha.sql` completo. Junta las seis migraciones en orden
+`supabase/puesta-en-marcha.sql` completo. Junta las cinco migraciones en orden
 y se puede volver a correr sin duplicar contenido ni fallar.
 
 Ese archivo se genera desde las migraciones, así que no se edita a mano:
@@ -100,29 +100,24 @@ supabase db push
 
 | Archivo | Qué hace |
 | --- | --- |
-| `0001_schema.sql` | Tablas: series, obras, exposiciones, mensajes y páginas editables |
+| `0001_schema.sql` | Tablas: obras, exposiciones, mensajes y páginas editables |
 | `0002_rls_storage.sql` | Políticas de acceso y el bucket `obras` para las imágenes |
-| `0003_contenido_inicial.sql` | Las 7 series y 7 exposiciones reales del sitio actual |
+| `0003_contenido_inicial.sql` | Las 7 exposiciones reales del sitio actual |
 | `0004_configuracion.sql` | Datos de contacto y frase de portada, editables desde el panel |
-| `0005_exposicion_serie.sql` | Medidas de las fotos de sala y técnicas de Clases con descripción |
-| `0006_exposicion_series.sql` | Una muestra puede exponer varias series (ver abajo) |
+| `0005_medidas_fotos_sala.sql` | Medidas de las fotos de sala y técnicas de Clases con descripción |
 
-Verificadas contra un Postgres 16 real: las seis aplican en orden desde una base
+Verificadas contra un Postgres 16 real: las cinco aplican en orden desde una base
 vacía, y el archivo consolidado corre tres veces seguidas sin error ni
 duplicados.
 
-### Una muestra expone varias series
+La relación es directa: `obra.exposicion_id` apunta a la muestra y
+`obra.conjunto` conserva un nombre opcional dentro de ella. Si se elimina una
+exposición, sus obras quedan sin exposición y no se borran.
 
-`0006` reemplaza la columna `exposicion.serie_id` por la tabla
-`exposicion_serie`. El motivo es concreto: **«Ensambles al Cubo» expuso también
-«Espacios Íntimos»**, y con una sola columna ese dato no cabía —el lugar lo
-ocupaba la serie homónima—, así que «Espacios Íntimos» quedaba sin ninguna
-exposición que la mostrara. Como el sitio entra al cuerpo de obra por la
-trayectoria, una serie sin exposición no se alcanza.
-
-La relación es de muchos a muchos en los dos sentidos: una muestra puede reunir
-varias series, y una serie puede volver a exponerse años después. En el panel se
-marca con casillas, en la ficha de cada exposición.
+Si la base ya contiene las tablas antiguas, ejecuta primero
+`supabase/reinicio.sql` —acción destructiva sobre las tablas de `public`— y
+después vuelve a pegar `supabase/puesta-en-marcha.sql`. La cuenta de Jessica en
+`auth` y el bucket de Storage no se tocan.
 
 ### 3. Crear el acceso de Jessica
 
@@ -145,7 +140,7 @@ src/
 ├── app/
 │   ├── page.tsx              Inicio — la imagen de portada
 │   ├── exposiciones/         Índice de muestras y la página de cada una
-│   ├── serie/[slug]/         Una serie con sus piezas y vista ampliada
+│   ├── exposiciones/[slug]/obras  Obras de una exposición
 │   ├── trabajos-recientes/   Lo último cargado
 │   ├── sobre-mi/             Biografía y retrato
 │   ├── clases/               Talleres y formulario de interés
@@ -153,7 +148,7 @@ src/
 │   ├── privacidad/           Qué datos se recogen y para qué
 │   └── admin/
 │       ├── login/            Acceso (fuera del marco del panel)
-│       └── (panel)/          Obras, Series, Exposiciones, Sobre mí, Clases,
+│       └── (panel)/          Trabajos recientes, Exposiciones, Sobre mí, Clases,
 │                              Mensajes y Configuración
 ├── components/
 │   ├── site/                 Componentes del sitio público
@@ -222,7 +217,7 @@ sí aparezca; así confirma que se estaba mirando el bundle correcto.
 
 Mientras Supabase no esté configurado, el sitio público no se muestra vacío:
 responde con el contenido de referencia de `src/lib/data/demo.ts`, que replica
-el canvas —las mismas series, proporciones y tonos— para poder revisar el
+el canvas —las mismas exposiciones, proporciones y tonos— para poder revisar el
 diseño antes de que exista una sola foto. Las imágenes de `public/demo/` son
 bloques de color, no obra de la artista, y el pie lo dice explícitamente.
 
@@ -234,9 +229,9 @@ no existen.
 
 ## Contenido
 
-Las 7 series y 7 exposiciones se siembran con los datos reales del sitio
-actual, ya normalizados: «Ensambles al Cubo» existe **una sola vez** como serie
-y la exposición homónima la referencia, que era la duplicación del sitio en Wix.
+Las 7 exposiciones se siembran con los datos reales del sitio actual. «Espacios
+Íntimos» vive como conjunto con nombre dentro de «Ensambles al Cubo», sin
+duplicar conceptos ni rutas.
 
 Falta cargar desde el panel:
 
@@ -246,8 +241,8 @@ Falta cargar desde el panel:
 - Revisar el texto de «Clases».
 - Marcar una obra como **destacada**: es la que hace de portada del Inicio.
 - Los **años** de las muestras. Hoy solo «Volúmenes» (2013) tiene fecha; el
-  resto aparece con «—» y el listado no puede ordenarse cronológicamente de
-  verdad hasta tenerlos.
+  resto aparece con «—», pero el orden del listado lo fija Jessica y no depende
+  del año.
 
 ## Comandos
 

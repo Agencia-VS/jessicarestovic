@@ -63,15 +63,16 @@ export default async function ExposicionPage({ params }: { params: Promise<{ slu
     <Pagina>
       <Seccion
         titulo="Exposiciones"
-        conteo={total > 0 ? `${total} ${total === 1 ? "imagen" : "imágenes"}` : undefined}
+        tituloComo="p"
+        conteo={total > 0 ? `${total} ${total === 1 ? "vista de sala" : "vistas de sala"}` : undefined}
       >
         <FiltrosExposiciones exposiciones={exposiciones} activo={exposicion.slug} />
 
         <div className="flex flex-wrap items-start gap-x-[clamp(1.25rem,4vw,4rem)] gap-y-8 pb-[clamp(1.875rem,4vw,3.5rem)]">
           <div className="flex min-w-0 flex-[1_1_26.25rem] flex-col gap-4">
-            <h2 className="font-display text-[clamp(1.5rem,2.6vw,2.125rem)] leading-tight font-light -tracking-[0.01em]">
+            <h1 className="font-display text-[clamp(1.5rem,2.6vw,2.125rem)] leading-tight font-light -tracking-[0.01em]">
               {exposicion.titulo}
-            </h2>
+            </h1>
             {exposicion.descripcion && (
               <p className="max-w-[52ch] font-display text-[clamp(1rem,1.5vw,1.25rem)] leading-relaxed font-light text-body text-pretty">
                 {exposicion.descripcion}
@@ -84,20 +85,11 @@ export default async function ExposicionPage({ params }: { params: Promise<{ slu
               lineas={[
                 { clave: "Lugar", valor: exposicion.lugar ?? "—" },
                 { clave: "Año", valor: exposicion.anio ? String(exposicion.anio) : "—" },
-                {
-                  clave: exposicion.series.length === 1 ? "Serie" : "Series",
-                  valor:
-                    exposicion.series.map(({ nombre }) => nombre).join(" · ") || "—",
-                },
               ]}
             />
-            {/* Una muestra puede haber expuesto más de una serie: un enlace
-                por cada una, nombrándola cuando hay varias. */}
-            {exposicion.series.map(({ id, nombre, slug }) => (
-              <EnlaceSuave key={id} href={`/serie/${slug}`} acentuado>
-                {exposicion.series.length === 1 ? "Ver la serie" : `Ver ${nombre}`}
-              </EnlaceSuave>
-            ))}
+            <EnlaceSuave href={`/exposiciones/${exposicion.slug}/obras`} acentuado>
+              Ver las obras ({exposicion.obrasPublicadas})
+            </EnlaceSuave>
           </div>
         </div>
 

@@ -114,6 +114,9 @@ export function SubirFotos({ nombre = "fotos" }: { nombre?: string }) {
         </span>
       </label>
       <span className="caption text-faint">{ayudaImagen("exposicion")}</span>
+      <p className="caption text-faint">
+        Son las fotos del montaje. Las obras se suben en «Trabajos recientes».
+      </p>
 
       {seleccion.length > 0 && (
         <ul className="flex flex-col gap-5">

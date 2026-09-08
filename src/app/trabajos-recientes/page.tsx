@@ -9,12 +9,12 @@ export const revalidate = 300;
 export const metadata: Metadata = {
   title: "Trabajos recientes",
   description:
-    "Lo último de Jessica Restović: las obras cargadas más recientemente, con su serie y su ficha.",
+    "Lo último de Jessica Restović: las obras cargadas más recientemente, con su exposición y su ficha.",
   alternates: { canonical: "/trabajos-recientes" },
 };
 
 /**
- * Lo último hecho, sin importar la serie: el orden es el de subida, así que
+ * Lo último hecho, sin importar la exposición: el orden es el de subida, así que
  * Jessica no tiene que administrar nada para que esta página se actualice —
  * sube la foto y aparece primera.
  */
@@ -33,7 +33,7 @@ export default async function TrabajosRecientesPage() {
       >
         <div className="border-t border-line pt-[clamp(2.125rem,4.4vw,4rem)]">
           {obras.length > 0 ? (
-            <GaleriaObras obras={obras} pie="serie" />
+            <GaleriaObras obras={obras} pie="exposicion" />
           ) : (
             <EstadoVacio
               titulo="Todavía no hay obras publicadas"

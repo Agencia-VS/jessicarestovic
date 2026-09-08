@@ -14,15 +14,10 @@ export const mensajeSchema = z.object({
 
 export type MensajeEntrada = z.infer<typeof mensajeSchema>;
 
-export const serieSchema = z.object({
-  nombre: texto(120).min(2, "La serie necesita un nombre."),
-  descripcion: texto(600).optional().or(z.literal("")),
-  orden: z.coerce.number().int().min(0).default(0),
-});
-
 export const obraSchema = z.object({
   titulo: texto(200).min(1, "La obra necesita un título."),
-  serie_id: z.string().uuid().nullable().optional(),
+  exposicion_id: z.string().uuid().nullable().optional(),
+  conjunto: texto(160).optional().or(z.literal("")),
   anio: z.coerce
     .number()
     .int()
@@ -35,7 +30,6 @@ export const obraSchema = z.object({
   imagen_alt: texto(300).min(4, "Describe la foto en pocas palabras: mejora el buscador y la accesibilidad."),
   destacada: z.coerce.boolean().default(false),
   publicada: z.coerce.boolean().default(true),
-  orden: z.coerce.number().int().min(0).default(0),
 });
 
 export const exposicionSchema = z.object({
@@ -50,7 +44,6 @@ export const exposicionSchema = z.object({
     .optional(),
   descripcion: texto(2000).optional().or(z.literal("")),
   publicada: z.coerce.boolean().default(true),
-  orden: z.coerce.number().int().min(0).default(0),
 });
 
 export const sobreMiSchema = z.object({
