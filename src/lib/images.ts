@@ -69,10 +69,10 @@ export type TipoImagen = keyof typeof ESPECS_IMAGEN;
 /** Ayuda contextual para mostrar dentro del formulario de subida. */
 export function ayudaImagen(tipo: TipoImagen): string {
   const spec = ESPECS_IMAGEN[tipo];
-  const minimo = spec.ladoMayorMin
+  const recomendado = spec.ladoMayorMin
     ? `${spec.ladoMayorMin} px en el lado mayor`
     : `${spec.anchoMin} × ${spec.altoMin} px`;
-  return `${spec.proporcion}. Mínimo ${minimo}, hasta ${Math.round(spec.pesoMaxBytes / MB)} MB. JPG, PNG, WebP o AVIF.`;
+  return `${spec.proporcion}. Recomendado ${recomendado}, hasta ${Math.round(spec.pesoMaxBytes / MB)} MB. JPG, PNG, WebP o AVIF.`;
 }
 
 /**
@@ -102,8 +102,11 @@ export function validarArchivo(archivo: File, tipo: TipoImagen): string | null {
   return null;
 }
 
-/** Valida las dimensiones ya leídas de la imagen. `null` si están bien. */
-export function validarDimensiones(
+/**
+ * Advierte si una foto puede verse menos nítida. Nunca bloquea la subida: una
+ * foto disponible siempre es preferible a obligar a conseguir otra versión.
+ */
+export function advertirDimensiones(
   ancho: number,
   alto: number,
   tipo: TipoImagen,
@@ -112,13 +115,13 @@ export function validarDimensiones(
   const ladoMayor = Math.max(ancho, alto);
 
   if (spec.ladoMayorMin !== null && ladoMayor < spec.ladoMayorMin) {
-    return `La foto mide ${ancho} × ${alto} px y necesita al menos ${spec.ladoMayorMin} px en su lado más largo para verse nítida.`;
+    return `La foto mide ${ancho} × ${alto} px. Recomendamos ${spec.ladoMayorMin} px en su lado más largo para mayor nitidez, pero puedes usarla igualmente.`;
   }
   if (spec.anchoMin !== null && ancho < spec.anchoMin) {
-    return `La foto necesita al menos ${spec.anchoMin} px de ancho y tiene ${ancho} px.`;
+    return `La foto tiene ${ancho} px de ancho. Recomendamos ${spec.anchoMin} px para mayor nitidez, pero puedes usarla igualmente.`;
   }
   if (spec.altoMin !== null && alto < spec.altoMin) {
-    return `La foto necesita al menos ${spec.altoMin} px de alto y tiene ${alto} px.`;
+    return `La foto tiene ${alto} px de alto. Recomendamos ${spec.altoMin} px para mayor nitidez, pero puedes usarla igualmente.`;
   }
   return null;
 }

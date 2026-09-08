@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { borrarSubidaPendiente, prepararSubidaImagen } from "@/lib/acciones/subida-directa";
-import { ayudaImagen, validarArchivo, validarDimensiones, type TipoImagen } from "@/lib/images";
+import { advertirDimensiones, ayudaImagen, validarArchivo, type TipoImagen } from "@/lib/images";
 import { subirArchivoPorUrl } from "@/lib/subida-directa";
 
 interface SubirImagenProps {
@@ -47,6 +47,7 @@ export function SubirImagen({
   const [seleccionada, setSeleccionada] = useState(false);
   const [medidas, setMedidas] = useState<Medidas | null>(null);
   const [problema, setProblema] = useState<string | null>(null);
+  const [advertencia, setAdvertencia] = useState<string | null>(null);
   const [progreso, setProgreso] = useState(0);
   const [subiendo, setSubiendo] = useState(false);
   const [arrastrando, setArrastrando] = useState(false);
@@ -107,6 +108,7 @@ export function SubirImagen({
     setRuta(null);
     setSeleccionada(Boolean(archivo));
     setProblema(null);
+    setAdvertencia(null);
     setMedidas(null);
     setProgreso(0);
 
@@ -129,12 +131,8 @@ export function SubirImagen({
     const imagen = new Image();
     imagen.onload = () => {
       if (id !== version.current) return;
-      const problemaMedidas = validarDimensiones(imagen.naturalWidth, imagen.naturalHeight, tipo);
-      if (problemaMedidas) {
-        setProblema(problemaMedidas);
-        return;
-      }
       setMedidas({ ancho: imagen.naturalWidth, alto: imagen.naturalHeight });
+      setAdvertencia(advertirDimensiones(imagen.naturalWidth, imagen.naturalHeight, tipo));
       void subir(archivo, id);
     };
     imagen.onerror = () => {
@@ -213,7 +211,10 @@ export function SubirImagen({
           {mensaje}
         </p>
       ) : (
-        <p className="caption text-faint">{ayudaImagen(tipo)}</p>
+        <>
+          {advertencia && <p className="caption text-muted">{advertencia}</p>}
+          <p className="caption text-faint">{ayudaImagen(tipo)}</p>
+        </>
       )}
     </div>
   );
