@@ -152,6 +152,26 @@
   column-gap: clamp(1.5rem, 3.4vw, 3.5rem);
 }
 
+@utility mosaico-justificado {
+  display: flex;
+  flex-direction: column;
+  gap: clamp(2rem, 4.5vw, 4.5rem);
+}
+
+@utility mosaico-justificado-fila {
+  display: grid;
+  align-items: start;
+  gap: clamp(1rem, 2.7vw, 2.75rem);
+}
+
+@media (max-width: 40rem) {
+  .mosaico-justificado-fila {
+    display: flex;
+    flex-direction: column;
+    gap: 2rem;
+  }
+}
+
 /* La aparición del formulario de Clases: sube y aparece, una sola vez. */
 @keyframes subir {
   from {

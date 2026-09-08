@@ -28,8 +28,9 @@ Las obras **nunca se recortan**: cada pieza conserva su proporción real, y es
 la foto la que dicta el alto de su tarjeta. En la retícula hay un tope suave
 (nada más alto que ~2:1 ni más ancho que 3.2:1) para que una pieza alargada no
 se coma una columna entera; en la vista ampliada la proporción es exacta. La
-retícula son columnas CSS, no una grilla de cuadrados: las alturas son
-distintas a propósito.
+pared de obras es una retícula justificada: cada fila comparte altura, el
+ancho de cada pieza sigue su proporción real y nada se recorta. Las vistas de
+sala y las portadas conservan columnas CSS de alturas variables.
 
 Tipografías: *Public Sans* (texto de apoyo, navegación, pies de obra) y
 *Newsreader* (títulos, nombres de obra y párrafos de presentación). El
