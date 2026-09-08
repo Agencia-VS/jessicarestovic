@@ -76,7 +76,7 @@ export function FormularioObra({ series, obra }: FormularioObraProps) {
         nombre="imagen"
         etiqueta="Foto de la obra"
         tipo="obra"
-        pathActual={obra?.imagen_path ?? null}
+        urlActual={obra?.imagenUrl ?? null}
         requerido={!editando}
       />
 

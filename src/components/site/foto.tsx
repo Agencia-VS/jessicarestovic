@@ -1,5 +1,6 @@
 import Image from "next/image";
-import { proporcion, proporcionEnMosaico, urlImagen } from "@/lib/images";
+import { proporcion, proporcionEnMosaico } from "@/lib/images";
+import { urlImagen } from "@/lib/imagenes-servidor";
 
 interface FotoProps {
   path: string;

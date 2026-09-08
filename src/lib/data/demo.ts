@@ -1,5 +1,5 @@
-import type { Exposicion, Obra, Serie, SerieConObras } from "./tipos";
-import type { ClasesContenido, ExposicionFotoRow, SobreMiContenido } from "@/types/database";
+import type { Exposicion, FotoDeSala, Obra, Serie, SerieConObras } from "./tipos";
+import type { ClasesContenido, SobreMiContenido } from "@/types/database";
 
 /**
  * Contenido de referencia para cuando todavía no hay base de datos conectada.
@@ -160,6 +160,8 @@ const OBRAS: Obra[] = DEFINICIONES.flatMap((definicion, indiceSerie) => {
       tecnica: definicion.tecnica ?? null,
       dimensiones: null,
       imagen_path: `/demo/${bloque.archivo}.avif`,
+      // Las de referencia son archivos locales: la ruta ya es la URL.
+      imagenUrl: `/demo/${bloque.archivo}.avif`,
       imagen_alt: `${titulo} — bloque de color de referencia, no la obra real`,
       imagen_ancho: bloque.ancho,
       imagen_alto: bloque.alto,
@@ -192,8 +194,8 @@ interface DefinicionExpo {
   descripcion: string | null;
   /** Cuántas vistas de sala tiene la muestra, según los números de Jessica. */
   vistas: number;
-  /** La serie que expuso, cuando fue una sola. */
-  serie?: string;
+  /** Los slugs de las series que expuso. Puede ser más de una, o ninguna. */
+  series?: string[];
 }
 
 /**
@@ -208,7 +210,8 @@ const EXPOS: DefinicionExpo[] = [
     anio: null,
     descripcion: "Muestra de la serie de ensambles en óleo sobre tela.",
     vistas: 34,
-    serie: "ensambles-al-cubo",
+    // La muestra reunió las dos series: la homónima y «Espacios Íntimos».
+    series: ["ensambles-al-cubo", "espacios-intimos"],
   },
   {
     slug: "de-lo-precario",
@@ -217,7 +220,7 @@ const EXPOS: DefinicionExpo[] = [
     anio: null,
     descripcion: "Materiales simples y frágiles como lenguaje.",
     vistas: 21,
-    serie: "de-lo-precario",
+    series: ["de-lo-precario"],
   },
   {
     slug: "volumenes",
@@ -226,7 +229,7 @@ const EXPOS: DefinicionExpo[] = [
     anio: 2013,
     descripcion: "Serie expuesta en la Feria La Porfía.",
     vistas: 8,
-    serie: "volumenes",
+    series: ["volumenes"],
   },
   {
     slug: "sur",
@@ -235,7 +238,7 @@ const EXPOS: DefinicionExpo[] = [
     anio: null,
     descripcion: "Serie en grafito sobre tela inspirada en la Patagonia.",
     vistas: 7,
-    serie: "sur",
+    series: ["sur"],
   },
   {
     slug: "de-lo-residual-y-lo-efimero",
@@ -244,7 +247,7 @@ const EXPOS: DefinicionExpo[] = [
     anio: null,
     descripcion: "Huellas del tiempo sobre distintas superficies.",
     vistas: 6,
-    serie: "de-lo-residual",
+    series: ["de-lo-residual"],
   },
   {
     slug: "a-partir-de-lo-simple",
@@ -253,7 +256,7 @@ const EXPOS: DefinicionExpo[] = [
     anio: null,
     descripcion: "Documentación de proceso: obra en curso y obra terminada.",
     vistas: 5,
-    serie: "a-partir-de-lo-simple",
+    series: ["a-partir-de-lo-simple"],
   },
   {
     slug: "fundacion-guayasamin",
@@ -270,7 +273,7 @@ const EXPOS: DefinicionExpo[] = [
  * corrido en cada muestra para que las portadas no salgan todas con la misma
  * proporción y el mosaico se vea como se va a ver con fotos de verdad.
  */
-function vistasDe(expo: DefinicionExpo, desde: number): ExposicionFotoRow[] {
+function vistasDe(expo: DefinicionExpo, desde: number): FotoDeSala[] {
   return Array.from({ length: expo.vistas }, (_, indice) => {
     const clave = TODOS_LOS_BLOQUES[(desde + indice) % TODOS_LOS_BLOQUES.length]!;
     const bloque = BLOQUES[clave];
@@ -279,6 +282,8 @@ function vistasDe(expo: DefinicionExpo, desde: number): ExposicionFotoRow[] {
       id: `demo-foto-${expo.slug}-${indice + 1}`,
       exposicion_id: `demo-expo-${expo.slug}`,
       imagen_path: `/demo/${bloque.archivo}.avif`,
+      // Las de referencia son archivos locales: la ruta ya es la URL.
+      imagenUrl: `/demo/${bloque.archivo}.avif`,
       imagen_alt: `Vista de montaje ${indice + 1} de ${expo.titulo} — bloque de referencia, no la sala real`,
       imagen_ancho: bloque.ancho,
       imagen_alto: bloque.alto,
@@ -289,7 +294,10 @@ function vistasDe(expo: DefinicionExpo, desde: number): ExposicionFotoRow[] {
 }
 
 export const DEMO_EXPOSICIONES: Exposicion[] = EXPOS.map((expo, indice) => {
-  const serie = expo.serie ? SERIES.find((s) => s.slug === expo.serie) : undefined;
+  const series = (expo.series ?? [])
+    .map((slug) => SERIES.find((s) => s.slug === slug))
+    .filter((serie): serie is (typeof SERIES)[number] => serie !== undefined)
+    .map(({ id, nombre, slug }) => ({ id, nombre, slug }));
 
   return {
     id: `demo-expo-${expo.slug}`,
@@ -298,8 +306,7 @@ export const DEMO_EXPOSICIONES: Exposicion[] = EXPOS.map((expo, indice) => {
     lugar: expo.lugar,
     anio: expo.anio,
     descripcion: expo.descripcion,
-    serie_id: serie?.id ?? null,
-    serie: serie ? { id: serie.id, nombre: serie.nombre, slug: serie.slug } : null,
+    series,
     publicada: true,
     orden: indice,
     creado_en: AHORA,

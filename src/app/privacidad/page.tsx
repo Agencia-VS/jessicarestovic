@@ -1,13 +1,14 @@
 import type { Metadata } from "next";
 import { Pagina, Titulo } from "@/components/site/pagina";
 import { obtenerConfiguracion } from "@/lib/data/consultas";
-import { derivarContacto, siteConfig } from "@/lib/site-config";
+import { derivarContacto } from "@/lib/site-config";
+import { urlDelSitio } from "@/lib/entorno";
 
 export const revalidate = 300;
 
 export const metadata: Metadata = {
   title: "Privacidad",
-  description: `Qué datos recoge ${siteConfig.url} y para qué se usan.`,
+  description: `Qué datos recoge ${urlDelSitio()} y para qué se usan.`,
   alternates: { canonical: "/privacidad" },
 };
 

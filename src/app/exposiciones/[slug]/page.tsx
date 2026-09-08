@@ -7,12 +7,19 @@ import { FichaDatos } from "@/components/site/ficha-datos";
 import { EnlaceSuave } from "@/components/site/enlace-suave";
 import { EstadoVacio } from "@/components/ui/estado-vacio";
 import { listarExposiciones, obtenerExposicionPorSlug } from "@/lib/data/consultas";
+import { slugsDeExposiciones } from "@/lib/supabase/build";
+import { supabaseConfigurado } from "@/lib/entorno";
+import { DEMO_EXPOSICIONES } from "@/lib/data/demo";
 
 export const revalidate = 300;
 
+/**
+ * Corre en tiempo de build, sin petición HTTP, así que usa el cliente sin
+ * cookies. Con el cliente normal, `cookies()` lanzaría y el build fallaría.
+ */
 export async function generateStaticParams() {
-  const exposiciones = await listarExposiciones();
-  return exposiciones.map(({ slug }) => ({ slug }));
+  if (!supabaseConfigurado()) return DEMO_EXPOSICIONES.map(({ slug }) => ({ slug }));
+  return (await slugsDeExposiciones()).map((slug) => ({ slug }));
 }
 
 export async function generateMetadata({
@@ -77,14 +84,20 @@ export default async function ExposicionPage({ params }: { params: Promise<{ slu
               lineas={[
                 { clave: "Lugar", valor: exposicion.lugar ?? "—" },
                 { clave: "Año", valor: exposicion.anio ? String(exposicion.anio) : "—" },
-                { clave: "Serie", valor: exposicion.serie?.nombre ?? "—" },
+                {
+                  clave: exposicion.series.length === 1 ? "Serie" : "Series",
+                  valor:
+                    exposicion.series.map(({ nombre }) => nombre).join(" · ") || "—",
+                },
               ]}
             />
-            {exposicion.serie && (
-              <EnlaceSuave href={`/serie/${exposicion.serie.slug}`} acentuado>
-                Ver la serie
+            {/* Una muestra puede haber expuesto más de una serie: un enlace
+                por cada una, nombrándola cuando hay varias. */}
+            {exposicion.series.map(({ id, nombre, slug }) => (
+              <EnlaceSuave key={id} href={`/serie/${slug}`} acentuado>
+                {exposicion.series.length === 1 ? "Ver la serie" : `Ver ${nombre}`}
               </EnlaceSuave>
-            )}
+            ))}
           </div>
         </div>
 

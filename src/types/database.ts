@@ -45,8 +45,6 @@ export type ExposicionRow = {
   lugar: string | null;
   anio: number | null;
   descripcion: string | null;
-  /** La serie que expuso, si la muestra fue de una sola. */
-  serie_id: string | null;
   publicada: boolean;
   orden: number;
   creado_en: string;
@@ -63,6 +61,12 @@ export type ExposicionFotoRow = {
   imagen_alto: number | null;
   orden: number;
   creado_en: string;
+};
+
+export type ExposicionSerieRow = {
+  exposicion_id: string;
+  serie_id: string;
+  orden: number;
 };
 
 export type ExposicionObraRow = {
@@ -181,15 +185,7 @@ export type Database = {
           "id" | "publicada" | "orden" | "creado_en" | "actualizado_en"
         >;
         Update: Partial<ExposicionRow>;
-        Relationships: [
-          {
-            foreignKeyName: "exposicion_serie_id_fkey";
-            columns: ["serie_id"];
-            isOneToOne: false;
-            referencedRelation: "serie";
-            referencedColumns: ["id"];
-          },
-        ];
+        Relationships: [];
       };
       exposicion_foto: {
         Row: ExposicionFotoRow;
@@ -201,6 +197,27 @@ export type Database = {
             columns: ["exposicion_id"];
             isOneToOne: false;
             referencedRelation: "exposicion";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      exposicion_serie: {
+        Row: ExposicionSerieRow;
+        Insert: Escribible<ExposicionSerieRow, "orden">;
+        Update: Partial<ExposicionSerieRow>;
+        Relationships: [
+          {
+            foreignKeyName: "exposicion_serie_exposicion_id_fkey";
+            columns: ["exposicion_id"];
+            isOneToOne: false;
+            referencedRelation: "exposicion";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "exposicion_serie_serie_id_fkey";
+            columns: ["serie_id"];
+            isOneToOne: false;
+            referencedRelation: "serie";
             referencedColumns: ["id"];
           },
         ];

@@ -10,7 +10,13 @@ import { guardarSobreMi } from "@/lib/acciones/paginas";
 import type { SobreMiContenido } from "@/lib/data/tipos";
 
 /** Un formulario de una sola página: foto de perfil y texto de biografía (§07). */
-export function FormularioSobreMi({ contenido }: { contenido: SobreMiContenido }) {
+interface FormularioSobreMiProps {
+  contenido: SobreMiContenido;
+  /** URL del retrato guardado, ya resuelta en el servidor. */
+  retratoUrl: string | null;
+}
+
+export function FormularioSobreMi({ contenido, retratoUrl }: FormularioSobreMiProps) {
   const [resultado, accion, guardando] = useActionState(guardarSobreMi, INICIAL);
   const errores = resultado.errores ?? {};
 
@@ -22,7 +28,7 @@ export function FormularioSobreMi({ contenido }: { contenido: SobreMiContenido }
         nombre="retrato"
         etiqueta="Retrato"
         tipo="retrato"
-        pathActual={contenido.retrato_path}
+        urlActual={retratoUrl}
       />
 
       <Campo

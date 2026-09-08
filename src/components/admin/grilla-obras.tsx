@@ -2,7 +2,6 @@
 
 import Link from "next/link";
 import { useState, useTransition } from "react";
-import { urlImagen } from "@/lib/images";
 import type { Obra } from "@/lib/data/tipos";
 import {
   alternarDestacada,
@@ -70,7 +69,7 @@ export function GrillaObras({ obras }: GrillaObrasProps) {
             <div className="flex h-44 items-center justify-center bg-line-soft">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
-                src={urlImagen(obra.imagen_path)}
+                src={obra.imagenUrl}
                 alt={obra.imagen_alt}
                 className="max-h-44 w-auto max-w-full object-contain"
               />

@@ -6,12 +6,16 @@ import { GaleriaObras } from "@/components/site/galeria-obras";
 import { FichaDatos } from "@/components/site/ficha-datos";
 import { EstadoVacio } from "@/components/ui/estado-vacio";
 import { listarSeries, obtenerSerieDetalle } from "@/lib/data/consultas";
+import { slugsDeSeries } from "@/lib/supabase/build";
+import { supabaseConfigurado } from "@/lib/entorno";
+import { DEMO_SERIES } from "@/lib/data/demo";
 
 export const revalidate = 300;
 
+/** Igual que en exposiciones: sin cookies, porque corre en el build. */
 export async function generateStaticParams() {
-  const series = await listarSeries();
-  return series.map(({ slug }) => ({ slug }));
+  if (!supabaseConfigurado()) return DEMO_SERIES.map(({ slug }) => ({ slug }));
+  return (await slugsDeSeries()).map((slug) => ({ slug }));
 }
 
 export async function generateMetadata({
@@ -57,8 +61,11 @@ export default async function SeriePage({ params }: { params: Promise<{ slug: st
   const siguiente = series[(posicion + 1) % series.length];
   const hayVecinas = series.length > 1 && anterior && siguiente;
 
-  const volver = serie.exposicion
-    ? { href: `/exposiciones/${serie.exposicion.slug}`, texto: serie.exposicion.titulo }
+  // Se vuelve a la muestra más reciente que la expuso; si no la expuso
+  // ninguna, al listado completo.
+  const [muestraPrincipal] = serie.exposiciones;
+  const volver = muestraPrincipal
+    ? { href: `/exposiciones/${muestraPrincipal.slug}`, texto: muestraPrincipal.titulo }
     : { href: "/exposiciones", texto: "Exposiciones" };
 
   return (
@@ -89,7 +96,11 @@ export default async function SeriePage({ params }: { params: Promise<{ slug: st
               lineas={[
                 { clave: "Piezas", valor: String(piezas) },
                 { clave: "Técnica", valor: serie.tecnica ?? "—" },
-                { clave: "Expuesta en", valor: serie.exposicion?.titulo ?? "—" },
+                {
+                  clave: "Expuesta en",
+                  valor:
+                    serie.exposiciones.map(({ titulo }) => titulo).join(" · ") || "—",
+                },
               ]}
             />
           </div>

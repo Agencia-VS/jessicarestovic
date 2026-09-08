@@ -3,11 +3,11 @@ import { hostDe } from "./src/lib/url";
 
 // Una variable mal escrita no debe impedir que el sitio compile: si no se
 // puede interpretar, las imágenes de Supabase simplemente no se optimizan.
-const host = hostDe(process.env.NEXT_PUBLIC_SUPABASE_URL);
+const host = hostDe(process.env.SUPABASE_URL);
 
-if (process.env.NEXT_PUBLIC_SUPABASE_URL && !host) {
+if (process.env.SUPABASE_URL && !host) {
   console.warn(
-    "[next.config] NEXT_PUBLIC_SUPABASE_URL no se pudo interpretar como URL. " +
+    "[next.config] SUPABASE_URL no se pudo interpretar como URL. " +
       "Las imágenes de Supabase no se optimizarán. Valor esperado: https://<ref>.supabase.co",
   );
 }

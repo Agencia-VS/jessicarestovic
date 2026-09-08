@@ -5,7 +5,7 @@ import { Hueco } from "@/components/site/foto";
 import { EnlaceSuave } from "@/components/site/enlace-suave";
 import { EstadoVacio } from "@/components/ui/estado-vacio";
 import { obtenerConfiguracion, obtenerSobreMi } from "@/lib/data/consultas";
-import { urlImagen } from "@/lib/images";
+import { urlImagen } from "@/lib/imagenes-servidor";
 import { derivarContacto, siteConfig } from "@/lib/site-config";
 
 export const revalidate = 300;

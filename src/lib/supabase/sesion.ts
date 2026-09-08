@@ -1,7 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { createServerClient } from "@supabase/ssr";
 import type { Database } from "@/types/database";
-import { supabaseConfigurado, supabaseEnv } from "./env";
+import { supabaseConfigurado, supabaseEnv } from "@/lib/entorno";
 
 /** Prefijo del panel y ruta de acceso. */
 const ADMIN = "/admin";
