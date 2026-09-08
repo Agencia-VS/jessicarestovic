@@ -2,6 +2,7 @@ import { Aviso } from "./aviso";
 
 const AVISOS: Record<string, string> = {
   "obra-creada": "Obra publicada.",
+  "obras-creadas": "Obras guardadas.",
   "exposicion-creada": "Exposición publicada.",
 };
 

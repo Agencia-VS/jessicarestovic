@@ -23,6 +23,9 @@ export default async function ObrasAdminPage({
         <BotonEnlace href="/admin/trabajos-recientes/nueva" variante="primario">
           Nueva obra
         </BotonEnlace>
+        <BotonEnlace href="/admin/trabajos-recientes/carpeta" variante="secundario">
+          Subir carpeta
+        </BotonEnlace>
       </EncabezadoPanel>
 
       <AvisoQuery clave={aviso} />

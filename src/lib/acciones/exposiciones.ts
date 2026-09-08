@@ -10,10 +10,10 @@ import {
   fallo,
   ok,
   SIN_SESION,
-  subirImagen,
   type Resultado,
 } from "./comun";
 import { erroresPorCampo, exposicionSchema, slugify } from "@/lib/validacion";
+import { rutaDeImagenValida } from "@/lib/subida-directa";
 
 function revalidarExposiciones(): void {
   revalidatePath("/exposiciones");
@@ -101,33 +101,34 @@ async function guardarFotos(
   formData: FormData,
   desdeOrden: number,
 ): Promise<string | null> {
-  const archivos = formData
-    .getAll("fotos")
-    .filter((valor): valor is File => valor instanceof File && valor.size > 0);
+  const cantidad = Math.min(Math.max(enteroONulo(formData.get("fotos_count")) ?? 0, 0), 200);
+  if (cantidad === 0) return null;
 
-  if (archivos.length === 0) return null;
-
-  for (const [indice, archivo] of archivos.entries()) {
-    const subida = await subirImagen(supabase, archivo, "exposiciones");
-    if ("error" in subida) return subida.error;
-
+  const fotos = [];
+  for (let indice = 0; indice < cantidad; indice += 1) {
+    const path = String(formData.get(`fotos_path_${indice}`) ?? "").trim();
+    if (!rutaDeImagenValida(path, "exposiciones")) {
+      return "Una de las fotos todavía no terminó de subir. Espera un momento y vuelve a guardar.";
+    }
     const alt =
       String(formData.get(`foto_alt_${indice}`) ?? "").trim() ||
       "Vista de sala de la exposición";
 
-    const { error } = await supabase.from("exposicion_foto").insert({
+    fotos.push({
       exposicion_id: exposicionId,
-      imagen_path: subida.path,
+      imagen_path: path,
       imagen_alt: alt,
       imagen_ancho: enteroONulo(formData.get(`foto_ancho_${indice}`)),
       imagen_alto: enteroONulo(formData.get(`foto_alto_${indice}`)),
       orden: desdeOrden + indice,
     });
+  }
 
-    if (error) {
-      await borrarImagen(supabase, subida.path);
-      return "No pudimos guardar una de las fotos. Vuelve a intentar.";
-    }
+  const { error } = await supabase.from("exposicion_foto").insert(fotos);
+
+  if (error) {
+    await Promise.all(fotos.map(({ imagen_path }) => borrarImagen(supabase, imagen_path)));
+    return "No pudimos guardar una de las fotos. Vuelve a intentar.";
   }
 
   return null;

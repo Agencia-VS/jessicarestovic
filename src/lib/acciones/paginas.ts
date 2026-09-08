@@ -2,13 +2,12 @@
 
 import { revalidatePath } from "next/cache";
 import {
-  archivoDe,
   borrarImagen,
   clienteConSesion,
   fallo,
   ok,
   SIN_SESION,
-  subirImagen,
+  textoONulo,
   type Resultado,
 } from "./comun";
 import {
@@ -22,6 +21,7 @@ import type {
   ConfiguracionContenido,
   SobreMiContenido,
 } from "@/types/database";
+import { rutaDeImagenValida } from "@/lib/subida-directa";
 
 /** Guarda «Sobre mí»: retrato y biografía en un solo formulario (§07). */
 export async function guardarSobreMi(
@@ -50,15 +50,13 @@ export async function guardarSobreMi(
 
   const previo = (actual?.contenido ?? {}) as Partial<SobreMiContenido>;
 
-  // El retrato solo cambia si se subió uno nuevo.
-  const archivo = archivoDe(formData, "retrato");
-  let retratoPath = previo.retrato_path ?? null;
-
-  if (archivo) {
-    const subida = await subirImagen(supabase, archivo, "retratos");
-    if ("error" in subida) return fallo(subida.error);
-    retratoPath = subida.path;
+  // El retrato solo cambia si llegó una ruta firmada nueva.
+  const nuevaRuta = textoONulo(formData.get("retrato_path"));
+  if (nuevaRuta && !rutaDeImagenValida(nuevaRuta, "retratos")) {
+    return fallo("El nuevo retrato no es válido o la subida todavía no terminó.");
   }
+  let retratoPath = previo.retrato_path ?? null;
+  if (nuevaRuta) retratoPath = nuevaRuta;
 
   const { titulo, biografia, cita, retrato_alt } = analisis.data;
   const contenido: SobreMiContenido = {
@@ -74,12 +72,12 @@ export async function guardarSobreMi(
     .upsert({ clave: "sobre-mi", contenido }, { onConflict: "clave" });
 
   if (error) {
-    if (archivo && retratoPath) await borrarImagen(supabase, retratoPath);
+    if (nuevaRuta) await borrarImagen(supabase, nuevaRuta);
     return fallo("No pudimos guardar los cambios. Vuelve a intentar en un momento.");
   }
 
   // Recién con la página apuntando al retrato nuevo, borramos el anterior.
-  if (archivo && previo.retrato_path && previo.retrato_path !== retratoPath) {
+  if (nuevaRuta && previo.retrato_path && previo.retrato_path !== retratoPath) {
     await borrarImagen(supabase, previo.retrato_path);
   }
 

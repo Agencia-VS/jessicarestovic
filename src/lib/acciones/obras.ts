@@ -3,7 +3,6 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import {
-  archivoDe,
   booleano,
   borrarImagen,
   clienteConSesion,
@@ -11,11 +10,12 @@ import {
   fallo,
   ok,
   SIN_SESION,
-  subirImagen,
   textoONulo,
   type Resultado,
 } from "./comun";
 import { erroresPorCampo, obraSchema, slugify } from "@/lib/validacion";
+import { rutaDeImagenValida } from "@/lib/subida-directa";
+import type { ObraEnLoteEntrada } from "@/lib/data/tipos";
 
 /** Rutas que dependen de las obras. */
 function revalidarObras(): void {
@@ -114,8 +114,10 @@ export async function crearObra(_previo: Resultado, formData: FormData): Promise
   const campos = leerCampos(formData);
   if ("errores" in campos) return fallo("Revisa los campos marcados.", campos.errores);
 
-  const archivo = archivoDe(formData, "imagen");
-  if (!archivo) return fallo("Falta la foto de la obra.");
+  const imagenPath = textoONulo(formData.get("imagen_path"));
+  if (!imagenPath || !rutaDeImagenValida(imagenPath, "obras")) {
+    return fallo("Falta la foto de la obra o la subida todavía no terminó.");
+  }
 
   const supabase = await clienteConSesion();
   if (!supabase) return SIN_SESION;
@@ -125,24 +127,135 @@ export async function crearObra(_previo: Resultado, formData: FormData): Promise
     campos.datos.exposicion_id,
     campos.datos.conjunto,
   );
-  const subida = await subirImagen(supabase, archivo, "obras");
-  if ("error" in subida) return fallo(subida.error);
 
   const { error } = await supabase.from("obra").insert({
     ...campos.datos,
     conjunto,
     orden: await siguienteOrden(supabase, campos.datos.exposicion_id),
     ...leerMedidas(formData),
-    imagen_path: subida.path,
+    imagen_path: imagenPath,
   });
 
   if (error) {
-    await borrarImagen(supabase, subida.path);
+    await borrarImagen(supabase, imagenPath);
     return fallo("No pudimos publicar la obra. Vuelve a intentar en un momento.");
   }
 
   revalidarObras();
   redirect("/admin/trabajos-recientes?aviso=obra-creada");
+}
+
+/**
+ * Inserta varias obras en una sola escritura. Los archivos ya están en
+ * Storage: acá solo validamos metadatos, reservamos órdenes consecutivos por
+ * exposición y registramos sus rutas.
+ */
+export async function crearObrasEnLote(
+  entradas: ObraEnLoteEntrada[],
+): Promise<{ ok: true; cantidad: number } | { error: string }> {
+  if (!Array.isArray(entradas) || entradas.length === 0) {
+    return { error: "No hay obras listas para guardar." };
+  }
+  if (entradas.length > 200) {
+    return { error: "La carpeta es demasiado grande. Súbela en grupos de hasta 200 fotos." };
+  }
+
+  const normalizadas: Array<ObraEnLoteEntrada & { conjunto: string | null }> = [];
+  for (const entrada of entradas) {
+    if (
+      typeof entrada.imagen_path !== "string" ||
+      !rutaDeImagenValida(entrada.imagen_path, "obras")
+    ) {
+      return { error: "Una de las fotos no tiene una subida válida." };
+    }
+
+    const analisis = obraSchema.safeParse({
+      titulo: entrada.titulo,
+      exposicion_id: entrada.exposicion_id,
+      conjunto: entrada.conjunto ?? "",
+      anio: entrada.anio,
+      tecnica: entrada.tecnica ?? "",
+      dimensiones: entrada.dimensiones ?? "",
+      imagen_alt: entrada.imagen_alt,
+      destacada: entrada.destacada,
+      publicada: entrada.publicada,
+    });
+    if (!analisis.success) return { error: "Revisa el título y la descripción de las obras." };
+
+    const datos = analisis.data;
+    normalizadas.push({
+      ...entrada,
+      titulo: datos.titulo,
+      exposicion_id: datos.exposicion_id ?? null,
+      conjunto: datos.conjunto ? datos.conjunto : null,
+      anio: datos.anio ?? null,
+      tecnica: datos.tecnica ? datos.tecnica : null,
+      dimensiones: datos.dimensiones ? datos.dimensiones : null,
+      imagen_alt: datos.imagen_alt,
+      destacada: datos.destacada,
+      publicada: datos.publicada,
+    });
+  }
+
+  const supabase = await clienteConSesion();
+  if (!supabase) return { error: "Tu sesión expiró. Vuelve a entrar." };
+
+  const rutas = normalizadas.map(({ imagen_path }) => imagen_path);
+  const limpiarRutas = async () => {
+    await Promise.all(rutas.map((path) => borrarImagen(supabase, path)));
+  };
+
+  const conjuntos = new Map<string, string | null>();
+  for (const entrada of normalizadas) {
+    if (!entrada.conjunto) continue;
+    const clave = `${entrada.exposicion_id ?? "sin-exposicion"}:${slugify(entrada.conjunto)}`;
+    if (!conjuntos.has(clave)) {
+      conjuntos.set(
+        clave,
+        await canonizarConjunto(supabase, entrada.exposicion_id, entrada.conjunto),
+      );
+    }
+  }
+
+  const exposiciones = [...new Set(normalizadas.map(({ exposicion_id }) => exposicion_id))];
+  const siguientes = new Map<string | null, number>();
+  await Promise.all(
+    exposiciones.map(async (exposicionId) => {
+      siguientes.set(exposicionId, await siguienteOrden(supabase, exposicionId));
+    }),
+  );
+
+  const filas = normalizadas.map((entrada) => {
+    const claveConjunto = entrada.conjunto
+      ? `${entrada.exposicion_id ?? "sin-exposicion"}:${slugify(entrada.conjunto)}`
+      : null;
+    const orden = siguientes.get(entrada.exposicion_id) ?? 0;
+    siguientes.set(entrada.exposicion_id, orden + 1);
+    return {
+      titulo: entrada.titulo,
+      exposicion_id: entrada.exposicion_id,
+      conjunto: claveConjunto ? conjuntos.get(claveConjunto) ?? entrada.conjunto : null,
+      anio: entrada.anio,
+      tecnica: entrada.tecnica,
+      dimensiones: entrada.dimensiones,
+      imagen_alt: entrada.imagen_alt,
+      imagen_path: entrada.imagen_path,
+      imagen_ancho: entrada.imagen_ancho,
+      imagen_alto: entrada.imagen_alto,
+      destacada: entrada.destacada,
+      publicada: entrada.publicada,
+      orden,
+    };
+  });
+
+  const { error } = await supabase.from("obra").insert(filas);
+  if (error) {
+    await limpiarRutas();
+    return { error: "No pudimos guardar las obras. Vuelve a intentar en un momento." };
+  }
+
+  revalidarObras();
+  return { ok: true, cantidad: filas.length };
 }
 
 export async function editarObra(
@@ -170,14 +283,16 @@ export async function editarObra(
     campos.datos.conjunto,
   );
 
-  const archivo = archivoDe(formData, "imagen");
+  const imagenPath = textoONulo(formData.get("imagen_path"));
+  if (imagenPath && !rutaDeImagenValida(imagenPath, "obras")) {
+    return fallo("La nueva foto no es válida o la subida todavía no terminó.");
+  }
+
   let imagen: { imagen_path: string; imagen_ancho: number | null; imagen_alto: number | null } | null =
     null;
 
-  if (archivo) {
-    const subida = await subirImagen(supabase, archivo, "obras");
-    if ("error" in subida) return fallo(subida.error);
-    imagen = { imagen_path: subida.path, ...leerMedidas(formData) };
+  if (imagenPath) {
+    imagen = { imagen_path: imagenPath, ...leerMedidas(formData) };
   }
 
   const { error } = await supabase

@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useTransition } from "react";
+import { useActionState, useState, useTransition } from "react";
 import { Campo, Area, Interruptor } from "@/components/ui/campo";
 import { Boton, BotonEnlace } from "@/components/ui/boton";
 import { SubirFotos } from "./subir-fotos";
@@ -21,6 +21,7 @@ export function FormularioExposicion({ exposicion, obras = [] }: FormularioExpos
   const editando = Boolean(exposicion);
   const accionBase = exposicion ? editarExposicion.bind(null, exposicion.id) : crearExposicion;
   const [resultado, accion, guardando] = useActionState(accionBase, INICIAL);
+  const [subiendoFotos, setSubiendoFotos] = useState(false);
   const [, iniciar] = useTransition();
   const errores = resultado.errores ?? {};
 
@@ -121,7 +122,7 @@ export function FormularioExposicion({ exposicion, obras = [] }: FormularioExpos
         </div>
       )}
 
-      <SubirFotos />
+      <SubirFotos alCambiarEstado={setSubiendoFotos} />
 
       <div className="border-t border-line pt-6">
         <Interruptor
@@ -133,7 +134,7 @@ export function FormularioExposicion({ exposicion, obras = [] }: FormularioExpos
       </div>
 
       <div className="flex flex-wrap gap-3">
-        <Boton type="submit" cargando={guardando}>
+        <Boton type="submit" cargando={guardando} disabled={subiendoFotos}>
           {editando ? "Guardar cambios" : "Publicar exposición"}
         </Boton>
         <BotonEnlace href="/admin/exposiciones">Volver</BotonEnlace>

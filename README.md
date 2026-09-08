@@ -106,9 +106,9 @@ supabase db push
 | `0004_configuracion.sql` | Datos de contacto y frase de portada, editables desde el panel |
 | `0005_medidas_fotos_sala.sql` | Medidas de las fotos de sala y técnicas de Clases con descripción |
 
-Verificadas contra un Postgres 16 real: las cinco aplican en orden desde una base
-vacía, y el archivo consolidado corre tres veces seguidas sin error ni
-duplicados.
+La verificación de sintaxis y orden se hace con `npm run sql`; la aplicación
+contra el proyecto real se debe ejecutar desde el SQL Editor o con el CLI,
+porque este repositorio no incluye credenciales ni un Postgres local.
 
 La relación es directa: `obra.exposicion_id` apunta a la muestra y
 `obra.conjunto` conserva un nombre opcional dentro de ella. Si se elimina una
@@ -132,6 +132,14 @@ Después se entra en `/admin`.
 Importar el repositorio en Vercel y cargar las tres variables de entorno
 (`SUPABASE_URL`, `SUPABASE_ANON_KEY` y `SITE_URL`). Cada push a la rama
 principal despliega solo.
+
+Las imágenes no pasan por Vercel: el panel pide una URL firmada en una Server
+Action y el navegador hace un `PUT` directo a Supabase Storage. Esto permite
+subir fotos de hasta 15 MB sin ampliar el body de la acción. En «Trabajos
+recientes» también está «Subir carpeta»: revisa nombres, exposición, conjunto,
+año y técnica, sube con dos cargas simultáneas como máximo y registra todas las
+obras en un solo insert. Los formatos HEIC se rechazan con instrucciones para
+convertirlos a JPG.
 
 ## Estructura
 
@@ -159,6 +167,7 @@ src/
 │   ├── data/                 Consultas, tipos de dominio y contenido de demo
 │   ├── supabase/             Clientes (navegador, servidor, sesión)
 │   ├── images.ts             Especificación de imágenes y validación
+│   ├── subida-directa.ts     PUT firmado desde el navegador y rutas seguras
 │   ├── site-config.ts        Identidad, navegación y datos de contacto
 │   └── validacion.ts         Esquemas de Zod
 ├── types/database.ts         Tipos del esquema de Postgres
