@@ -57,7 +57,11 @@ export const configuracionSchema = z.object({
   email: texto(200).pipe(z.string().email("Revisa el correo: parece incompleto.")),
   telefono: texto(40).min(8, "Escribe el teléfono con su código de país."),
   instagram: texto(60).min(2, "Escribe tu usuario de Instagram."),
+});
+
+export const portadaSchema = z.object({
   cita: texto(400).min(1, "La frase de portada no puede quedar vacía."),
+  portada_alt: texto(300).optional().or(z.literal("")),
 });
 
 export const clasesSchema = z.object({

@@ -15,6 +15,10 @@ export const CONFIGURACION_POR_DEFECTO: ConfiguracionContenido = {
   instagram: "@jessica_restovic",
   cita:
     "Un trabajo obsesivo en que el tiempo y el ritmo pausado del hacer es el gestor de espacios íntimos.",
+  portada_path: null,
+  portada_alt: null,
+  portada_ancho: null,
+  portada_alto: null,
 };
 
 /**
@@ -90,6 +94,7 @@ export const navPublica: readonly NavItem[] = [
  */
 /** Navegación del panel — las secciones del brief (§07). */
 export const navAdmin: readonly NavItem[] = [
+  { href: "/admin/inicio", label: "Inicio" },
   { href: "/admin/trabajos-recientes", label: "Trabajos recientes" },
   { href: "/admin/exposiciones", label: "Exposiciones" },
   { href: "/admin/sobre-mi", label: "Sobre mí" },

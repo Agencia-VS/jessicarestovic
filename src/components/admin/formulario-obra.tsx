@@ -218,7 +218,7 @@ export function FormularioObra({
         <Interruptor
           etiqueta="Destacada en Inicio"
           nombre="destacada"
-          detalle="Las obras destacadas son las que se ven en la portada."
+          detalle="Se usa como portada alternativa si no hay una foto cargada en Inicio."
           defaultChecked={obra?.destacada ?? false}
         />
         <Interruptor
