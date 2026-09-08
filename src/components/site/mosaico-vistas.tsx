@@ -23,7 +23,7 @@ export function PortadasExposiciones({ exposiciones }: { exposiciones: Exposicio
             <Link href={`/exposiciones/${expo.slug}`} className="group flex flex-col gap-3">
               {portada ? (
                 <Foto
-                  path={portada.imagen_path}
+                  src={portada.imagenUrl}
                   alt={portada.imagen_alt}
                   ancho={portada.imagen_ancho}
                   alto={portada.imagen_alto}
@@ -65,7 +65,7 @@ export function VistasDeSala({ exposicion }: { exposicion: Exposicion }) {
         <figure key={foto.id} className="mb-[clamp(1.875rem,3.8vw,3.875rem)] break-inside-avoid">
           <div className="flex flex-col gap-3">
             <Foto
-              path={foto.imagen_path}
+              src={foto.imagenUrl}
               alt={foto.imagen_alt}
               ancho={foto.imagen_ancho}
               alto={foto.imagen_alto}

@@ -1,9 +1,9 @@
 import Image from "next/image";
 import { proporcion, proporcionEnMosaico } from "@/lib/images";
-import { urlImagen } from "@/lib/imagenes-servidor";
 
 interface FotoProps {
-  path: string;
+  /** URL pública ya resuelta por la capa de datos del servidor. */
+  src: string;
   alt: string;
   ancho: number | null;
   alto: number | null;
@@ -29,7 +29,7 @@ interface FotoProps {
  * costados no se ve (§08 «Por qué no se recorta la obra»).
  */
 export function Foto({
-  path,
+  src,
   alt,
   ancho,
   alto,
@@ -43,7 +43,7 @@ export function Foto({
   return (
     <div className={`relative ${className}`} style={{ aspectRatio: ratio }}>
       <Image
-        src={urlImagen(path)}
+        src={src}
         alt={alt}
         fill
         sizes={sizes}

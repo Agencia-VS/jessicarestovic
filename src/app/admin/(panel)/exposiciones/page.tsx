@@ -21,7 +21,7 @@ export default async function ExposicionesAdminPage({
     <>
       <EncabezadoPanel
         titulo="Exposiciones"
-        detalle="En el sitio se ordenan de la más reciente a la más antigua, según el año."
+        detalle="Arrastra para cambiar el orden editorial en que aparecen en el sitio."
       >
         <BotonEnlace href="/admin/exposiciones/nueva" variante="primario">
           Nueva exposición

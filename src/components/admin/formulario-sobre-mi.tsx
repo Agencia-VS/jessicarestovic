@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useState } from "react";
 import { Campo, Area } from "@/components/ui/campo";
 import { Boton } from "@/components/ui/boton";
 import { SubirImagen } from "./subir-imagen";
@@ -18,6 +18,7 @@ interface FormularioSobreMiProps {
 
 export function FormularioSobreMi({ contenido, retratoUrl }: FormularioSobreMiProps) {
   const [resultado, accion, guardando] = useActionState(guardarSobreMi, INICIAL);
+  const [subiendoRetrato, setSubiendoRetrato] = useState(false);
   const errores = resultado.errores ?? {};
 
   return (
@@ -29,6 +30,7 @@ export function FormularioSobreMi({ contenido, retratoUrl }: FormularioSobreMiPr
         etiqueta="Retrato"
         tipo="retrato"
         urlActual={retratoUrl}
+        alCambiarEstado={setSubiendoRetrato}
       />
 
       <Campo
@@ -66,7 +68,7 @@ export function FormularioSobreMi({ contenido, retratoUrl }: FormularioSobreMiPr
         ayuda="Se muestra destacada al final de la página."
       />
 
-      <Boton type="submit" cargando={guardando} className="self-start">
+      <Boton type="submit" cargando={guardando} disabled={subiendoRetrato} className="self-start">
         Guardar cambios
       </Boton>
     </form>

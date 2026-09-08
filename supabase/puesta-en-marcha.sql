@@ -19,10 +19,8 @@
 -- ---------------------------------------------------------------------------
 -- Modelo de contenido de jessicarestovic.com
 --
--- Cuatro entidades, según el brief (§05 «Modelo de contenido»):
---   serie        agrupa obras relacionadas — resuelve la duplicación actual
---                entre «Trabajos» y «Expos» del sitio en Wix
---   obra         cada pieza individual
+-- Tres entidades de contenido, según el brief (§05 «Modelo de contenido»):
+--   obra         cada pieza individual, opcionalmente dentro de una exposición
 --   exposicion   un hito de la trayectoria, con sus fotos de sala
 --   mensaje      cada envío de los formularios de Contacto o Clases
 --
@@ -44,26 +42,6 @@ end;
 $$;
 
 -- ---------------------------------------------------------------------------
--- serie
--- ---------------------------------------------------------------------------
-create table if not exists public.serie (
-  id            uuid primary key default gen_random_uuid(),
-  nombre        text not null,
-  slug          text not null unique,
-  descripcion   text,
-  orden         integer not null default 0,
-  creado_en     timestamptz not null default now(),
-  actualizado_en timestamptz not null default now(),
-  constraint serie_nombre_no_vacio check (length(btrim(nombre)) > 0)
-);
-
-create index if not exists serie_orden_idx on public.serie (orden, nombre);
-
-create or replace trigger serie_touch
-  before update on public.serie
-  for each row execute function public.touch_actualizado_en();
-
--- ---------------------------------------------------------------------------
 -- obra
 --
 -- `imagen_ancho` / `imagen_alto` se guardan al subir la foto para poder
@@ -72,7 +50,8 @@ create or replace trigger serie_touch
 create table if not exists public.obra (
   id            uuid primary key default gen_random_uuid(),
   titulo        text not null,
-  serie_id      uuid references public.serie (id) on delete set null,
+  exposicion_id uuid,
+  conjunto      text,
   anio          integer,
   tecnica       text,
   dimensiones   text,
@@ -86,6 +65,7 @@ create table if not exists public.obra (
   creado_en     timestamptz not null default now(),
   actualizado_en timestamptz not null default now(),
   constraint obra_titulo_no_vacio check (length(btrim(titulo)) > 0),
+  constraint obra_conjunto_no_vacio check (conjunto is null or length(btrim(conjunto)) > 0),
   -- El texto alternativo es obligatorio: accesibilidad y SEO (§06).
   constraint obra_alt_no_vacio check (length(btrim(imagen_alt)) > 0),
   constraint obra_anio_plausible check (anio is null or (anio between 1900 and 2100)),
@@ -95,7 +75,7 @@ create table if not exists public.obra (
   )
 );
 
-create index if not exists obra_serie_orden_idx on public.obra (serie_id, orden, creado_en);
+create index if not exists obra_exposicion_orden_idx on public.obra (exposicion_id, orden, creado_en);
 create index if not exists obra_destacada_idx on public.obra (orden) where destacada and publicada;
 create index if not exists obra_publicada_idx on public.obra (publicada);
 
@@ -121,12 +101,22 @@ create table if not exists public.exposicion (
   constraint exposicion_anio_plausible check (anio is null or (anio between 1900 and 2100))
 );
 
--- Listado cronológico tipo CV: más reciente primero (§05).
-create index if not exists exposicion_cronologico_idx on public.exposicion (anio desc nulls last, orden);
+-- El orden editorial lo fija Jessica; el año es un dato, no el criterio de
+-- ordenación del listado (§05).
+create index if not exists exposicion_orden_idx on public.exposicion (orden, creado_en);
 
 create or replace trigger exposicion_touch
   before update on public.exposicion
   for each row execute function public.touch_actualizado_en();
+
+do $$
+begin
+  alter table public.obra
+    add constraint obra_exposicion_id_fkey
+    foreign key (exposicion_id) references public.exposicion (id) on delete set null;
+exception
+  when duplicate_object then null;
+end $$;
 
 -- Fotos de sala / montaje de cada exposición.
 create table if not exists public.exposicion_foto (
@@ -140,16 +130,6 @@ create table if not exists public.exposicion_foto (
 );
 
 create index if not exists exposicion_foto_orden_idx on public.exposicion_foto (exposicion_id, orden);
-
--- Obras relacionadas con una exposición (opcional, §05).
-create table if not exists public.exposicion_obra (
-  exposicion_id uuid not null references public.exposicion (id) on delete cascade,
-  obra_id       uuid not null references public.obra (id) on delete cascade,
-  orden         integer not null default 0,
-  primary key (exposicion_id, obra_id)
-);
-
-create index if not exists exposicion_obra_obra_idx on public.exposicion_obra (obra_id);
 
 -- ---------------------------------------------------------------------------
 -- mensaje
@@ -203,21 +183,13 @@ create or replace trigger pagina_touch
 -- y Clases son la única escritura que puede hacer un visitante anónimo.
 -- ---------------------------------------------------------------------------
 
-alter table public.serie            enable row level security;
 alter table public.obra             enable row level security;
 alter table public.exposicion       enable row level security;
 alter table public.exposicion_foto  enable row level security;
-alter table public.exposicion_obra  enable row level security;
 alter table public.mensaje          enable row level security;
 alter table public.pagina           enable row level security;
 
 -- --- Lectura pública -------------------------------------------------------
-
-drop policy if exists "serie visible para todos" on public.serie;
-create policy "serie visible para todos"
-  on public.serie for select
-  to anon, authenticated
-  using (true);
 
 drop policy if exists "obra publicada visible para todos" on public.obra;
 create policy "obra publicada visible para todos"
@@ -243,12 +215,6 @@ create policy "fotos de exposicion publicada visibles para todos"
     )
   );
 
-drop policy if exists "relacion exposicion-obra visible para todos" on public.exposicion_obra;
-create policy "relacion exposicion-obra visible para todos"
-  on public.exposicion_obra for select
-  to anon, authenticated
-  using (true);
-
 drop policy if exists "pagina visible para todos" on public.pagina;
 create policy "pagina visible para todos"
   on public.pagina for select
@@ -257,12 +223,6 @@ create policy "pagina visible para todos"
 
 -- --- Escritura: solo con sesión --------------------------------------------
 -- Una política `for all` por tabla cubre insert / update / delete del panel.
-
-drop policy if exists "serie administrable con sesion" on public.serie;
-create policy "serie administrable con sesion"
-  on public.serie for all
-  to authenticated
-  using (true) with check (true);
 
 drop policy if exists "obra administrable con sesion" on public.obra;
 create policy "obra administrable con sesion"
@@ -279,12 +239,6 @@ create policy "exposicion administrable con sesion"
 drop policy if exists "fotos de exposicion administrables con sesion" on public.exposicion_foto;
 create policy "fotos de exposicion administrables con sesion"
   on public.exposicion_foto for all
-  to authenticated
-  using (true) with check (true);
-
-drop policy if exists "relacion exposicion-obra administrable con sesion" on public.exposicion_obra;
-create policy "relacion exposicion-obra administrable con sesion"
-  on public.exposicion_obra for all
   to authenticated
   using (true) with check (true);
 
@@ -371,25 +325,13 @@ create policy "borrar imagenes con sesion"
 -- ---------------------------------------------------------------------------
 -- Contenido inicial
 --
--- Las series y exposiciones vienen de la auditoría de jessicarestovic.com
--- (§03 del brief): son los datos reales que hoy están repartidos en 15 páginas
--- de Wix, ya normalizados en el modelo nuevo. «Ensambles al Cubo» aparece una
--- sola vez —como serie— y la exposición del mismo nombre la referencia, que es
--- justo la duplicación que el modelo nuevo resuelve.
+-- Las exposiciones vienen de la auditoría de jessicarestovic.com (§03 del
+-- brief): son los datos reales que hoy están repartidos en 15 páginas de Wix,
+-- ya normalizados en el modelo nuevo.
 --
 -- Los textos de «Sobre mí» y «Clases» quedan como marcadores: hay que
 -- reemplazarlos por los textos reales de Jessica desde el panel.
 -- ---------------------------------------------------------------------------
-
-insert into public.serie (nombre, slug, descripcion, orden) values
-  ('Ensambles al Cubo',    'ensambles-al-cubo',    null, 1),
-  ('Espacios Íntimos',     'espacios-intimos',     'Grafito sobre tela.', 2),
-  ('Sur',                  'sur',                  'Serie en grafito sobre tela inspirada en la Patagonia.', 3),
-  ('De lo Residual',       'de-lo-residual',       'Huellas del tiempo sobre distintas superficies.', 4),
-  ('De lo Precario',       'de-lo-precario',       'Materiales simples y frágiles como lenguaje.', 5),
-  ('Volúmenes',            'volumenes',            null, 6),
-  ('A partir de lo simple','a-partir-de-lo-simple','Documentación de proceso: obra en curso y obra terminada.', 7)
-on conflict (slug) do nothing;
 
 insert into public.exposicion (titulo, slug, lugar, anio, descripcion, orden) values
   ('Fundación Guayasamín', 'fundacion-guayasamin', 'Quito, Ecuador', null,
@@ -466,66 +408,33 @@ insert into public.pagina (clave, contenido) values (
 on conflict (clave) do nothing;
 
 -- ===========================================================================
--- 0005_exposicion_serie.sql
+-- 0005_medidas_fotos_sala.sql
 -- ===========================================================================
 
 -- ---------------------------------------------------------------------------
--- La serie que mostró cada exposición
---
--- El diseño entra al cuerpo de obra por la trayectoria: desde una exposición
--- se pasa a «Ver la serie», y la página de serie vuelve a la exposición de la
--- que se entró. Ese enlace no existía —`exposicion_obra` relaciona piezas
--- sueltas, no la serie— así que la exposición gana una referencia opcional a
--- la serie que expuso.
---
--- Es opcional a propósito: una muestra colectiva o una selección de varias
--- series simplemente queda sin serie, como «Fundación Guayasamín».
--- ---------------------------------------------------------------------------
-
-alter table public.exposicion
-  add column if not exists serie_id uuid references public.serie (id) on delete set null;
-
-create index if not exists exposicion_serie_idx on public.exposicion (serie_id);
-
--- Enlaza las exposiciones sembradas con su serie. Los pares vienen de la
--- auditoría: el título de la muestra y el de la serie coinciden salvo en «De
--- lo residual y lo efímero», que expuso la serie «De lo Residual».
-update public.exposicion as e
-set serie_id = s.id
-from public.serie as s
-where e.serie_id is null
-  and s.slug = case e.slug
-    when 'ensambles-al-cubo'            then 'ensambles-al-cubo'
-    when 'sur'                          then 'sur'
-    when 'volumenes'                    then 'volumenes'
-    when 'de-lo-precario'               then 'de-lo-precario'
-    when 'a-partir-de-lo-simple'        then 'a-partir-de-lo-simple'
-    when 'de-lo-residual-y-lo-efimero'  then 'de-lo-residual'
-    else null
-  end;
-
--- ---------------------------------------------------------------------------
--- Las medidas de cada foto de sala
---
--- La obra ya guardaba ancho y alto: es lo que permite reservar el espacio
--- exacto antes de que la foto cargue, para que nada se recorte ni salte. Las
--- vistas de montaje se muestran igual —«la foto dicta la tarjeta»— así que
--- necesitan el mismo dato. El panel ya lee las medidas para validarlas al
--- subir; ahora también las guarda.
+-- Medidas de las fotos de sala y descripciones enriquecidas de «Clases».
 -- ---------------------------------------------------------------------------
 
 alter table public.exposicion_foto
   add column if not exists imagen_ancho integer,
   add column if not exists imagen_alto integer;
 
--- ---------------------------------------------------------------------------
--- Técnicas de «Clases» con su descripción
---
--- El diseño muestra cada técnica en una fila: el nombre en serif grande a la
--- izquierda y una descripción corta a la derecha. Se guardan en la misma línea
--- separadas por un guion largo, así el panel sigue siendo un campo de texto
--- con una técnica por línea y no una tabla aparte.
--- ---------------------------------------------------------------------------
+-- Una foto cargada a medias no puede reservar una proporción válida. Las
+-- filas antiguas se consideran sin medidas y quedan listas para completar en
+-- una edición posterior.
+update public.exposicion_foto
+set imagen_ancho = null,
+    imagen_alto = null
+where (imagen_ancho is null) <> (imagen_alto is null);
+
+alter table public.exposicion_foto
+  drop constraint if exists exposicion_foto_dimensiones_imagen;
+
+alter table public.exposicion_foto
+  add constraint exposicion_foto_dimensiones_imagen check (
+    (imagen_ancho is null and imagen_alto is null)
+    or (imagen_ancho > 0 and imagen_alto > 0)
+  );
 
 update public.pagina
 set contenido = jsonb_set(
@@ -539,63 +448,3 @@ set contenido = jsonb_set(
 )
 where clave = 'clases'
   and contenido -> 'tecnicas' = jsonb_build_array('Acuarela', 'Monocopia', 'Dibujo');
-
--- ===========================================================================
--- 0006_exposicion_series.sql
--- ===========================================================================
-
--- ---------------------------------------------------------------------------
--- Una muestra puede exponer varias series
---
--- `exposicion.serie_id` admitía una sola, y eso dejaba obra sin puerta de
--- entrada: «Ensambles al Cubo» mostró también «Espacios Íntimos», pero el
--- lugar ya lo ocupaba la serie homónima, así que «Espacios Íntimos» quedaba
--- sin ninguna exposición que la mostrara. Como el sitio entra al cuerpo de
--- obra por la trayectoria, una serie sin exposición no se alcanza.
---
--- La relación real es de muchos a muchos en los dos sentidos: una muestra
--- puede reunir varias series, y una serie puede volver a exponerse años
--- después. La tabla intermedia expresa las dos cosas y deja de perder datos.
--- ---------------------------------------------------------------------------
-
-create table if not exists public.exposicion_serie (
-  exposicion_id uuid not null references public.exposicion (id) on delete cascade,
-  serie_id      uuid not null references public.serie (id) on delete cascade,
-  orden         integer not null default 0,
-  primary key (exposicion_id, serie_id)
-);
-
-create index if not exists exposicion_serie_serie_idx on public.exposicion_serie (serie_id);
-create index if not exists exposicion_serie_orden_idx on public.exposicion_serie (exposicion_id, orden);
-
-alter table public.exposicion_serie enable row level security;
-
-drop policy if exists "series de exposicion visibles para todos" on public.exposicion_serie;
-create policy "series de exposicion visibles para todos"
-  on public.exposicion_serie for select
-  to anon, authenticated
-  using (true);
-
-drop policy if exists "series de exposicion administrables con sesion" on public.exposicion_serie;
-create policy "series de exposicion administrables con sesion"
-  on public.exposicion_serie for all
-  to authenticated
-  using (true) with check (true);
-
--- Traspasa lo que ya estaba en la columna, sin perder nada.
-insert into public.exposicion_serie (exposicion_id, serie_id, orden)
-select e.id, e.serie_id, 0
-from public.exposicion as e
-where e.serie_id is not null
-on conflict do nothing;
-
--- El dato que no cabía: «Ensambles al Cubo» expuso además «Espacios Íntimos».
-insert into public.exposicion_serie (exposicion_id, serie_id, orden)
-select e.id, s.id, 1
-from public.exposicion as e, public.serie as s
-where e.slug = 'ensambles-al-cubo'
-  and s.slug = 'espacios-intimos'
-on conflict do nothing;
-
--- Una sola fuente de verdad: la columna se va.
-alter table public.exposicion drop column if exists serie_id;

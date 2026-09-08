@@ -23,7 +23,7 @@ export function Portada({ obra, cita }: PortadaProps) {
       <div className="w-full">
         {obra ? (
           <Foto
-            path={obra.imagen_path}
+            src={obra.imagenUrl}
             alt={obra.imagen_alt}
             ancho={obra.imagen_ancho}
             alto={obra.imagen_alto}

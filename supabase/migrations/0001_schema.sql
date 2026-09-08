@@ -1,10 +1,8 @@
 -- ---------------------------------------------------------------------------
 -- Modelo de contenido de jessicarestovic.com
 --
--- Cuatro entidades, según el brief (§05 «Modelo de contenido»):
---   serie        agrupa obras relacionadas — resuelve la duplicación actual
---                entre «Trabajos» y «Expos» del sitio en Wix
---   obra         cada pieza individual
+-- Tres entidades de contenido, según el brief (§05 «Modelo de contenido»):
+--   obra         cada pieza individual, opcionalmente dentro de una exposición
 --   exposicion   un hito de la trayectoria, con sus fotos de sala
 --   mensaje      cada envío de los formularios de Contacto o Clases
 --
@@ -26,26 +24,6 @@ end;
 $$;
 
 -- ---------------------------------------------------------------------------
--- serie
--- ---------------------------------------------------------------------------
-create table if not exists public.serie (
-  id            uuid primary key default gen_random_uuid(),
-  nombre        text not null,
-  slug          text not null unique,
-  descripcion   text,
-  orden         integer not null default 0,
-  creado_en     timestamptz not null default now(),
-  actualizado_en timestamptz not null default now(),
-  constraint serie_nombre_no_vacio check (length(btrim(nombre)) > 0)
-);
-
-create index if not exists serie_orden_idx on public.serie (orden, nombre);
-
-create or replace trigger serie_touch
-  before update on public.serie
-  for each row execute function public.touch_actualizado_en();
-
--- ---------------------------------------------------------------------------
 -- obra
 --
 -- `imagen_ancho` / `imagen_alto` se guardan al subir la foto para poder
@@ -54,7 +32,8 @@ create or replace trigger serie_touch
 create table if not exists public.obra (
   id            uuid primary key default gen_random_uuid(),
   titulo        text not null,
-  serie_id      uuid references public.serie (id) on delete set null,
+  exposicion_id uuid,
+  conjunto      text,
   anio          integer,
   tecnica       text,
   dimensiones   text,
@@ -68,6 +47,7 @@ create table if not exists public.obra (
   creado_en     timestamptz not null default now(),
   actualizado_en timestamptz not null default now(),
   constraint obra_titulo_no_vacio check (length(btrim(titulo)) > 0),
+  constraint obra_conjunto_no_vacio check (conjunto is null or length(btrim(conjunto)) > 0),
   -- El texto alternativo es obligatorio: accesibilidad y SEO (§06).
   constraint obra_alt_no_vacio check (length(btrim(imagen_alt)) > 0),
   constraint obra_anio_plausible check (anio is null or (anio between 1900 and 2100)),
@@ -77,7 +57,7 @@ create table if not exists public.obra (
   )
 );
 
-create index if not exists obra_serie_orden_idx on public.obra (serie_id, orden, creado_en);
+create index if not exists obra_exposicion_orden_idx on public.obra (exposicion_id, orden, creado_en);
 create index if not exists obra_destacada_idx on public.obra (orden) where destacada and publicada;
 create index if not exists obra_publicada_idx on public.obra (publicada);
 
@@ -103,12 +83,22 @@ create table if not exists public.exposicion (
   constraint exposicion_anio_plausible check (anio is null or (anio between 1900 and 2100))
 );
 
--- Listado cronológico tipo CV: más reciente primero (§05).
-create index if not exists exposicion_cronologico_idx on public.exposicion (anio desc nulls last, orden);
+-- El orden editorial lo fija Jessica; el año es un dato, no el criterio de
+-- ordenación del listado (§05).
+create index if not exists exposicion_orden_idx on public.exposicion (orden, creado_en);
 
 create or replace trigger exposicion_touch
   before update on public.exposicion
   for each row execute function public.touch_actualizado_en();
+
+do $$
+begin
+  alter table public.obra
+    add constraint obra_exposicion_id_fkey
+    foreign key (exposicion_id) references public.exposicion (id) on delete set null;
+exception
+  when duplicate_object then null;
+end $$;
 
 -- Fotos de sala / montaje de cada exposición.
 create table if not exists public.exposicion_foto (
@@ -122,16 +112,6 @@ create table if not exists public.exposicion_foto (
 );
 
 create index if not exists exposicion_foto_orden_idx on public.exposicion_foto (exposicion_id, orden);
-
--- Obras relacionadas con una exposición (opcional, §05).
-create table if not exists public.exposicion_obra (
-  exposicion_id uuid not null references public.exposicion (id) on delete cascade,
-  obra_id       uuid not null references public.obra (id) on delete cascade,
-  orden         integer not null default 0,
-  primary key (exposicion_id, obra_id)
-);
-
-create index if not exists exposicion_obra_obra_idx on public.exposicion_obra (obra_id);
 
 -- ---------------------------------------------------------------------------
 -- mensaje

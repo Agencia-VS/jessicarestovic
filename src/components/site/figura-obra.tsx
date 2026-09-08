@@ -13,10 +13,12 @@ export function fichaDe(obra: Obra): string {
 
 interface FiguraObraProps {
   obra: Obra;
-  /** Lo que va bajo el título: la serie en la retícula, la ficha en la serie. */
+  /** Lo que va bajo el título: la exposición en la retícula, la ficha en obras. */
   pie: string;
   onAbrir: () => void;
   prioridad?: boolean;
+  /** La pared justificada usa filas; el mosaico histórico usa columnas CSS. */
+  modo?: "mosaico" | "justificado";
 }
 
 /**
@@ -25,9 +27,21 @@ interface FiguraObraProps {
  * `break-inside: avoid` es lo que sostiene el mosaico — la figura no se puede
  * partir entre dos columnas.
  */
-export function FiguraObra({ obra, pie, onAbrir, prioridad = false }: FiguraObraProps) {
+export function FiguraObra({
+  obra,
+  pie,
+  onAbrir,
+  prioridad = false,
+  modo = "mosaico",
+}: FiguraObraProps) {
   return (
-    <figure className="mb-[clamp(1.875rem,3.8vw,3.875rem)] break-inside-avoid">
+    <figure
+      className={
+        modo === "justificado"
+          ? "min-w-0"
+          : "mb-[clamp(1.875rem,3.8vw,3.875rem)] break-inside-avoid"
+      }
+    >
       <button
         type="button"
         onClick={onAbrir}
@@ -35,11 +49,11 @@ export function FiguraObra({ obra, pie, onAbrir, prioridad = false }: FiguraObra
         className="group flex w-full cursor-zoom-in flex-col gap-3 text-left"
       >
         <Foto
-          path={obra.imagen_path}
+          src={obra.imagenUrl}
           alt={obra.imagen_alt}
           ancho={obra.imagen_ancho}
           alto={obra.imagen_alto}
-          sizes={SIZES_MOSAICO}
+          sizes={modo === "justificado" ? "(max-width: 40rem) 100vw, 75vw" : SIZES_MOSAICO}
           prioridad={prioridad}
           className="w-full"
         />

@@ -6,20 +6,13 @@
 -- y Clases son la única escritura que puede hacer un visitante anónimo.
 -- ---------------------------------------------------------------------------
 
-alter table public.serie            enable row level security;
 alter table public.obra             enable row level security;
 alter table public.exposicion       enable row level security;
 alter table public.exposicion_foto  enable row level security;
-alter table public.exposicion_obra  enable row level security;
 alter table public.mensaje          enable row level security;
 alter table public.pagina           enable row level security;
 
 -- --- Lectura pública -------------------------------------------------------
-
-create policy "serie visible para todos"
-  on public.serie for select
-  to anon, authenticated
-  using (true);
 
 create policy "obra publicada visible para todos"
   on public.obra for select
@@ -42,11 +35,6 @@ create policy "fotos de exposicion publicada visibles para todos"
     )
   );
 
-create policy "relacion exposicion-obra visible para todos"
-  on public.exposicion_obra for select
-  to anon, authenticated
-  using (true);
-
 create policy "pagina visible para todos"
   on public.pagina for select
   to anon, authenticated
@@ -54,11 +42,6 @@ create policy "pagina visible para todos"
 
 -- --- Escritura: solo con sesión --------------------------------------------
 -- Una política `for all` por tabla cubre insert / update / delete del panel.
-
-create policy "serie administrable con sesion"
-  on public.serie for all
-  to authenticated
-  using (true) with check (true);
 
 create policy "obra administrable con sesion"
   on public.obra for all
@@ -72,11 +55,6 @@ create policy "exposicion administrable con sesion"
 
 create policy "fotos de exposicion administrables con sesion"
   on public.exposicion_foto for all
-  to authenticated
-  using (true) with check (true);
-
-create policy "relacion exposicion-obra administrable con sesion"
-  on public.exposicion_obra for all
   to authenticated
   using (true) with check (true);
 

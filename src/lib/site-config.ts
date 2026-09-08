@@ -27,7 +27,7 @@ export const siteConfig = {
   nombre: "Jessica Restović",
   rol: "Artista visual",
   descripcion:
-    "Obra de Jessica Restović, artista visual: series en grafito sobre tela, ensambles y volúmenes. Galería, exposiciones y talleres.",
+    "Obra de Jessica Restović, artista visual: grafito sobre tela, ensambles y volúmenes. Exposiciones y talleres.",
   locale: "es_CL",
   lang: "es",
 } as const;
@@ -73,9 +73,8 @@ export interface NavItem {
 /**
  * Navegación pública.
  *
- * No hay índice general de obra: cada serie se entra desde la exposición en
- * que se mostró, que es como quedó el diseño —la trayectoria es la puerta al
- * cuerpo de obra, no una galería suelta.
+ * No hay índice general de obra: cada exposición es la puerta al cuerpo de
+ * obra, que se organiza dentro de la trayectoria.
  */
 export const navPublica: readonly NavItem[] = [
   { href: "/exposiciones", label: "Exposiciones" },
@@ -86,15 +85,12 @@ export const navPublica: readonly NavItem[] = [
 ] as const;
 
 /**
- * Las páginas de serie viven bajo `/serie/…` y se llega a ellas desde una
- * exposición. En el menú marcan «Exposiciones», que es de donde vienen.
+ * Las páginas de obras viven bajo una exposición y en el menú marcan
+ * «Exposiciones».
  */
-export const SECCION_DE_SERIE = "/exposiciones";
-
 /** Navegación del panel — las secciones del brief (§07). */
 export const navAdmin: readonly NavItem[] = [
-  { href: "/admin/obras", label: "Obras" },
-  { href: "/admin/series", label: "Series" },
+  { href: "/admin/trabajos-recientes", label: "Trabajos recientes" },
   { href: "/admin/exposiciones", label: "Exposiciones" },
   { href: "/admin/sobre-mi", label: "Sobre mí" },
   { href: "/admin/clases", label: "Clases" },

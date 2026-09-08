@@ -1,25 +1,13 @@
 -- ---------------------------------------------------------------------------
 -- Contenido inicial
 --
--- Las series y exposiciones vienen de la auditoría de jessicarestovic.com
--- (§03 del brief): son los datos reales que hoy están repartidos en 15 páginas
--- de Wix, ya normalizados en el modelo nuevo. «Ensambles al Cubo» aparece una
--- sola vez —como serie— y la exposición del mismo nombre la referencia, que es
--- justo la duplicación que el modelo nuevo resuelve.
+-- Las exposiciones vienen de la auditoría de jessicarestovic.com (§03 del
+-- brief): son los datos reales que hoy están repartidos en 15 páginas de Wix,
+-- ya normalizados en el modelo nuevo.
 --
 -- Los textos de «Sobre mí» y «Clases» quedan como marcadores: hay que
 -- reemplazarlos por los textos reales de Jessica desde el panel.
 -- ---------------------------------------------------------------------------
-
-insert into public.serie (nombre, slug, descripcion, orden) values
-  ('Ensambles al Cubo',    'ensambles-al-cubo',    null, 1),
-  ('Espacios Íntimos',     'espacios-intimos',     'Grafito sobre tela.', 2),
-  ('Sur',                  'sur',                  'Serie en grafito sobre tela inspirada en la Patagonia.', 3),
-  ('De lo Residual',       'de-lo-residual',       'Huellas del tiempo sobre distintas superficies.', 4),
-  ('De lo Precario',       'de-lo-precario',       'Materiales simples y frágiles como lenguaje.', 5),
-  ('Volúmenes',            'volumenes',            null, 6),
-  ('A partir de lo simple','a-partir-de-lo-simple','Documentación de proceso: obra en curso y obra terminada.', 7)
-on conflict (slug) do nothing;
 
 insert into public.exposicion (titulo, slug, lugar, anio, descripcion, orden) values
   ('Fundación Guayasamín', 'fundacion-guayasamin', 'Quito, Ecuador', null,
