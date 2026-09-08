@@ -43,7 +43,7 @@ export function subirArchivoPorUrl(
         alProgresar?.(100);
         resolver();
       } else {
-        rechazar(new Error("No pudimos subir la foto."));
+        rechazar(new Error("Storage rechazó la foto (HTTP " + xhr.status + ")."));
       }
     };
     xhr.send(archivo);

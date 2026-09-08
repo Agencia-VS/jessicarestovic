@@ -19,10 +19,25 @@ interface FormularioSobreMiProps {
 export function FormularioSobreMi({ contenido, retratoUrl }: FormularioSobreMiProps) {
   const [resultado, accion, guardando] = useActionState(guardarSobreMi, INICIAL);
   const [subiendoRetrato, setSubiendoRetrato] = useState(false);
+  const [errorRetrato, setErrorRetrato] = useState<string | null>(null);
   const errores = resultado.errores ?? {};
 
+  const validarAntesDeGuardar = (evento: React.FormEvent<HTMLFormElement>) => {
+    const datos = new FormData(evento.currentTarget);
+    const seleccionada = datos.get("retrato_seleccionada") === "1";
+    const ruta = String(datos.get("retrato_path") ?? "").trim();
+
+    if (seleccionada && !ruta) {
+      evento.preventDefault();
+      setErrorRetrato("La foto todavía no terminó de subir. Espera a que finalice y vuelve a intentar.");
+      return;
+    }
+
+    setErrorRetrato(null);
+  };
+
   return (
-    <form action={accion} className="flex max-w-xl flex-col gap-8">
+    <form action={accion} onSubmit={validarAntesDeGuardar} className="flex max-w-xl flex-col gap-8">
       <Aviso resultado={resultado} />
 
       <SubirImagen
@@ -32,6 +47,11 @@ export function FormularioSobreMi({ contenido, retratoUrl }: FormularioSobreMiPr
         urlActual={retratoUrl}
         alCambiarEstado={setSubiendoRetrato}
       />
+      {errorRetrato && (
+        <p role="alert" className="caption text-danger">
+          {errorRetrato}
+        </p>
+      )}
 
       <Campo
         etiqueta="Descripción del retrato"
