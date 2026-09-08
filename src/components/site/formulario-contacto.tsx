@@ -1,55 +1,52 @@
 "use client";
 
 import { useActionState } from "react";
-import { Campo, Area } from "@/components/ui/campo";
-import { Boton } from "@/components/ui/boton";
+import { CampoLinea } from "./campo-linea";
 import { enviarMensaje } from "@/lib/acciones/mensajes";
 import { INICIAL } from "@/lib/acciones/resultado";
 import type { MensajeOrigen } from "@/types/database";
 
 interface FormularioContactoProps {
   origen: MensajeOrigen;
-  /** Texto del botón: cambia entre «Enviar mensaje» y «Quiero información». */
   textoBoton?: string;
   placeholderMensaje?: string;
 }
 
 /**
  * El formulario de Contacto y el de Clases son el mismo, cambia el `origen`.
- * Así la bandeja del panel puede mostrar de dónde viene cada envío sin
- * duplicar código ni tablas.
+ * Así la bandeja del panel muestra de dónde viene cada envío sin duplicar
+ * código ni tablas.
  */
 export function FormularioContacto({
   origen,
-  textoBoton = "Enviar mensaje",
+  textoBoton = "Enviar",
   placeholderMensaje,
 }: FormularioContactoProps) {
   const [resultado, accion, enviando] = useActionState(enviarMensaje, INICIAL);
 
+  // La respuesta reemplaza al formulario: una línea en cursiva y el acento,
+  // como el resto de los remates del sitio.
   if (resultado.estado === "ok") {
     return (
-      <div
-        role="status"
-        className="border-l-2 border-success bg-success-soft px-6 py-5 text-[0.9375rem] text-ink"
-      >
+      <p role="status" className="font-display text-xl font-light italic text-accent">
         {resultado.aviso}
-      </div>
+      </p>
     );
   }
 
   const { errores = {}, valores = {} } = resultado;
 
   return (
-    <form action={accion} className="flex max-w-lg flex-col gap-7">
+    <form action={accion} className="flex flex-col gap-[clamp(0.875rem,1.8vw,1.375rem)]">
       <input type="hidden" name="origen" value={origen} />
 
       {resultado.aviso && (
-        <p role="alert" className="border-l-2 border-danger bg-danger-soft px-5 py-4 text-sm text-ink">
+        <p role="alert" className="ficha border-l-2 border-danger bg-danger-soft px-4 py-3 text-ink">
           {resultado.aviso}
         </p>
       )}
 
-      <Campo
+      <CampoLinea
         etiqueta="Nombre"
         nombre="nombre"
         requerido
@@ -57,16 +54,7 @@ export function FormularioContacto({
         defaultValue={valores.nombre}
         error={errores.nombre}
       />
-      <Campo
-        etiqueta="Correo"
-        nombre="email"
-        type="email"
-        requerido
-        autoComplete="email"
-        defaultValue={valores.email}
-        error={errores.email}
-      />
-      <Campo
+      <CampoLinea
         etiqueta="Teléfono"
         nombre="telefono"
         type="tel"
@@ -74,18 +62,32 @@ export function FormularioContacto({
         defaultValue={valores.telefono}
         error={errores.telefono}
       />
-      <Area
-        etiqueta="Mensaje"
+      <CampoLinea
+        etiqueta="Email"
+        nombre="email"
+        type="email"
+        requerido
+        autoComplete="email"
+        defaultValue={valores.email}
+        error={errores.email}
+      />
+      <CampoLinea
+        etiqueta={placeholderMensaje ?? "Mensaje"}
         nombre="mensaje"
         requerido
-        placeholder={placeholderMensaje}
+        area
         defaultValue={valores.mensaje}
         error={errores.mensaje}
       />
 
-      <Boton type="submit" cargando={enviando} className="self-start">
-        {textoBoton}
-      </Boton>
+      <button
+        type="submit"
+        disabled={enviando}
+        aria-busy={enviando || undefined}
+        className="eyebrow mt-1.5 self-start border-b border-ink pb-1 tracking-[0.18em] transition-colors hover:border-accent hover:text-accent disabled:border-faint disabled:text-faint"
+      >
+        {enviando ? "Enviando…" : textoBoton}
+      </button>
     </form>
   );
 }

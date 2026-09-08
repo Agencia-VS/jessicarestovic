@@ -1,15 +1,15 @@
-import { Pagina } from "@/components/site/pagina";
-import { BotonEnlace } from "@/components/ui/boton";
+import { Pagina, Titulo } from "@/components/site/pagina";
+import { EnlaceSuave } from "@/components/site/enlace-suave";
 
 export default function NoEncontrada() {
   return (
     <Pagina>
-      <div className="gutter flex flex-1 flex-col items-start justify-center gap-6 py-24">
-        <h1 className="font-display text-4xl md:text-5xl">Esta página no existe</h1>
-        <p className="max-w-[48ch] text-[0.9375rem] leading-relaxed text-body">
-          Puede que el enlace haya cambiado. La obra completa está en la galería.
+      <div className="marco flex flex-1 flex-col items-start justify-center gap-6 gutter py-24">
+        <Titulo>Esta página no existe</Titulo>
+        <p className="max-w-[48ch] font-display text-[clamp(1rem,1.5vw,1.25rem)] leading-relaxed font-light text-body text-pretty">
+          Puede que el enlace haya cambiado. La obra está en las exposiciones.
         </p>
-        <BotonEnlace href="/obra">Ver la obra</BotonEnlace>
+        <EnlaceSuave href="/exposiciones">Ver exposiciones</EnlaceSuave>
       </div>
     </Pagina>
   );

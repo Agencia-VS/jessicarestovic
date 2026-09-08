@@ -40,6 +40,7 @@ export const obraSchema = z.object({
 
 export const exposicionSchema = z.object({
   titulo: texto(200).min(1, "La exposición necesita un título."),
+  serie_id: z.string().uuid().nullable().optional(),
   lugar: texto(200).optional().or(z.literal("")),
   anio: z.coerce
     .number()
@@ -58,6 +59,13 @@ export const sobreMiSchema = z.object({
   biografia: texto(6000).min(1, "Escribe la biografía."),
   cita: texto(400).optional().or(z.literal("")),
   retrato_alt: texto(300).optional().or(z.literal("")),
+});
+
+export const configuracionSchema = z.object({
+  email: texto(200).pipe(z.string().email("Revisa el correo: parece incompleto.")),
+  telefono: texto(40).min(8, "Escribe el teléfono con su código de país."),
+  instagram: texto(60).min(2, "Escribe tu usuario de Instagram."),
+  cita: texto(400).min(1, "La frase de portada no puede quedar vacía."),
 });
 
 export const clasesSchema = z.object({

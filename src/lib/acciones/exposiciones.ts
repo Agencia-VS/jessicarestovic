@@ -11,6 +11,7 @@ import {
   ok,
   SIN_SESION,
   subirImagen,
+  textoONulo,
   type Cliente,
   type Resultado,
 } from "./comun";
@@ -18,12 +19,17 @@ import { erroresPorCampo, exposicionSchema, slugify } from "@/lib/validacion";
 
 function revalidarExposiciones(): void {
   revalidatePath("/exposiciones");
+  // La página de cada muestra y las de serie muestran el enlace cruzado
+  // («Ver la serie», «← Volúmenes»), así que se refrescan juntas.
+  revalidatePath("/exposiciones/[slug]", "page");
+  revalidatePath("/serie/[slug]", "page");
   revalidatePath("/admin/exposiciones");
 }
 
 function leerCampos(formData: FormData) {
   const analisis = exposicionSchema.safeParse({
     titulo: String(formData.get("titulo") ?? ""),
+    serie_id: textoONulo(formData.get("serie_id")),
     lugar: String(formData.get("lugar") ?? ""),
     anio: enteroONulo(formData.get("anio")),
     descripcion: String(formData.get("descripcion") ?? ""),
@@ -38,6 +44,7 @@ function leerCampos(formData: FormData) {
     datos: {
       titulo: d.titulo,
       slug: slugify(d.titulo),
+      serie_id: d.serie_id ?? null,
       lugar: d.lugar ? d.lugar : null,
       anio: d.anio ?? null,
       descripcion: d.descripcion ? d.descripcion : null,
@@ -75,6 +82,8 @@ async function guardarFotos(
       exposicion_id: exposicionId,
       imagen_path: subida.path,
       imagen_alt: alt,
+      imagen_ancho: enteroONulo(formData.get(`foto_ancho_${indice}`)),
+      imagen_alto: enteroONulo(formData.get(`foto_alto_${indice}`)),
       orden: desdeOrden + indice,
     });
 

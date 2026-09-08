@@ -1,7 +1,7 @@
 "use client";
 
 import { useActionState, useTransition } from "react";
-import { Campo, Area, Interruptor } from "@/components/ui/campo";
+import { Campo, Area, Interruptor, Select } from "@/components/ui/campo";
 import { Boton, BotonEnlace } from "@/components/ui/boton";
 import { SubirFotos } from "./subir-fotos";
 import { Aviso } from "./aviso";
@@ -13,15 +13,17 @@ import {
   eliminarFoto,
 } from "@/lib/acciones/exposiciones";
 import { urlImagen } from "@/lib/images";
-import type { Exposicion } from "@/lib/data/tipos";
+import type { Exposicion, Serie } from "@/lib/data/tipos";
 
 interface FormularioExposicionProps {
+  /** Las series existentes, para decir cuál expuso esta muestra. */
+  series: Serie[];
   /** Cuando viene una exposición, el formulario edita en vez de crear. */
   exposicion?: Exposicion;
 }
 
 /** El mismo formulario para crear y editar una exposición. */
-export function FormularioExposicion({ exposicion }: FormularioExposicionProps) {
+export function FormularioExposicion({ series, exposicion }: FormularioExposicionProps) {
   const editando = Boolean(exposicion);
   const accionBase = exposicion
     ? editarExposicion.bind(null, exposicion.id)
@@ -41,6 +43,18 @@ export function FormularioExposicion({ exposicion }: FormularioExposicionProps) 
         requerido
         defaultValue={exposicion?.titulo}
         error={errores.titulo}
+      />
+
+      <Select
+        etiqueta="Serie que expuso"
+        nombre="serie_id"
+        opciones={[
+          { valor: "", etiqueta: "Ninguna en particular" },
+          ...series.map(({ id, nombre }) => ({ valor: id, etiqueta: nombre })),
+        ]}
+        defaultValue={exposicion?.serie_id ?? ""}
+        error={errores.serie_id}
+        ayuda="Si la muestra fue de una sola serie, el visitante podrá pasar de la exposición a esa serie completa."
       />
 
       <div className="grid grid-cols-1 gap-7 sm:grid-cols-2">

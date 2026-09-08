@@ -1,29 +1,38 @@
 @import "tailwindcss";
 
 /* ---------------------------------------------------------------------------
-   Dirección A — «Sala blanca»
-   La obra colgada en una pared: fondo hueso, una pieza a la vez, tipografía
-   casi invisible. El sitio se compromete con un solo tono claro a propósito —
-   la dirección «Grafito» se descartó porque las piezas ya oscuras se pierden
-   sobre negro.
+   Paleta del canvas de diseño: crudo, grafito y un solo acento ciruela.
+   Tonos neutros cálidos derivados de la marca actual (§06 del brief), con el
+   acento reservado para enlaces y estados activos — nunca compitiendo con el
+   color real de las obras.
    --------------------------------------------------------------------------- */
 
 @theme {
   /* Superficies */
-  --color-paper: #fcfbf8;
-  --color-paper-alt: #faf9f6;
+  --color-paper: #f5f2ed;
+  /* Un tono más claro: el fondo de la vista ampliada, para que la obra se lea
+     recortada contra otra pared y no contra la misma página. */
+  --color-paper-alt: #fbf9f6;
 
   /* Tinta */
-  --color-ink: #1c1b19;
-  --color-body: #57534d;
-  --color-muted: #8c877f;
-  --color-faint: #b4aea5;
-  --color-label: #a9a29a;
-  --color-inactive: #bdb7ae;
+  --color-ink: #232120;
+  --color-prose: #3a3733;
+  --color-body: #4a4642;
+  --color-muted: #8a837c;
+  --color-faint: #a39b92;
+  --color-label: #b5ada4;
+  --color-inactive: #b5ada4;
 
   /* Trazos */
-  --color-line: #e4e0d8;
-  --color-line-soft: #eeebe4;
+  --color-line: #e4ded4;
+  /* El tono del hueco de una foto que todavía no se ha cargado. */
+  --color-line-soft: #ede8e0;
+  /* Subrayado de campos de formulario y de enlaces. */
+  --color-rule: #d8d0c4;
+  --color-rule-soft: #ded6cb;
+
+  /* El único acento */
+  --color-accent: #6b4550;
 
   /* Estados */
   --color-danger: #9b3b2f;
@@ -31,19 +40,15 @@
   --color-success: #3f6b52;
   --color-success-soft: #e8f0ea;
 
-  /* Tonos de referencia de la retícula (bloques sin foto todavía) */
-  --color-ref-arena: #dcd4c6;
-  --color-ref-piedra: #c9cdcc;
-  --color-ref-hueso: #e0dace;
-  --color-ref-gris: #c4c8c6;
+  /* Tipografía: un serif editorial para títulos y nombres de obra, un
+     sans-serif neutro para todo el texto de apoyo (§06). La firma manuscrita
+     de Jessica es una imagen, no una fuente. */
+  --font-sans: var(--font-public-sans), system-ui, -apple-system, sans-serif;
+  --font-display: var(--font-newsreader), Georgia, serif;
 
-  /* Tipografía */
-  --font-sans: var(--font-schibsted), "Helvetica Neue", Helvetica, Arial, sans-serif;
-  --font-display: var(--font-instrument), Georgia, serif;
-  --font-signature: var(--font-italianno), cursive;
-
-  /* Ritmo horizontal del layout: 72px en escritorio, 24px en móvil */
-  --spacing-gutter: 1.5rem;
+  /* Ancho de columna del mosaico: la foto manda la altura, esto solo fija
+     cuántas columnas caben. */
+  --container-mosaico: 20.625rem;
 }
 
 @layer base {
@@ -53,6 +58,7 @@
 
   html {
     -webkit-text-size-adjust: 100%;
+    scroll-behavior: smooth;
   }
 
   body {
@@ -63,7 +69,7 @@
     text-rendering: optimizeLegibility;
   }
 
-  /* Enlaces: sin subrayado, el hover apaga el tono. Igual que el mockup. */
+  /* Enlaces: sin subrayado propio; el hover pasa al acento. */
   a {
     color: inherit;
     text-decoration: none;
@@ -75,7 +81,7 @@
   }
 
   ::selection {
-    background: var(--color-line);
+    background: #e6dcd2;
   }
 
   @media (prefers-reduced-motion: reduce) {
@@ -90,24 +96,74 @@
   }
 }
 
-@utility gutter {
-  /* El margen lateral del mockup: 24px en móvil, 72px desde tablet. */
-  padding-inline: 1.5rem;
+@utility marco {
+  /* El ancho máximo del canvas: 1440px, centrado.
+     `width:100%` no es de más: estas cajas son hijas de un `main` flex, y ahí
+     un margen automático las encogería a su contenido en vez de estirarlas. */
+  width: 100%;
+  max-width: 90rem;
+  margin-inline: auto;
+}
 
-  @media (width >= 48rem) {
-    padding-inline: 4.5rem;
-  }
+@utility gutter {
+  /* El margen lateral del canvas: 20px en móvil, hasta 72px en escritorio. */
+  padding-inline: clamp(1.25rem, 5vw, 4.5rem);
 }
 
 @utility eyebrow {
-  /* Etiquetas y navegación: versalitas espaciadas, 12px. */
-  font-size: 0.75rem;
+  /* Navegación, enlaces sueltos y conteos: versalitas espaciadas, 11px. */
+  font-size: 0.6875rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+@utility etiqueta {
+  /* Las claves de una ficha —«Lugar», «Año», «Técnica»— más tenues aún. */
+  font-size: 0.625rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+}
+
+@utility pie {
+  /* Pie de obra bajo la foto: serie, lugar, número de vista. */
+  font-size: 0.6875rem;
+  font-weight: 300;
   letter-spacing: 0.13em;
   text-transform: uppercase;
 }
 
-@utility caption {
-  /* Pie de obra: título + técnica, 11.5px. */
-  font-size: 0.719rem;
+@utility ficha {
+  /* Valor de ficha técnica: año · técnica · dimensiones. */
+  font-size: 0.75rem;
+  font-weight: 300;
   line-height: 1.5;
+}
+
+@utility caption {
+  /* Texto menudo de apoyo, sobre todo en el panel. */
+  font-size: 0.75rem;
+  line-height: 1.5;
+}
+
+@utility mosaico {
+  /* La retícula de alturas variables (§06): columnas CSS, para que cada pieza
+     conserve su proporción real en vez de calzar en una fila. */
+  columns: var(--container-mosaico);
+  column-gap: clamp(1.5rem, 3.4vw, 3.5rem);
+}
+
+/* La aparición del formulario de Clases: sube y aparece, una sola vez. */
+@keyframes subir {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@utility aparece {
+  animation: subir 520ms cubic-bezier(0.22, 0.61, 0.36, 1) both;
 }
