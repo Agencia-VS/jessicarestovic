@@ -11,7 +11,6 @@ import {
   ok,
   SIN_SESION,
   subirImagen,
-  textoONulo,
   type Cliente,
   type Resultado,
 } from "./comun";
@@ -26,10 +25,47 @@ function revalidarExposiciones(): void {
   revalidatePath("/admin/exposiciones");
 }
 
+/**
+ * Las series que expuso la muestra. Llegan como varias casillas con el mismo
+ * nombre, así que se leen todas y se descartan repetidas.
+ */
+function leerSeries(formData: FormData): string[] {
+  const ids = formData.getAll("series").map((valor) => String(valor).trim());
+  return [...new Set(ids.filter(Boolean))];
+}
+
+/**
+ * Reemplaza el conjunto de series de una exposición por el que llega del
+ * formulario. Se borra y se vuelve a insertar en vez de comparar diferencias:
+ * son un puñado de filas y así el orden queda siempre igual al de la lista.
+ */
+async function guardarSeries(
+  supabase: Cliente,
+  exposicionId: string,
+  seriesIds: string[],
+): Promise<string | null> {
+  const { error: errorBorrado } = await supabase
+    .from("exposicion_serie")
+    .delete()
+    .eq("exposicion_id", exposicionId);
+
+  if (errorBorrado) return "No pudimos actualizar las series de la exposición.";
+  if (seriesIds.length === 0) return null;
+
+  const { error } = await supabase.from("exposicion_serie").insert(
+    seriesIds.map((serieId, orden) => ({
+      exposicion_id: exposicionId,
+      serie_id: serieId,
+      orden,
+    })),
+  );
+
+  return error ? "No pudimos guardar las series de la exposición." : null;
+}
+
 function leerCampos(formData: FormData) {
   const analisis = exposicionSchema.safeParse({
     titulo: String(formData.get("titulo") ?? ""),
-    serie_id: textoONulo(formData.get("serie_id")),
     lugar: String(formData.get("lugar") ?? ""),
     anio: enteroONulo(formData.get("anio")),
     descripcion: String(formData.get("descripcion") ?? ""),
@@ -44,7 +80,6 @@ function leerCampos(formData: FormData) {
     datos: {
       titulo: d.titulo,
       slug: slugify(d.titulo),
-      serie_id: d.serie_id ?? null,
       lugar: d.lugar ? d.lugar : null,
       anio: d.anio ?? null,
       descripcion: d.descripcion ? d.descripcion : null,
@@ -116,6 +151,9 @@ export async function crearExposicion(
     return fallo("No pudimos crear la exposición. ¿Ya existe una con ese título?");
   }
 
+  const problemaSeries = await guardarSeries(supabase, data.id, leerSeries(formData));
+  if (problemaSeries) return fallo(problemaSeries);
+
   const problemaFotos = await guardarFotos(supabase, data.id, formData, 0);
   if (problemaFotos) return fallo(problemaFotos);
 
@@ -141,6 +179,9 @@ export async function editarExposicion(
     .from("exposicion_foto")
     .select("id", { count: "exact", head: true })
     .eq("exposicion_id", id);
+
+  const problemaSeries = await guardarSeries(supabase, id, leerSeries(formData));
+  if (problemaSeries) return fallo(problemaSeries);
 
   const problemaFotos = await guardarFotos(supabase, id, formData, count ?? 0);
   if (problemaFotos) return fallo(problemaFotos);

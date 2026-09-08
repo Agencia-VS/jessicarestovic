@@ -17,6 +17,7 @@ import type {
   MensajeRow,
   Obra,
   Serie,
+  SerieBreve,
   SerieConObras,
   SerieDetalle,
   SobreMiContenido,
@@ -209,23 +210,44 @@ export async function obtenerSerieDetalle(slug: string): Promise<SerieDetalle | 
   if (!serie) return null;
 
   const obras = (await listarObrasPublicadas()).filter((obra) => obra.serie_id === serie.id);
-  const exposicion = exposiciones.find((expo) => expo.serie?.id === serie.id) ?? null;
+  // Una serie puede haberse expuesto más de una vez; van de la más reciente
+  // a la más antigua, que es el orden en que `listarExposiciones` las trae.
+  const muestras = exposiciones
+    .filter((expo) => expo.series.some((s) => s.id === serie.id))
+    .map(({ titulo, slug }) => ({ titulo, slug }));
 
   return {
     ...serie,
     obras,
     tecnica: tecnicaDominante(obras),
-    exposicion: exposicion ? { titulo: exposicion.titulo, slug: exposicion.slug } : null,
+    exposiciones: muestras,
   };
 }
 
 // --- Exposiciones ----------------------------------------------------------
 
-/** Columnas de `exposicion` con sus fotos y la serie que expuso. */
-const SELECT_EXPO = "*, fotos:exposicion_foto (*), serie:serie_id (id, nombre, slug)";
+/** Columnas de `exposicion` con sus fotos y las series que expuso. */
+const SELECT_EXPO =
+  "*, fotos:exposicion_foto (*), vinculos:exposicion_serie (orden, serie:serie_id (id, nombre, slug))";
 
-function ordenarFotos(expo: Exposicion): Exposicion {
-  return { ...expo, fotos: [...expo.fotos].sort((a, b) => a.orden - b.orden) };
+/** Forma cruda que devuelve la tabla intermedia antes de aplanarla. */
+interface ExposicionCruda extends Omit<Exposicion, "series"> {
+  vinculos: { orden: number; serie: SerieBreve | null }[] | null;
+}
+
+/**
+ * Deja la exposición como la consume la app: fotos y series en su orden, y los
+ * vínculos aplanados a una lista de series.
+ */
+function normalizarExposicion(cruda: ExposicionCruda): Exposicion {
+  const { vinculos, ...expo } = cruda;
+
+  const series = (vinculos ?? [])
+    .sort((a, b) => a.orden - b.orden)
+    .map(({ serie }) => serie)
+    .filter((serie): serie is SerieBreve => serie !== null);
+
+  return { ...expo, fotos: [...expo.fotos].sort((a, b) => a.orden - b.orden), series };
 }
 
 export async function listarExposiciones(soloPublicadas = true): Promise<Exposicion[]> {
@@ -239,7 +261,7 @@ export async function listarExposiciones(soloPublicadas = true): Promise<Exposic
     .order("anio", { ascending: false, nullsFirst: false })
     .order("orden");
 
-  return ((data ?? []) as unknown as Exposicion[]).map(ordenarFotos);
+  return ((data ?? []) as unknown as ExposicionCruda[]).map(normalizarExposicion);
 }
 
 export async function obtenerExposicion(id: string): Promise<Exposicion | null> {
@@ -247,7 +269,7 @@ export async function obtenerExposicion(id: string): Promise<Exposicion | null> 
   const supabase = await createClient();
 
   const { data } = await supabase.from("exposicion").select(SELECT_EXPO).eq("id", id).maybeSingle();
-  return data ? ordenarFotos(data as unknown as Exposicion) : null;
+  return data ? normalizarExposicion(data as unknown as ExposicionCruda) : null;
 }
 
 /** La exposición que pide una URL como `/exposiciones/volumenes`. */
@@ -264,7 +286,7 @@ export async function obtenerExposicionPorSlug(slug: string): Promise<Exposicion
     .eq("publicada", true)
     .maybeSingle();
 
-  return data ? ordenarFotos(data as unknown as Exposicion) : null;
+  return data ? normalizarExposicion(data as unknown as ExposicionCruda) : null;
 }
 
 // --- Mensajes --------------------------------------------------------------

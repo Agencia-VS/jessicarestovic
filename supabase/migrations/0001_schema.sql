@@ -28,7 +28,7 @@ $$;
 -- ---------------------------------------------------------------------------
 -- serie
 -- ---------------------------------------------------------------------------
-create table public.serie (
+create table if not exists public.serie (
   id            uuid primary key default gen_random_uuid(),
   nombre        text not null,
   slug          text not null unique,
@@ -39,9 +39,9 @@ create table public.serie (
   constraint serie_nombre_no_vacio check (length(btrim(nombre)) > 0)
 );
 
-create index serie_orden_idx on public.serie (orden, nombre);
+create index if not exists serie_orden_idx on public.serie (orden, nombre);
 
-create trigger serie_touch
+create or replace trigger serie_touch
   before update on public.serie
   for each row execute function public.touch_actualizado_en();
 
@@ -51,7 +51,7 @@ create trigger serie_touch
 -- `imagen_ancho` / `imagen_alto` se guardan al subir la foto para poder
 -- reservar el espacio exacto en la retícula sin recortar la obra (§08).
 -- ---------------------------------------------------------------------------
-create table public.obra (
+create table if not exists public.obra (
   id            uuid primary key default gen_random_uuid(),
   titulo        text not null,
   serie_id      uuid references public.serie (id) on delete set null,
@@ -77,18 +77,18 @@ create table public.obra (
   )
 );
 
-create index obra_serie_orden_idx on public.obra (serie_id, orden, creado_en);
-create index obra_destacada_idx on public.obra (orden) where destacada and publicada;
-create index obra_publicada_idx on public.obra (publicada);
+create index if not exists obra_serie_orden_idx on public.obra (serie_id, orden, creado_en);
+create index if not exists obra_destacada_idx on public.obra (orden) where destacada and publicada;
+create index if not exists obra_publicada_idx on public.obra (publicada);
 
-create trigger obra_touch
+create or replace trigger obra_touch
   before update on public.obra
   for each row execute function public.touch_actualizado_en();
 
 -- ---------------------------------------------------------------------------
 -- exposicion
 -- ---------------------------------------------------------------------------
-create table public.exposicion (
+create table if not exists public.exposicion (
   id            uuid primary key default gen_random_uuid(),
   titulo        text not null,
   slug          text not null unique,
@@ -104,14 +104,14 @@ create table public.exposicion (
 );
 
 -- Listado cronológico tipo CV: más reciente primero (§05).
-create index exposicion_cronologico_idx on public.exposicion (anio desc nulls last, orden);
+create index if not exists exposicion_cronologico_idx on public.exposicion (anio desc nulls last, orden);
 
-create trigger exposicion_touch
+create or replace trigger exposicion_touch
   before update on public.exposicion
   for each row execute function public.touch_actualizado_en();
 
 -- Fotos de sala / montaje de cada exposición.
-create table public.exposicion_foto (
+create table if not exists public.exposicion_foto (
   id            uuid primary key default gen_random_uuid(),
   exposicion_id uuid not null references public.exposicion (id) on delete cascade,
   imagen_path   text not null,
@@ -121,24 +121,29 @@ create table public.exposicion_foto (
   constraint exposicion_foto_alt_no_vacio check (length(btrim(imagen_alt)) > 0)
 );
 
-create index exposicion_foto_orden_idx on public.exposicion_foto (exposicion_id, orden);
+create index if not exists exposicion_foto_orden_idx on public.exposicion_foto (exposicion_id, orden);
 
 -- Obras relacionadas con una exposición (opcional, §05).
-create table public.exposicion_obra (
+create table if not exists public.exposicion_obra (
   exposicion_id uuid not null references public.exposicion (id) on delete cascade,
   obra_id       uuid not null references public.obra (id) on delete cascade,
   orden         integer not null default 0,
   primary key (exposicion_id, obra_id)
 );
 
-create index exposicion_obra_obra_idx on public.exposicion_obra (obra_id);
+create index if not exists exposicion_obra_obra_idx on public.exposicion_obra (obra_id);
 
 -- ---------------------------------------------------------------------------
 -- mensaje
 -- ---------------------------------------------------------------------------
-create type public.mensaje_origen as enum ('contacto', 'clases');
+do $$
+begin
+  create type public.mensaje_origen as enum ('contacto', 'clases');
+exception
+  when duplicate_object then null;
+end $$;
 
-create table public.mensaje (
+create table if not exists public.mensaje (
   id            uuid primary key default gen_random_uuid(),
   nombre        text not null,
   email         text not null,
@@ -152,18 +157,18 @@ create table public.mensaje (
   constraint mensaje_email_plausible check (email ~* '^[^@\s]+@[^@\s.]+\.[^@\s]+$')
 );
 
-create index mensaje_bandeja_idx on public.mensaje (leido, creado_en desc);
+create index if not exists mensaje_bandeja_idx on public.mensaje (leido, creado_en desc);
 
 -- ---------------------------------------------------------------------------
 -- pagina — contenido editable de «Sobre mí» y «Clases»
 -- ---------------------------------------------------------------------------
-create table public.pagina (
+create table if not exists public.pagina (
   clave         text primary key,
   contenido     jsonb not null default '{}'::jsonb,
   actualizado_en timestamptz not null default now(),
   constraint pagina_clave_conocida check (clave in ('sobre-mi', 'clases'))
 );
 
-create trigger pagina_touch
+create or replace trigger pagina_touch
   before update on public.pagina
   for each row execute function public.touch_actualizado_en();

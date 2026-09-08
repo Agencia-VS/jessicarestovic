@@ -77,15 +77,23 @@ En [supabase.com](https://supabase.com) crear un proyecto y copiar de
 
 ### 2. Aplicar las migraciones
 
-Los archivos de `supabase/migrations/` se aplican en orden. Con el
-[CLI de Supabase](https://supabase.com/docs/guides/cli):
+**La forma más rápida:** abrir el **SQL Editor** del panel de Supabase y pegar
+`supabase/puesta-en-marcha.sql` completo. Junta las seis migraciones en orden
+y se puede volver a correr sin duplicar contenido ni fallar.
+
+Ese archivo se genera desde las migraciones, así que no se edita a mano:
+
+```bash
+npm run sql     # regenera supabase/puesta-en-marcha.sql
+```
+
+Con el [CLI de Supabase](https://supabase.com/docs/guides/cli), la alternativa
+es aplicar las migraciones una por una:
 
 ```bash
 supabase link --project-ref <ref-del-proyecto>
 supabase db push
 ```
-
-O pegando cada archivo en el **SQL Editor** del panel de Supabase, en orden:
 
 | Archivo | Qué hace |
 | --- | --- |
@@ -93,7 +101,25 @@ O pegando cada archivo en el **SQL Editor** del panel de Supabase, en orden:
 | `0002_rls_storage.sql` | Políticas de acceso y el bucket `obras` para las imágenes |
 | `0003_contenido_inicial.sql` | Las 7 series y 7 exposiciones reales del sitio actual |
 | `0004_configuracion.sql` | Datos de contacto y frase de portada, editables desde el panel |
-| `0005_exposicion_serie.sql` | La serie que expuso cada muestra, las medidas de las fotos de sala y las técnicas de Clases con descripción |
+| `0005_exposicion_serie.sql` | Medidas de las fotos de sala y técnicas de Clases con descripción |
+| `0006_exposicion_series.sql` | Una muestra puede exponer varias series (ver abajo) |
+
+Verificadas contra un Postgres 16 real: las seis aplican en orden desde una base
+vacía, y el archivo consolidado corre tres veces seguidas sin error ni
+duplicados.
+
+### Una muestra expone varias series
+
+`0006` reemplaza la columna `exposicion.serie_id` por la tabla
+`exposicion_serie`. El motivo es concreto: **«Ensambles al Cubo» expuso también
+«Espacios Íntimos»**, y con una sola columna ese dato no cabía —el lugar lo
+ocupaba la serie homónima—, así que «Espacios Íntimos» quedaba sin ninguna
+exposición que la mostrara. Como el sitio entra al cuerpo de obra por la
+trayectoria, una serie sin exposición no se alcanza.
+
+La relación es de muchos a muchos en los dos sentidos: una muestra puede reunir
+varias series, y una serie puede volver a exponerse años después. En el panel se
+marca con casillas, en la ficha de cada exposición.
 
 ### 3. Crear el acceso de Jessica
 

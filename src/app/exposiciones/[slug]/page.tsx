@@ -77,14 +77,20 @@ export default async function ExposicionPage({ params }: { params: Promise<{ slu
               lineas={[
                 { clave: "Lugar", valor: exposicion.lugar ?? "—" },
                 { clave: "Año", valor: exposicion.anio ? String(exposicion.anio) : "—" },
-                { clave: "Serie", valor: exposicion.serie?.nombre ?? "—" },
+                {
+                  clave: exposicion.series.length === 1 ? "Serie" : "Series",
+                  valor:
+                    exposicion.series.map(({ nombre }) => nombre).join(" · ") || "—",
+                },
               ]}
             />
-            {exposicion.serie && (
-              <EnlaceSuave href={`/serie/${exposicion.serie.slug}`} acentuado>
-                Ver la serie
+            {/* Una muestra puede haber expuesto más de una serie: un enlace
+                por cada una, nombrándola cuando hay varias. */}
+            {exposicion.series.map(({ id, nombre, slug }) => (
+              <EnlaceSuave key={id} href={`/serie/${slug}`} acentuado>
+                {exposicion.series.length === 1 ? "Ver la serie" : `Ver ${nombre}`}
               </EnlaceSuave>
-            )}
+            ))}
           </div>
         </div>
 

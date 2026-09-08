@@ -1,9 +1,10 @@
 "use client";
 
 import { useActionState, useTransition } from "react";
-import { Campo, Area, Interruptor, Select } from "@/components/ui/campo";
+import { Campo, Area, Interruptor } from "@/components/ui/campo";
 import { Boton, BotonEnlace } from "@/components/ui/boton";
 import { SubirFotos } from "./subir-fotos";
+import { CasillasSeries } from "./casillas-series";
 import { Aviso } from "./aviso";
 import { Confirmar } from "./confirmar";
 import { INICIAL } from "@/lib/acciones/resultado";
@@ -16,7 +17,7 @@ import { urlImagen } from "@/lib/images";
 import type { Exposicion, Serie } from "@/lib/data/tipos";
 
 interface FormularioExposicionProps {
-  /** Las series existentes, para decir cuál expuso esta muestra. */
+  /** Las series existentes, para marcar cuáles expuso esta muestra. */
   series: Serie[];
   /** Cuando viene una exposición, el formulario edita en vez de crear. */
   exposicion?: Exposicion;
@@ -45,16 +46,9 @@ export function FormularioExposicion({ series, exposicion }: FormularioExposicio
         error={errores.titulo}
       />
 
-      <Select
-        etiqueta="Serie que expuso"
-        nombre="serie_id"
-        opciones={[
-          { valor: "", etiqueta: "Ninguna en particular" },
-          ...series.map(({ id, nombre }) => ({ valor: id, etiqueta: nombre })),
-        ]}
-        defaultValue={exposicion?.serie_id ?? ""}
-        error={errores.serie_id}
-        ayuda="Si la muestra fue de una sola serie, el visitante podrá pasar de la exposición a esa serie completa."
+      <CasillasSeries
+        series={series}
+        seleccionadas={exposicion?.series.map(({ id }) => id) ?? []}
       />
 
       <div className="grid grid-cols-1 gap-7 sm:grid-cols-2">

@@ -23,21 +23,34 @@ export interface SerieConObras extends Serie {
   obras: Obra[];
 }
 
-/** Una exposición con sus fotos de sala y la serie que expuso. */
+/** Identificación mínima de una serie, para los enlaces cruzados. */
+export interface SerieBreve {
+  id: string;
+  nombre: string;
+  slug: string;
+}
+
+/**
+ * Una exposición con sus fotos de sala y las series que expuso.
+ *
+ * Son varias a propósito: «Ensambles al Cubo» mostró dos, y una muestra
+ * colectiva puede reunir más. La lista vacía es el caso de «Fundación
+ * Guayasamín», que expuso piezas sueltas.
+ */
 export interface Exposicion extends ExposicionRow {
   fotos: ExposicionFotoRow[];
-  serie: { id: string; nombre: string; slug: string } | null;
+  series: SerieBreve[];
 }
 
 /**
  * Una serie tal como la muestra su página: sus obras, la técnica deducida de
- * ellas y la muestra por la que se entró.
+ * ellas y las muestras en que se expuso.
  */
 export interface SerieDetalle extends SerieConObras {
   /** La técnica que comparte la mayoría de sus piezas, si hay alguna. */
   tecnica: string | null;
-  /** La exposición que la mostró, para el enlace de vuelta. */
-  exposicion: { titulo: string; slug: string } | null;
+  /** Las muestras que la expusieron, de la más reciente a la más antigua. */
+  exposiciones: { titulo: string; slug: string }[];
 }
 
 export type { ClasesContenido, ExposicionFotoRow, MensajeRow, SobreMiContenido };
