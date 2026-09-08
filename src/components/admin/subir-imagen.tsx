@@ -44,6 +44,7 @@ export function SubirImagen({
   const rutaPendiente = useRef<string | null>(null);
   const [previa, setPrevia] = useState<string | null>(null);
   const [ruta, setRuta] = useState<string | null>(null);
+  const [seleccionada, setSeleccionada] = useState(false);
   const [medidas, setMedidas] = useState<Medidas | null>(null);
   const [problema, setProblema] = useState<string | null>(null);
   const [progreso, setProgreso] = useState(0);
@@ -83,10 +84,14 @@ export function SubirImagen({
       if (id !== version.current) return;
       setRuta(firma.path);
       setProblema(null);
-    } catch {
+    } catch (error) {
       if (rutaFirmada) await borrarSubidaPendiente(rutaFirmada, tipo);
       if (id === version.current) {
-        setProblema("No pudimos subir la foto. Revisa tu conexión y vuelve a intentar.");
+        setProblema(
+          error instanceof Error
+            ? error.message
+            : "No pudimos subir la foto. Revisa tu conexión y vuelve a intentar.",
+        );
       }
     } finally {
       if (id === version.current) {
@@ -100,6 +105,7 @@ export function SubirImagen({
     const id = ++version.current;
     descartarRutaPendiente();
     setRuta(null);
+    setSeleccionada(Boolean(archivo));
     setProblema(null);
     setMedidas(null);
     setProgreso(0);
@@ -160,6 +166,7 @@ export function SubirImagen({
       </span>
 
       <input type="hidden" name={`${nombre}_path`} value={ruta ?? ""} />
+      <input type="hidden" name={`${nombre}_seleccionada`} value={seleccionada ? "1" : "0"} />
       {ruta && medidas && (
         <>
           <input type="hidden" name={`${nombre}_ancho`} value={medidas.ancho} />

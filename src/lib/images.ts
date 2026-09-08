@@ -45,8 +45,11 @@ export const ESPECS_IMAGEN = {
     uso: "Foto de perfil (Sobre mí)",
     proporcion: "Vertical 4:5",
     ladoMayorMin: null,
-    anchoMin: 1600,
-    altoMin: 2000,
+    // La página la muestra a unos 360 px de ancho. 800 × 1000 deja margen
+    // suficiente para pantallas retina sin obligar a Jessica a conseguir un
+    // archivo innecesariamente grande.
+    anchoMin: 800,
+    altoMin: 1000,
     pesoMaxBytes: 10 * MB,
     formatos: ["image/jpeg", "image/png", "image/webp", "image/avif"],
   },

@@ -16,6 +16,7 @@ import {
   erroresPorCampo,
   sobreMiSchema,
 } from "@/lib/validacion";
+import { BUCKET_IMAGENES } from "@/lib/images";
 import type {
   ClasesContenido,
   ConfiguracionContenido,
@@ -52,8 +53,26 @@ export async function guardarSobreMi(
 
   // El retrato solo cambia si llegó una ruta firmada nueva.
   const nuevaRuta = textoONulo(formData.get("retrato_path"));
+  const retratoSeleccionado = formData.get("retrato_seleccionada") === "1";
+  if (retratoSeleccionado && !nuevaRuta) {
+    return fallo("La foto seleccionada todavía no terminó de subir. Vuelve a intentarlo cuando llegue al 100%.");
+  }
   if (nuevaRuta && !rutaDeImagenValida(nuevaRuta, "retratos")) {
     return fallo("El nuevo retrato no es válido o la subida todavía no terminó.");
+  }
+
+  if (nuevaRuta) {
+    const { data: archivo, error: errorArchivo } = await supabase.storage
+      .from(BUCKET_IMAGENES)
+      .info(nuevaRuta);
+
+    if (errorArchivo || !archivo) {
+      console.error("[guardarSobreMi] El retrato no está disponible en Storage", {
+        path: nuevaRuta,
+        error: errorArchivo,
+      });
+      return fallo("La foto no quedó disponible en Storage. Vuelve a subirla y espera a que termine.");
+    }
   }
   let retratoPath = previo.retrato_path ?? null;
   if (nuevaRuta) retratoPath = nuevaRuta;
