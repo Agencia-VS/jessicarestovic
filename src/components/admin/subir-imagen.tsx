@@ -15,7 +15,7 @@ interface SubirImagenProps {
   /** Al crear, la foto es obligatoria; al editar, se puede dejar la anterior. */
   requerido?: boolean;
   error?: string;
-  /** El formulario padre desactiva «Guardar» mientras se suben los bytes. */
+  /** El formulario padre desactiva «Guardar» hasta completar la nueva foto. */
   alCambiarEstado?: (ocupado: boolean) => void;
 }
 
@@ -57,8 +57,8 @@ export function SubirImagen({
   }, [previa]);
 
   useEffect(() => {
-    alCambiarEstado?.(subiendo);
-  }, [alCambiarEstado, subiendo]);
+    alCambiarEstado?.(subiendo || (seleccionada && !ruta));
+  }, [alCambiarEstado, ruta, seleccionada, subiendo]);
 
   const descartarRutaPendiente = () => {
     const anterior = rutaPendiente.current;

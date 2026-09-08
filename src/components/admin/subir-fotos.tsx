@@ -17,7 +17,7 @@ interface Seleccion {
 
 interface SubirFotosProps {
   nombre?: string;
-  /** El formulario padre desactiva «Guardar» mientras haya bytes en vuelo. */
+  /** El formulario padre desactiva «Guardar» hasta completar todas las fotos. */
   alCambiarEstado?: (ocupado: boolean) => void;
 }
 
@@ -37,7 +37,7 @@ export function SubirFotos({ nombre = "fotos", alCambiarEstado }: SubirFotosProp
   }, [seleccion]);
 
   useEffect(() => {
-    alCambiarEstado?.(seleccion.some((item) => item.subiendo));
+    alCambiarEstado?.(seleccion.some((item) => !item.ruta));
   }, [alCambiarEstado, seleccion]);
 
   useEffect(() => {
@@ -71,11 +71,14 @@ export function SubirFotos({ nombre = "fotos", alCambiarEstado }: SubirFotosProp
         if (id === version.current) actualizar(indice, { progreso });
       });
       if (id === version.current) actualizar(indice, { ruta: firma.path, subiendo: false, progreso: 100 });
-    } catch {
+    } catch (error) {
       if (rutaFirmada) await borrarSubidaPendiente(rutaFirmada, "exposicion");
       if (id === version.current) {
         actualizar(indice, {
-          problema: "No pudimos subir esta foto. Revisa tu conexión y vuelve a intentar.",
+          problema:
+            error instanceof Error
+              ? error.message
+              : "No pudimos subir esta foto. Revisa tu conexión y vuelve a intentar.",
           subiendo: false,
         });
       }
