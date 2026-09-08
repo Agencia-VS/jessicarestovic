@@ -6,12 +6,16 @@ import { GaleriaObras } from "@/components/site/galeria-obras";
 import { FichaDatos } from "@/components/site/ficha-datos";
 import { EstadoVacio } from "@/components/ui/estado-vacio";
 import { listarSeries, obtenerSerieDetalle } from "@/lib/data/consultas";
+import { slugsDeSeries } from "@/lib/supabase/build";
+import { supabaseConfigurado } from "@/lib/entorno";
+import { DEMO_SERIES } from "@/lib/data/demo";
 
 export const revalidate = 300;
 
+/** Igual que en exposiciones: sin cookies, porque corre en el build. */
 export async function generateStaticParams() {
-  const series = await listarSeries();
-  return series.map(({ slug }) => ({ slug }));
+  if (!supabaseConfigurado()) return DEMO_SERIES.map(({ slug }) => ({ slug }));
+  return (await slugsDeSeries()).map((slug) => ({ slug }));
 }
 
 export async function generateMetadata({

@@ -1,5 +1,5 @@
-import type { Exposicion, Obra, Serie, SerieConObras } from "./tipos";
-import type { ClasesContenido, ExposicionFotoRow, SobreMiContenido } from "@/types/database";
+import type { Exposicion, FotoDeSala, Obra, Serie, SerieConObras } from "./tipos";
+import type { ClasesContenido, SobreMiContenido } from "@/types/database";
 
 /**
  * Contenido de referencia para cuando todavía no hay base de datos conectada.
@@ -160,6 +160,8 @@ const OBRAS: Obra[] = DEFINICIONES.flatMap((definicion, indiceSerie) => {
       tecnica: definicion.tecnica ?? null,
       dimensiones: null,
       imagen_path: `/demo/${bloque.archivo}.avif`,
+      // Las de referencia son archivos locales: la ruta ya es la URL.
+      imagenUrl: `/demo/${bloque.archivo}.avif`,
       imagen_alt: `${titulo} — bloque de color de referencia, no la obra real`,
       imagen_ancho: bloque.ancho,
       imagen_alto: bloque.alto,
@@ -271,7 +273,7 @@ const EXPOS: DefinicionExpo[] = [
  * corrido en cada muestra para que las portadas no salgan todas con la misma
  * proporción y el mosaico se vea como se va a ver con fotos de verdad.
  */
-function vistasDe(expo: DefinicionExpo, desde: number): ExposicionFotoRow[] {
+function vistasDe(expo: DefinicionExpo, desde: number): FotoDeSala[] {
   return Array.from({ length: expo.vistas }, (_, indice) => {
     const clave = TODOS_LOS_BLOQUES[(desde + indice) % TODOS_LOS_BLOQUES.length]!;
     const bloque = BLOQUES[clave];
@@ -280,6 +282,8 @@ function vistasDe(expo: DefinicionExpo, desde: number): ExposicionFotoRow[] {
       id: `demo-foto-${expo.slug}-${indice + 1}`,
       exposicion_id: `demo-expo-${expo.slug}`,
       imagen_path: `/demo/${bloque.archivo}.avif`,
+      // Las de referencia son archivos locales: la ruta ya es la URL.
+      imagenUrl: `/demo/${bloque.archivo}.avif`,
       imagen_alt: `Vista de montaje ${indice + 1} de ${expo.titulo} — bloque de referencia, no la sala real`,
       imagen_ancho: bloque.ancho,
       imagen_alto: bloque.alto,

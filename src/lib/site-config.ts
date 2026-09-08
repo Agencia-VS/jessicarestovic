@@ -1,4 +1,3 @@
-import { urlORespaldo } from "./url";
 import type { ConfiguracionContenido } from "@/types/database";
 
 /**
@@ -18,12 +17,17 @@ export const CONFIGURACION_POR_DEFECTO: ConfiguracionContenido = {
     "Un trabajo obsesivo en que el tiempo y el ritmo pausado del hacer es el gestor de espacios íntimos.",
 };
 
+/**
+ * Identidad del sitio. No incluye la URL a propósito: este módulo lo importan
+ * componentes de cliente (la navegación), y leer una variable de entorno acá
+ * la hornearía en el bundle del navegador. La URL vive en `entorno.ts`, que es
+ * server-only, y se obtiene con `urlDelSitio()`.
+ */
 export const siteConfig = {
   nombre: "Jessica Restović",
   rol: "Artista visual",
   descripcion:
     "Obra de Jessica Restović, artista visual: series en grafito sobre tela, ensambles y volúmenes. Galería, exposiciones y talleres.",
-  url: urlORespaldo(process.env.NEXT_PUBLIC_SITE_URL, "https://jessicarestovic.com"),
   locale: "es_CL",
   lang: "es",
 } as const;

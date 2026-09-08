@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { siteConfig, type Contacto } from "@/lib/site-config";
-import { supabaseConfigurado } from "@/lib/supabase/env";
+import { supabaseConfigurado } from "@/lib/entorno";
 import { Firma } from "./firma";
 
 /**

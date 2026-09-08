@@ -72,8 +72,11 @@ en vez de fallar, así se puede revisar el diseño antes de crear el proyecto.
 En [supabase.com](https://supabase.com) crear un proyecto y copiar de
 **Project Settings → API**:
 
-- `NEXT_PUBLIC_SUPABASE_URL`
-- `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+- `SUPABASE_URL`
+- `SUPABASE_ANON_KEY`
+
+Sin el prefijo `NEXT_PUBLIC_`: nada del navegador las necesita, así que no se
+exponen. Ver «Variables privadas» más abajo.
 
 ### 2. Aplicar las migraciones
 
@@ -132,8 +135,8 @@ Después se entra en `/admin`.
 ### 4. Desplegar en Vercel
 
 Importar el repositorio en Vercel y cargar las tres variables de entorno
-(`NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY` y
-`NEXT_PUBLIC_SITE_URL`). Cada push a la rama principal despliega solo.
+(`SUPABASE_URL`, `SUPABASE_ANON_KEY` y `SITE_URL`). Cada push a la rama
+principal despliega solo.
 
 ## Estructura
 
@@ -166,6 +169,27 @@ src/
 ├── types/database.ts         Tipos del esquema de Postgres
 └── proxy.ts                  Refresca la sesión y protege /admin
 ```
+
+### Variables privadas
+
+Ninguna variable lleva el prefijo `NEXT_PUBLIC_`, así que ninguna llega al
+navegador. No es solo cosmético:
+
+- **La clave `anon`** Supabase la publica a propósito y toda la protección real
+  vive en las políticas de RLS. Pero acá el navegador no la usa nunca: el panel
+  entra por Server Actions y las páginas se renderizan en el servidor. Si no la
+  necesita, no se expone.
+- **La URL de Supabase** la necesitaban tres componentes de cliente del panel
+  para armar el `src` de las miniaturas. Ahora la resuelve la capa de datos y
+  viaja como dato (`obra.imagenUrl`, `foto.imagenUrl`), no como configuración.
+  `urlImagen()` vive en `src/lib/imagenes-servidor.ts`, separado de `images.ts`
+  justamente porque ese sí lo importan componentes de cliente para validar
+  archivos antes de subirlos.
+
+Comprobado, no supuesto: con las variables cargadas, se descargó el bundle que
+el navegador recibe en `/admin/login` y no aparece ni el host, ni la clave, ni
+la cadena `SUPABASE` — mientras el control (cadenas del propio formulario de
+cliente) sí aparece, lo que confirma que se estaba mirando el bundle correcto.
 
 ### Notas de implementación
 

@@ -8,8 +8,6 @@
  * después: que la foto tenga resolución suficiente y no pese demasiado.
  */
 
-import { normalizarUrl } from "./url";
-
 const MB = 1024 * 1024;
 
 export interface EspecImagen {
@@ -116,20 +114,6 @@ export function validarDimensiones(
 
 export const BUCKET_IMAGENES = "obras";
 
-/**
- * URL pública de una imagen guardada.
- *
- * Un `path` que empieza con `/` es un archivo local de `public/` — lo usan las
- * imágenes de referencia del demo. Cualquier otro es un objeto del bucket de
- * Supabase Storage.
- */
-export function urlImagen(path: string): string {
-  if (path.startsWith("/") || path.startsWith("http")) return path;
-
-  const base = normalizarUrl(process.env.NEXT_PUBLIC_SUPABASE_URL);
-  if (!base) return path;
-  return `${base}/storage/v1/object/public/${BUCKET_IMAGENES}/${path}`;
-}
 
 /**
  * Proporción de la obra para reservar el espacio en la retícula sin recortar

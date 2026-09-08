@@ -1,7 +1,7 @@
 import { cookies } from "next/headers";
 import { createServerClient } from "@supabase/ssr";
 import type { Database } from "@/types/database";
-import { supabaseEnv } from "./env";
+import { supabaseEnv } from "@/lib/entorno";
 
 /**
  * Cliente de Supabase para Server Components, Server Actions y Route Handlers.

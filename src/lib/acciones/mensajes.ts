@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
-import { supabaseConfigurado } from "@/lib/supabase/env";
+import { supabaseConfigurado } from "@/lib/entorno";
 import { erroresPorCampo, mensajeSchema } from "@/lib/validacion";
 import type { Resultado } from "./resultado";
 

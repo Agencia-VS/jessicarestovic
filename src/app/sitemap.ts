@@ -1,6 +1,7 @@
 import type { MetadataRoute } from "next";
 import { listarExposiciones, listarSeries } from "@/lib/data/consultas";
-import { navPublica, siteConfig } from "@/lib/site-config";
+import { navPublica } from "@/lib/site-config";
+import { urlDelSitio } from "@/lib/entorno";
 
 /**
  * El mapa del sitio incluye las páginas de serie y de exposición, que no están
@@ -14,21 +15,21 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const fijas = ["/privacidad", ...navPublica.map(({ href }) => href)];
 
   return [
-    { url: siteConfig.url, lastModified: ahora, changeFrequency: "monthly", priority: 1 },
+    { url: urlDelSitio(), lastModified: ahora, changeFrequency: "monthly", priority: 1 },
     ...fijas.map((href) => ({
-      url: `${siteConfig.url}${href}`,
+      url: `${urlDelSitio()}${href}`,
       lastModified: ahora,
       changeFrequency: "monthly" as const,
       priority: href === "/privacidad" ? 0.2 : 0.8,
     })),
     ...exposiciones.map(({ slug, actualizado_en }) => ({
-      url: `${siteConfig.url}/exposiciones/${slug}`,
+      url: `${urlDelSitio()}/exposiciones/${slug}`,
       lastModified: actualizado_en ? new Date(actualizado_en) : ahora,
       changeFrequency: "monthly" as const,
       priority: 0.7,
     })),
     ...series.map(({ slug, actualizado_en }) => ({
-      url: `${siteConfig.url}/serie/${slug}`,
+      url: `${urlDelSitio()}/serie/${slug}`,
       lastModified: actualizado_en ? new Date(actualizado_en) : ahora,
       changeFrequency: "monthly" as const,
       priority: 0.6,

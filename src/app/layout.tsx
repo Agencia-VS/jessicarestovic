@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Newsreader, Public_Sans } from "next/font/google";
 import { siteConfig } from "@/lib/site-config";
+import { urlDelSitio } from "@/lib/entorno";
 import "./globals.css";
 
 /** Texto de apoyo, navegación y pies de obra. */
@@ -21,7 +22,7 @@ const newsreader = Newsreader({
 });
 
 export const metadata: Metadata = {
-  metadataBase: new URL(siteConfig.url),
+  metadataBase: new URL(urlDelSitio()),
   title: {
     default: `${siteConfig.nombre} — ${siteConfig.rol}`,
     template: `%s — ${siteConfig.nombre}`,
@@ -33,7 +34,7 @@ export const metadata: Metadata = {
     siteName: siteConfig.nombre,
     title: `${siteConfig.nombre} — ${siteConfig.rol}`,
     description: siteConfig.descripcion,
-    url: siteConfig.url,
+    url: urlDelSitio(),
   },
   twitter: { card: "summary_large_image" },
   alternates: { canonical: "/" },

@@ -13,7 +13,6 @@ import {
   editarExposicion,
   eliminarFoto,
 } from "@/lib/acciones/exposiciones";
-import { urlImagen } from "@/lib/images";
 import type { Exposicion, Serie } from "@/lib/data/tipos";
 
 interface FormularioExposicionProps {
@@ -89,7 +88,7 @@ export function FormularioExposicion({ series, exposicion }: FormularioExposicio
               <li key={foto.id} className="flex flex-col gap-2">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
-                  src={urlImagen(foto.imagen_path)}
+                  src={foto.imagenUrl}
                   alt={foto.imagen_alt}
                   className="aspect-3/2 w-full object-cover"
                 />

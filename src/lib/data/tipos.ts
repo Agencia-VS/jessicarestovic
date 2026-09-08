@@ -8,9 +8,21 @@ import type {
   SobreMiContenido,
 } from "@/types/database";
 
-/** Una obra con el nombre de su serie ya resuelto. */
+/**
+ * Una obra con el nombre de su serie y la URL de su foto ya resueltos.
+ *
+ * La URL viene resuelta desde el servidor a propósito: así los componentes de
+ * cliente del panel muestran la foto sin necesitar la URL de Supabase, que por
+ * eso puede quedar como variable de entorno privada.
+ */
 export interface Obra extends ObraRow {
   serie: { id: string; nombre: string; slug: string } | null;
+  imagenUrl: string;
+}
+
+/** Una foto de sala con su URL ya resuelta, por el mismo motivo. */
+export interface FotoDeSala extends ExposicionFotoRow {
+  imagenUrl: string;
 }
 
 /** Una serie con la cuenta de obras publicadas que la componen. */
@@ -38,7 +50,7 @@ export interface SerieBreve {
  * Guayasamín», que expuso piezas sueltas.
  */
 export interface Exposicion extends ExposicionRow {
-  fotos: ExposicionFotoRow[];
+  fotos: FotoDeSala[];
   series: SerieBreve[];
 }
 

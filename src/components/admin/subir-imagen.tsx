@@ -1,15 +1,23 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { ayudaImagen, urlImagen, validarArchivo, validarDimensiones, type TipoImagen } from "@/lib/images";
+import {
+  ayudaImagen,
+  validarArchivo,
+  validarDimensiones,
+  type TipoImagen,
+} from "@/lib/images";
 
 interface SubirImagenProps {
   /** Nombre del campo en el formulario. */
   nombre: string;
   etiqueta: string;
   tipo: TipoImagen;
-  /** Ruta de la foto que ya está guardada, si se está editando. */ 
-  pathActual?: string | null;
+  /**
+   * URL de la foto que ya está guardada, si se está editando. Llega resuelta
+   * desde el servidor: así este componente no necesita la URL de Supabase.
+   */
+  urlActual?: string | null;
   /** Al crear, la foto es obligatoria; al editar, se puede dejar la anterior. */
   requerido?: boolean;
   error?: string;
@@ -32,7 +40,7 @@ export function SubirImagen({
   nombre,
   etiqueta,
   tipo,
-  pathActual,
+  urlActual,
   requerido = false,
   error,
 }: SubirImagenProps) {
@@ -94,7 +102,7 @@ export function SubirImagen({
     tomarArchivo(archivo);
   };
 
-  const mostrada = previa ?? (pathActual ? urlImagen(pathActual) : null);
+  const mostrada = previa ?? urlActual ?? null;
   const mensaje = problema ?? error;
 
   return (
@@ -144,7 +152,7 @@ export function SubirImagen({
           type="file"
           name={nombre}
           accept="image/jpeg,image/png,image/webp,image/avif"
-          required={requerido && !pathActual}
+          required={requerido && !urlActual}
           onChange={(e) => tomarArchivo(e.target.files?.[0] ?? null)}
           className="sr-only"
         />

@@ -1,5 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
-import { supabaseConfigurado } from "@/lib/supabase/env";
+import { supabaseConfigurado } from "@/lib/entorno";
 import {
   DEMO_CLASES,
   DEMO_DESTACADAS,
@@ -10,6 +10,7 @@ import {
   DEMO_SOBRE_MI,
 } from "./demo";
 import { CONFIGURACION_POR_DEFECTO } from "@/lib/site-config";
+import { urlImagen } from "@/lib/imagenes-servidor";
 import type { ConfiguracionContenido, PaginaClave } from "@/types/database";
 import type {
   ClasesContenido,
@@ -35,6 +36,11 @@ import type {
 
 /** Columnas de `obra` más la serie asociada — una sola forma para toda la app. */
 const SELECT_OBRA = "*, serie:serie_id (id, nombre, slug)";
+
+/** Añade la URL de la foto, para que el navegador no tenga que armarla. */
+function conUrl(obra: Omit<Obra, "imagenUrl">): Obra {
+  return { ...obra, imagenUrl: urlImagen(obra.imagen_path) };
+}
 
 // --- Series ----------------------------------------------------------------
 
@@ -71,7 +77,7 @@ export async function listarObrasPublicadas(): Promise<Obra[]> {
     .order("orden")
     .order("creado_en");
 
-  return (data ?? []) as unknown as Obra[];
+  return ((data ?? []) as unknown as Omit<Obra, "imagenUrl">[]).map(conUrl);
 }
 
 /** Obras destacadas para el Inicio, en el orden que fijó Jessica. */
@@ -88,7 +94,7 @@ export async function listarObrasDestacadas(limite = 8): Promise<Obra[]> {
     .order("creado_en")
     .limit(limite);
 
-  return (data ?? []) as unknown as Obra[];
+  return ((data ?? []) as unknown as Omit<Obra, "imagenUrl">[]).map(conUrl);
 }
 
 /** Todas las obras, publicadas u ocultas — para la grilla del panel. */
@@ -102,7 +108,7 @@ export async function listarObrasAdmin(): Promise<Obra[]> {
     .order("orden")
     .order("creado_en");
 
-  return (data ?? []) as unknown as Obra[];
+  return ((data ?? []) as unknown as Omit<Obra, "imagenUrl">[]).map(conUrl);
 }
 
 export async function obtenerObra(id: string): Promise<Obra | null> {
@@ -110,7 +116,7 @@ export async function obtenerObra(id: string): Promise<Obra | null> {
   const supabase = await createClient();
 
   const { data } = await supabase.from("obra").select(SELECT_OBRA).eq("id", id).maybeSingle();
-  return (data as unknown as Obra) ?? null;
+  return data ? conUrl(data as unknown as Omit<Obra, "imagenUrl">) : null;
 }
 
 /**
@@ -173,7 +179,7 @@ export async function listarObrasRecientes(limite = 12): Promise<Obra[]> {
     .order("creado_en", { ascending: false })
     .limit(limite);
 
-  return (data ?? []) as unknown as Obra[];
+  return ((data ?? []) as unknown as Omit<Obra, "imagenUrl">[]).map(conUrl);
 }
 
 /**
@@ -247,7 +253,11 @@ function normalizarExposicion(cruda: ExposicionCruda): Exposicion {
     .map(({ serie }) => serie)
     .filter((serie): serie is SerieBreve => serie !== null);
 
-  return { ...expo, fotos: [...expo.fotos].sort((a, b) => a.orden - b.orden), series };
+  const fotos = [...expo.fotos]
+    .sort((a, b) => a.orden - b.orden)
+    .map((foto) => ({ ...foto, imagenUrl: urlImagen(foto.imagen_path) }));
+
+  return { ...expo, fotos, series };
 }
 
 export async function listarExposiciones(soloPublicadas = true): Promise<Exposicion[]> {

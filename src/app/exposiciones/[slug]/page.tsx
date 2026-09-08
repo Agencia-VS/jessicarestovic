@@ -7,12 +7,19 @@ import { FichaDatos } from "@/components/site/ficha-datos";
 import { EnlaceSuave } from "@/components/site/enlace-suave";
 import { EstadoVacio } from "@/components/ui/estado-vacio";
 import { listarExposiciones, obtenerExposicionPorSlug } from "@/lib/data/consultas";
+import { slugsDeExposiciones } from "@/lib/supabase/build";
+import { supabaseConfigurado } from "@/lib/entorno";
+import { DEMO_EXPOSICIONES } from "@/lib/data/demo";
 
 export const revalidate = 300;
 
+/**
+ * Corre en tiempo de build, sin petición HTTP, así que usa el cliente sin
+ * cookies. Con el cliente normal, `cookies()` lanzaría y el build fallaría.
+ */
 export async function generateStaticParams() {
-  const exposiciones = await listarExposiciones();
-  return exposiciones.map(({ slug }) => ({ slug }));
+  if (!supabaseConfigurado()) return DEMO_EXPOSICIONES.map(({ slug }) => ({ slug }));
+  return (await slugsDeExposiciones()).map((slug) => ({ slug }));
 }
 
 export async function generateMetadata({
