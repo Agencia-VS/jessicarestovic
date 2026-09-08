@@ -187,9 +187,10 @@ navegador. No es solo cosmético:
   archivos antes de subirlos.
 
 Comprobado, no supuesto: con las variables cargadas, se descargó el bundle que
-el navegador recibe en `/admin/login` y no aparece ni el host, ni la clave, ni
-la cadena `SUPABASE` — mientras el control (cadenas del propio formulario de
-cliente) sí aparece, lo que confirma que se estaba mirando el bundle correcto.
+el navegador recibe en `/admin/login` y no aparece ni el host de Supabase ni la
+clave. La comprobación busca esos valores concretos —no el nombre de la
+variable— y verifica además que una cadena de control del formulario de cliente
+sí aparezca; así confirma que se estaba mirando el bundle correcto.
 
 ### Notas de implementación
 

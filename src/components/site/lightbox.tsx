@@ -85,7 +85,7 @@ export function Lightbox({ obras, indice, onCerrar, onCambiar }: LightboxProps) 
 
         <div className="flex h-full min-w-0 flex-1 items-center justify-center">
           <Foto
-            path={obra.imagen_path}
+            src={obra.imagenUrl}
             alt={obra.imagen_alt}
             ancho={obra.imagen_ancho}
             alto={obra.imagen_alto}

@@ -35,7 +35,7 @@ export function FiguraObra({ obra, pie, onAbrir, prioridad = false }: FiguraObra
         className="group flex w-full cursor-zoom-in flex-col gap-3 text-left"
       >
         <Foto
-          path={obra.imagen_path}
+          src={obra.imagenUrl}
           alt={obra.imagen_alt}
           ancho={obra.imagen_ancho}
           alto={obra.imagen_alto}
