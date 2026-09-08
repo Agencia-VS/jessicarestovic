@@ -38,6 +38,7 @@ export function FormularioObra({
   const [creandoExposicion, setCreandoExposicion] = useState(false);
   const [tituloExposicion, setTituloExposicion] = useState("");
   const [problemaExposicion, setProblemaExposicion] = useState<string | null>(null);
+  const [subiendoImagen, setSubiendoImagen] = useState(false);
   const [, iniciar] = useTransition();
 
   const errores = resultado.errores ?? {};
@@ -91,6 +92,7 @@ export function FormularioObra({
         tipo="obra"
         urlActual={obra?.imagenUrl ?? null}
         requerido={!editando}
+        alCambiarEstado={setSubiendoImagen}
       />
 
       <div className="flex flex-col gap-4">
@@ -228,7 +230,7 @@ export function FormularioObra({
       </div>
 
       <div className="flex flex-wrap gap-3">
-        <Boton type="submit" cargando={guardando}>
+        <Boton type="submit" cargando={guardando} disabled={subiendoImagen}>
           {editando ? "Guardar cambios" : "Publicar obra"}
         </Boton>
         <BotonEnlace href="/admin/trabajos-recientes">Volver</BotonEnlace>

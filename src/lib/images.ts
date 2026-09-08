@@ -79,6 +79,14 @@ export function ayudaImagen(tipo: TipoImagen): string {
 export function validarArchivo(archivo: File, tipo: TipoImagen): string | null {
   const spec = ESPECS_IMAGEN[tipo];
 
+  // iPhone puede entregar HEIC aunque el selector informe un MIME vacío.
+  // Lo detectamos por ambos caminos para dar una salida concreta, no un
+  // mensaje genérico de formato inválido.
+  const nombre = archivo.name.toLowerCase();
+  if (archivo.type === "image/heic" || archivo.type === "image/heif" || /\.(heic|heif)$/.test(nombre)) {
+    return "Este formato HEIC no se puede usar. En iPhone: Ajustes → Cámara → Formatos → Más compatible. Si ya tienes la foto, conviértela a JPG.";
+  }
+
   const formatos: readonly string[] = spec.formatos;
   if (!formatos.includes(archivo.type)) {
     return "Ese archivo no es una foto que podamos usar. Sube un JPG, PNG, WebP o AVIF.";

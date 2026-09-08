@@ -35,10 +35,6 @@ const nextConfig: NextConfig = {
       : [],
     formats: ["image/avif", "image/webp"],
   },
-  experimental: {
-    // Server Actions reciben archivos de hasta 15 MB (obra en galería, §08).
-    serverActions: { bodySizeLimit: "16mb" },
-  },
 };
 
 export default nextConfig;

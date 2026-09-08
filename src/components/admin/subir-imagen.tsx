@@ -1,26 +1,22 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import {
-  ayudaImagen,
-  validarArchivo,
-  validarDimensiones,
-  type TipoImagen,
-} from "@/lib/images";
+import { borrarSubidaPendiente, prepararSubidaImagen } from "@/lib/acciones/subida-directa";
+import { ayudaImagen, validarArchivo, validarDimensiones, type TipoImagen } from "@/lib/images";
+import { subirArchivoPorUrl } from "@/lib/subida-directa";
 
 interface SubirImagenProps {
-  /** Nombre del campo en el formulario. */
+  /** Nombre del campo en el formulario; la ruta se envía como `${nombre}_path`. */
   nombre: string;
   etiqueta: string;
   tipo: TipoImagen;
-  /**
-   * URL de la foto que ya está guardada, si se está editando. Llega resuelta
-   * desde el servidor: así este componente no necesita la URL de Supabase.
-   */
+  /** URL de la foto que ya está guardada, si se está editando. */
   urlActual?: string | null;
   /** Al crear, la foto es obligatoria; al editar, se puede dejar la anterior. */
   requerido?: boolean;
   error?: string;
+  /** El formulario padre desactiva «Guardar» mientras se suben los bytes. */
+  alCambiarEstado?: (ocupado: boolean) => void;
 }
 
 interface Medidas {
@@ -29,12 +25,10 @@ interface Medidas {
 }
 
 /**
- * Subida de una foto: se arrastra el archivo o se elige del celular, y aparece
- * la vista previa al instante (§07, pasos 2 y «Editar una foto existente»).
+ * Sube una foto directamente a Storage con una URL firmada.
  *
- * La validación ocurre acá, en el navegador, para avisar antes de que Jessica
- * espere una subida que iba a fallar. El servidor vuelve a validar de todas
- * formas.
+ * El input no tiene `name`: los bytes no se envían a la Server Action. Al
+ * guardar, el formulario solo manda la ruta corta y las medidas.
  */
 export function SubirImagen({
   nombre,
@@ -43,22 +37,72 @@ export function SubirImagen({
   urlActual,
   requerido = false,
   error,
+  alCambiarEstado,
 }: SubirImagenProps) {
   const inputRef = useRef<HTMLInputElement>(null);
+  const version = useRef(0);
+  const rutaPendiente = useRef<string | null>(null);
   const [previa, setPrevia] = useState<string | null>(null);
+  const [ruta, setRuta] = useState<string | null>(null);
   const [medidas, setMedidas] = useState<Medidas | null>(null);
   const [problema, setProblema] = useState<string | null>(null);
+  const [progreso, setProgreso] = useState(0);
+  const [subiendo, setSubiendo] = useState(false);
   const [arrastrando, setArrastrando] = useState(false);
 
-  // Liberamos la URL de la vista previa al reemplazarla o desmontar.
   useEffect(() => {
     if (!previa) return;
     return () => URL.revokeObjectURL(previa);
   }, [previa]);
 
+  useEffect(() => {
+    alCambiarEstado?.(subiendo);
+  }, [alCambiarEstado, subiendo]);
+
+  const descartarRutaPendiente = () => {
+    const anterior = rutaPendiente.current;
+    rutaPendiente.current = null;
+    if (anterior) void borrarSubidaPendiente(anterior, tipo);
+  };
+
+  const subir = async (archivo: File, id: number) => {
+    setSubiendo(true);
+    setProgreso(0);
+    let rutaFirmada: string | null = null;
+    try {
+      const firma = await prepararSubidaImagen(tipo, archivo.type, archivo.size);
+      if (id !== version.current) return;
+      if ("error" in firma) {
+        setProblema(firma.error);
+        return;
+      }
+
+      rutaFirmada = firma.path;
+      rutaPendiente.current = firma.path;
+      await subirArchivoPorUrl(firma.url, archivo, setProgreso);
+      if (id !== version.current) return;
+      setRuta(firma.path);
+      setProblema(null);
+    } catch {
+      if (rutaFirmada) await borrarSubidaPendiente(rutaFirmada, tipo);
+      if (id === version.current) {
+        setProblema("No pudimos subir la foto. Revisa tu conexión y vuelve a intentar.");
+      }
+    } finally {
+      if (id === version.current) {
+        rutaPendiente.current = null;
+        setSubiendo(false);
+      }
+    }
+  };
+
   const tomarArchivo = (archivo: File | null) => {
+    const id = ++version.current;
+    descartarRutaPendiente();
+    setRuta(null);
     setProblema(null);
     setMedidas(null);
+    setProgreso(0);
 
     if (!archivo) {
       setPrevia(null);
@@ -76,15 +120,19 @@ export function SubirImagen({
     const url = URL.createObjectURL(archivo);
     setPrevia(url);
 
-    // Leemos el tamaño real para validarlo y para guardarlo con la obra.
     const imagen = new Image();
     imagen.onload = () => {
+      if (id !== version.current) return;
       const problemaMedidas = validarDimensiones(imagen.naturalWidth, imagen.naturalHeight, tipo);
       if (problemaMedidas) {
         setProblema(problemaMedidas);
         return;
       }
       setMedidas({ ancho: imagen.naturalWidth, alto: imagen.naturalHeight });
+      void subir(archivo, id);
+    };
+    imagen.onerror = () => {
+      if (id === version.current) setProblema("No pudimos leer esa foto. Prueba con un JPG, PNG, WebP o AVIF.");
     };
     imagen.src = url;
   };
@@ -94,7 +142,6 @@ export function SubirImagen({
     setArrastrando(false);
     const archivo = evento.dataTransfer.files?.[0] ?? null;
     if (archivo && inputRef.current) {
-      // Dejamos el archivo en el input para que viaje con el formulario.
       const lista = new DataTransfer();
       lista.items.add(archivo);
       inputRef.current.files = lista.files;
@@ -112,8 +159,8 @@ export function SubirImagen({
         {!requerido && <span className="ml-2 normal-case tracking-normal text-faint">opcional</span>}
       </span>
 
-      {/* Las medidas viajan al servidor para reservar el espacio en la retícula. */}
-      {medidas && (
+      <input type="hidden" name={`${nombre}_path`} value={ruta ?? ""} />
+      {ruta && medidas && (
         <>
           <input type="hidden" name={`${nombre}_ancho`} value={medidas.ancho} />
           <input type="hidden" name={`${nombre}_alto`} value={medidas.alto} />
@@ -133,32 +180,24 @@ export function SubirImagen({
       >
         {mostrada ? (
           // La vista previa es un `blob:` del archivo recién elegido, que
-          // `next/image` no puede optimizar. Es una miniatura del panel, no
-          // parte del sitio público.
+          // `next/image` no puede optimizar. Es una miniatura del panel.
           // eslint-disable-next-line @next/next/no-img-element
-          <img
-            src={mostrada}
-            alt=""
-            className="max-h-56 w-auto max-w-full object-contain"
-          />
+          <img src={mostrada} alt="" className="max-h-56 w-auto max-w-full object-contain" />
         ) : (
-          <span className="caption text-muted">
-            Arrastra la foto acá, o toca para elegirla
-          </span>
+          <span className="caption text-muted">Arrastra la foto acá, o toca para elegirla</span>
         )}
 
         <input
           ref={inputRef}
           type="file"
-          name={nombre}
           accept="image/jpeg,image/png,image/webp,image/avif"
-          required={requerido && !urlActual}
+          required={requerido && !urlActual && !ruta}
           onChange={(e) => tomarArchivo(e.target.files?.[0] ?? null)}
           className="sr-only"
         />
 
         <span className="caption text-ink underline underline-offset-4">
-          {mostrada ? "Cambiar la foto" : "Elegir una foto"}
+          {subiendo ? `Subiendo… ${progreso}%` : mostrada ? "Cambiar la foto" : "Elegir una foto"}
         </span>
       </label>
 

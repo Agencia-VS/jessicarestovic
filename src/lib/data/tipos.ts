@@ -50,4 +50,20 @@ export interface ExposicionDetalle extends Exposicion {
   tecnica: string | null;
 }
 
+/** Metadatos pequeños que recibe el alta de varias obras ya subidas. */
+export interface ObraEnLoteEntrada {
+  titulo: string;
+  exposicion_id: string | null;
+  conjunto: string | null;
+  anio: number | null;
+  tecnica: string | null;
+  dimensiones: string | null;
+  imagen_alt: string;
+  imagen_path: string;
+  imagen_ancho: number | null;
+  imagen_alto: number | null;
+  destacada: boolean;
+  publicada: boolean;
+}
+
 export type { ClasesContenido, ExposicionFotoRow, MensajeRow, SobreMiContenido };
