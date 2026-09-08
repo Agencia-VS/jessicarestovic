@@ -6,7 +6,7 @@
  * Action de Vercel.
  */
 
-export type CarpetaImagen = "obras" | "exposiciones" | "retratos";
+export type CarpetaImagen = "obras" | "exposiciones" | "retratos" | "portadas";
 
 const EXTENSIONES = "jpg|png|webp|avif";
 

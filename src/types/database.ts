@@ -93,6 +93,11 @@ export type ConfiguracionContenido = {
   instagram: string;
   /** La frase que cierra la portada. */
   cita: string;
+  /** Imagen independiente que encabeza el Inicio. */
+  portada_path: string | null;
+  portada_alt: string | null;
+  portada_ancho: number | null;
+  portada_alto: number | null;
 };
 
 /** Contenido de la página «Clases». */

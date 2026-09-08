@@ -6,7 +6,7 @@ import { borrarImagen, clienteConSesion } from "./comun";
 
 const CARPETAS: Record<TipoImagen, CarpetaImagen> = {
   obra: "obras",
-  destacada: "obras",
+  destacada: "portadas",
   retrato: "retratos",
   exposicion: "exposiciones",
 };

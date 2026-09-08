@@ -1,7 +1,7 @@
 "use client";
 
 import { useActionState } from "react";
-import { Campo, Area } from "@/components/ui/campo";
+import { Campo } from "@/components/ui/campo";
 import { Boton } from "@/components/ui/boton";
 import { Aviso } from "./aviso";
 import { INICIAL } from "@/lib/acciones/resultado";
@@ -9,7 +9,7 @@ import { guardarConfiguracion } from "@/lib/acciones/paginas";
 import type { ConfiguracionContenido } from "@/types/database";
 
 /**
- * Datos de contacto y frase de portada.
+ * Datos de contacto del sitio.
  *
  * Un campo por cosa: el enlace de WhatsApp se arma solo con los dígitos del
  * teléfono y el de Instagram con el usuario, así Jessica nunca escribe una URL.
@@ -49,16 +49,6 @@ export function FormularioConfiguracion({ contenido }: { contenido: Configuracio
         defaultValue={contenido.instagram}
         error={errores.instagram}
         ayuda="Solo tu usuario, por ejemplo @jessica_restovic."
-      />
-
-      <Area
-        etiqueta="Frase de portada"
-        nombre="cita"
-        requerido
-        rows={3}
-        defaultValue={contenido.cita}
-        error={errores.cita}
-        ayuda="La frase que cierra la página de Inicio."
       />
 
       <Boton type="submit" cargando={guardando} className="self-start">

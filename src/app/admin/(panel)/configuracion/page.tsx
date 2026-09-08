@@ -11,7 +11,7 @@ export default async function ConfiguracionAdminPage() {
     <>
       <EncabezadoPanel
         titulo="Configuración"
-        detalle="Tus datos de contacto y la frase de portada. Los cambios se ven en el sitio al guardar."
+        detalle="Tus datos de contacto. Los cambios se ven en el sitio al guardar."
       />
       <FormularioConfiguracion contenido={contenido} />
     </>

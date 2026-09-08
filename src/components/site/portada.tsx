@@ -1,10 +1,13 @@
-import type { Obra } from "@/lib/data/tipos";
 import { Foto, Hueco } from "./foto";
 import { EnlaceSuave } from "./enlace-suave";
 
 interface PortadaProps {
-  /** La obra marcada como destacada; si no hay ninguna, queda el hueco. */
-  obra: Obra | null;
+  imagen: {
+    src: string;
+    alt: string;
+    ancho: number | null;
+    alto: number | null;
+  } | null;
   /** La frase de portada, editable desde el panel. */
   cita: string;
 }
@@ -17,16 +20,16 @@ interface PortadaProps {
  * segundo, así que la frase es contenido, no decoración — se edita en
  * «Configuración» del panel.
  */
-export function Portada({ obra, cita }: PortadaProps) {
+export function Portada({ imagen, cita }: PortadaProps) {
   return (
     <section className="marco gutter flex flex-col gap-[clamp(1.125rem,2.4vw,2rem)] pt-[clamp(1.25rem,3vw,2.75rem)] pb-[clamp(1.75rem,4vw,3.5rem)]">
       <div className="w-full">
-        {obra ? (
+        {imagen ? (
           <Foto
-            src={obra.imagenUrl}
-            alt={obra.imagen_alt}
-            ancho={obra.imagen_ancho}
-            alto={obra.imagen_alto}
+            src={imagen.src}
+            alt={imagen.alt}
+            ancho={imagen.ancho}
+            alto={imagen.alto}
             variante="exacta"
             sizes="(max-width: 90rem) 100vw, 1440px"
             prioridad
@@ -35,7 +38,7 @@ export function Portada({ obra, cita }: PortadaProps) {
         ) : (
           <Hueco
             proporcion={3 / 2}
-            etiqueta="La imagen de portada se marca como destacada desde el panel"
+            etiqueta="Todavía no hay una imagen de portada"
             className="max-h-[calc(100dvh-14.375rem)] min-h-80"
           />
         )}

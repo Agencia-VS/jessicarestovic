@@ -249,7 +249,8 @@ Falta cargar desde el panel:
 - La biografía de «Sobre mí» y el retrato (el texto de `/about` sirve casi tal
   cual).
 - Revisar el texto de «Clases».
-- Marcar una obra como **destacada**: es la que hace de portada del Inicio.
+- Subir la foto de portada desde **Inicio**. Si todavía no existe, el
+  Inicio usa como alternativa la primera obra marcada como **destacada**.
 - Los **años** de las muestras. Hoy solo «Volúmenes» (2013) tiene fecha; el
   resto aparece con «—», pero el orden del listado lo fija Jessica y no depende
   del año.
@@ -266,9 +267,9 @@ npm run typecheck  # TypeScript sin emitir
 
 ## Contacto de Jessica
 
-Los datos de contacto y la frase de portada se editan desde **Configuración**
-en el panel: correo, teléfono, Instagram y cita. Jessica completa un campo por
-cosa —nunca una URL—, y el sitio deriva el enlace de WhatsApp de los dígitos
+La imagen y la frase de portada se editan desde **Inicio** en el panel. Los
+datos de contacto se editan desde **Configuración**. Jessica completa un campo
+por cosa —nunca una URL—, y el sitio deriva el enlace de WhatsApp de los dígitos
 del teléfono y el de Instagram del usuario.
 
 `src/lib/site-config.ts` guarda los valores por defecto
