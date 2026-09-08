@@ -26,26 +26,55 @@ export function subirArchivoPorUrl(
   alProgresar?: (porcentaje: number) => void,
 ): Promise<void> {
   return new Promise((resolver, rechazar) => {
+    // Supabase Storage espera los Blob/File del navegador como multipart.
+    // Es el mismo cuerpo que construye `uploadToSignedUrl`: `cacheControl`
+    // como campo y el archivo en el campo sin nombre. No fijamos Content-Type
+    // porque el navegador debe agregar el boundary del FormData.
+    const cuerpo = new FormData();
+    cuerpo.append("cacheControl", "31536000");
+    cuerpo.append("", archivo);
+
     const xhr = new XMLHttpRequest();
     xhr.open("PUT", url);
-    xhr.setRequestHeader("Content-Type", archivo.type);
     xhr.setRequestHeader("x-upsert", "false");
-    xhr.setRequestHeader("cache-control", "31536000");
     xhr.upload.onprogress = (evento) => {
       if (evento.lengthComputable) {
         alProgresar?.(Math.round((evento.loaded / evento.total) * 100));
       }
     };
-    xhr.onerror = () => rechazar(new Error("No pudimos subir la foto."));
+    xhr.onerror = () =>
+      rechazar(
+        new Error(
+          "No pudimos conectar con Supabase Storage. Revisa tu conexión y vuelve a intentar.",
+        ),
+      );
     xhr.onabort = () => rechazar(new Error("La subida fue cancelada."));
     xhr.onload = () => {
       if (xhr.status >= 200 && xhr.status < 300) {
         alProgresar?.(100);
         resolver();
       } else {
-        rechazar(new Error("Storage rechazó la foto (HTTP " + xhr.status + ")."));
+        let detalle = "";
+        try {
+          const respuesta = JSON.parse(xhr.responseText) as {
+            message?: unknown;
+            error?: unknown;
+          };
+          const mensaje =
+            typeof respuesta.message === "string"
+              ? respuesta.message
+              : typeof respuesta.error === "string"
+                ? respuesta.error
+                : "";
+          if (mensaje) detalle = ` ${mensaje}`;
+        } catch {
+          // Algunas respuestas de red no tienen cuerpo JSON.
+        }
+        rechazar(
+          new Error(`Storage rechazó la foto (HTTP ${xhr.status}).${detalle}`),
+        );
       }
     };
-    xhr.send(archivo);
+    xhr.send(cuerpo);
   });
 }

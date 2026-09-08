@@ -278,10 +278,13 @@ export function SubirCarpeta({
       });
       actualizarFila(fila.id, { ruta: firma.path, progreso: 100, subiendo: false });
       return firma.path;
-    } catch {
+    } catch (error) {
       if (rutaFirmada) await borrarSubidaPendiente(rutaFirmada, "obra");
       actualizarFila(fila.id, {
-        problema: "No pudimos subir esta foto. Revisa tu conexión y vuelve a intentar.",
+        problema:
+          error instanceof Error
+            ? error.message
+            : "No pudimos subir esta foto. Revisa tu conexión y vuelve a intentar.",
         subiendo: false,
       });
       return null;
