@@ -88,7 +88,7 @@ export function GrillaObras({ obras }: GrillaObrasProps) {
                   arrastrada === obra.id ? "opacity-40" : ""
                 }`}
               >
-                <Link href={`/admin/trabajos-recientes/${obra.id}`} className="flex flex-col gap-3">
+                <Link href={`/admin/obras/${obra.id}`} className="flex flex-col gap-3">
                   <div className="flex h-44 items-center justify-center bg-line-soft">
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img

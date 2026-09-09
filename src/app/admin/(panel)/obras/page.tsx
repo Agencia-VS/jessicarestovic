@@ -5,7 +5,7 @@ import { BotonEnlace } from "@/components/ui/boton";
 import { EstadoVacio } from "@/components/ui/estado-vacio";
 import { listarObrasAdmin } from "@/lib/data/consultas";
 
-export const metadata = { title: "Trabajos recientes" };
+export const metadata = { title: "Obras" };
 
 export default async function ObrasAdminPage({
   searchParams,
@@ -17,13 +17,13 @@ export default async function ObrasAdminPage({
   return (
     <>
       <EncabezadoPanel
-        titulo="Trabajos recientes"
-        detalle="Arrastra las obras dentro de cada exposición para cambiar el orden de su retícula."
+        titulo="Obras"
+        detalle="Todas las piezas. Arrastra dentro de un grupo para cambiar el orden de su retícula."
       >
-        <BotonEnlace href="/admin/trabajos-recientes/nueva" variante="primario">
+        <BotonEnlace href="/admin/obras/nueva" variante="primario">
           Nueva obra
         </BotonEnlace>
-        <BotonEnlace href="/admin/trabajos-recientes/carpeta" variante="secundario">
+        <BotonEnlace href="/admin/obras/carpeta" variante="secundario">
           Subir carpeta
         </BotonEnlace>
       </EncabezadoPanel>
@@ -34,7 +34,7 @@ export default async function ObrasAdminPage({
         <GrillaObras obras={obras} />
       ) : (
         <EstadoVacio
-          titulo="Todavía no hay trabajos"
+          titulo="Todavía no hay obras"
           detalle="Sube la primera con «Nueva obra». Solo necesitas la foto y un título; el resto se puede completar después."
         />
       )}

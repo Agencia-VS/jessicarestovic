@@ -7,6 +7,7 @@ import { crearObrasEnLote } from "@/lib/acciones/obras";
 import { advertirDimensiones, ayudaImagen, validarArchivo } from "@/lib/images";
 import { slugify } from "@/lib/validacion";
 import { subirArchivoPorUrl } from "@/lib/subida-directa";
+import { avisoDeReduccion, reducirImagen, type Medidas } from "@/lib/reducir-imagen";
 import type { Exposicion, ObraEnLoteEntrada } from "@/lib/data/tipos";
 import { Boton, BotonEnlace } from "@/components/ui/boton";
 
@@ -27,7 +28,10 @@ interface Fila {
   titulo: string;
   problema: string | null;
   advertencia: string | null;
-  medidas: { ancho: number; alto: number } | null;
+  /** Las de la copia que se sube, no las del archivo original. */
+  medidas: Medidas | null;
+  /** Aviso informativo: la foto se subió reducida. */
+  nota: string | null;
   ruta: string | null;
   progreso: number;
   subiendo: boolean;
@@ -53,6 +57,16 @@ const ROMANOS: Array<[string, string]> = [
   ["I", "1"],
 ];
 
+/** Las medidas reales del archivo, leídas de su vista previa. */
+function medirImagen(url: string): Promise<Medidas> {
+  return new Promise((resolver, rechazar) => {
+    const imagen = new Image();
+    imagen.onload = () => resolver({ ancho: imagen.naturalWidth, alto: imagen.naturalHeight });
+    imagen.onerror = () => rechazar(new Error("No pudimos leer esa foto."));
+    imagen.src = url;
+  });
+}
+
 function rutaRelativa(archivo: File): string {
   return (archivo as File & { webkitRelativePath?: string }).webkitRelativePath || archivo.name;
 }
@@ -61,6 +75,14 @@ function partesDe(ruta: string): string[] {
   return ruta.split(/[\\/]/).filter(Boolean);
 }
 
+/**
+ * Busca el grupo cuyo nombre calza con el de la carpeta, por slug exacto.
+ *
+ * Es deliberadamente conservador: una coincidencia equivocada es peor que
+ * ninguna, porque Jessica tendría que notarla. El efecto útil es que si ya creó
+ * el conjunto «Ilustraciones en Acuarela» en el panel, soltar una carpeta con
+ * ese nombre lo asigna sola.
+ */
 function exposicionPorNombre(nombre: string, exposiciones: Exposicion[]): Exposicion | undefined {
   const slug = slugify(nombre);
   return exposiciones.find((exposicion) => exposicion.slug === slug || slugify(exposicion.titulo) === slug);
@@ -215,6 +237,7 @@ export function SubirCarpeta({
         titulo: titulo.titulo,
         problema: problemaArchivo ?? titulo.problema,
         advertencia: null,
+        nota: null,
         medidas: null,
         ruta: null,
         progreso: 0,
@@ -239,24 +262,48 @@ export function SubirCarpeta({
     setGrupos([...gruposNuevos.values()]);
     setFilas(filasNuevas);
 
-    for (const fila of filasNuevas) {
-      if (fila.problema) continue;
-      const imagen = new Image();
-      imagen.onload = () => {
+    void prepararFilas(filasNuevas, id);
+  };
+
+  /**
+   * Mide y reduce cada foto, de dos en dos.
+   *
+   * De dos en dos y no todas juntas porque decodificar treinta fotos de 24 MP a
+   * la vez son gigabytes de memoria: en un celular la pestaña muere. Hasta que
+   * cada fila tenga sus medidas, «Subir» no deja continuar, así que la revisión
+   * y la preparación avanzan en paralelo sin que ella espere una pantalla en
+   * blanco.
+   */
+  const prepararFilas = async (filasNuevas: Fila[], id: number) => {
+    const pendientes = filasNuevas.filter((fila) => !fila.problema);
+    let siguiente = 0;
+
+    const trabajador = async () => {
+      while (siguiente < pendientes.length) {
+        const fila = pendientes[siguiente++]!;
         if (id !== version.current) return;
-        const medidas = { ancho: imagen.naturalWidth, alto: imagen.naturalHeight };
-        actualizarFila(fila.id, {
-          medidas,
-          advertencia: advertirDimensiones(medidas.ancho, medidas.alto, "obra"),
-        });
-      };
-      imagen.onerror = () => {
-        if (id === version.current) {
-          actualizarFila(fila.id, { problema: "No pudimos leer esa foto." });
+        try {
+          const originales = await medirImagen(fila.previa);
+          if (id !== version.current) return;
+          const copia = await reducirImagen(fila.archivo, originales);
+          if (id !== version.current) return;
+          actualizarFila(fila.id, {
+            archivo: copia.archivo,
+            medidas: { ancho: copia.ancho, alto: copia.alto },
+            advertencia: advertirDimensiones(originales.ancho, originales.alto, "obra"),
+            nota: avisoDeReduccion(fila.archivo, copia),
+          });
+        } catch {
+          if (id === version.current) {
+            actualizarFila(fila.id, { problema: "No pudimos leer esa foto." });
+          }
         }
-      };
-      imagen.src = fila.previa;
-    }
+      }
+    };
+
+    await Promise.all(
+      Array.from({ length: Math.min(2, pendientes.length) }, () => trabajador()),
+    );
   };
 
   const cambiarGrupo = (grupoId: string, cambio: Partial<Grupo>) => {
@@ -351,7 +398,7 @@ export function SubirCarpeta({
       setMensaje(resultado.error);
       return;
     }
-    router.push(`/admin/trabajos-recientes?aviso=obras-creadas&cantidad=${resultado.cantidad}`);
+    router.push(`/admin/obras?aviso=obras-creadas&cantidad=${resultado.cantidad}`);
   };
 
   const porGrupo = useMemo(
@@ -403,18 +450,30 @@ export function SubirCarpeta({
               </div>
               <div className="grid grid-cols-1 gap-5 sm:grid-cols-3">
                 <label className="flex flex-col gap-1.5">
-                  <span className="eyebrow text-muted">Exposición</span>
+                  <span className="eyebrow text-muted">Exposición o conjunto</span>
                   <select
                     value={grupo.exposicionId}
                     onChange={(evento) => cambiarGrupo(grupo.id, { exposicionId: evento.target.value })}
                     className="w-full border-b border-line bg-transparent py-2.5 text-sm text-ink focus:border-ink focus:outline-none"
                   >
-                    <option value="">Sin exposición</option>
-                    {exposiciones.map((exposicion) => (
-                      <option key={exposicion.id} value={exposicion.id}>
-                        {exposicion.titulo}{!exposicion.publicada ? " (oculta)" : ""}
-                      </option>
-                    ))}
+                    <option value="">Sin asignar</option>
+                    {(["exposicion", "trabajo"] as const).map((tipo) => {
+                      const delTipo = exposiciones.filter((grupo) => grupo.tipo === tipo);
+                      if (delTipo.length === 0) return null;
+                      return (
+                        <optgroup
+                          key={tipo}
+                          label={tipo === "trabajo" ? "Trabajos" : "Exposiciones"}
+                        >
+                          {delTipo.map((opcion) => (
+                            <option key={opcion.id} value={opcion.id}>
+                              {opcion.titulo}
+                              {!opcion.publicada ? " (oculto)" : ""}
+                            </option>
+                          ))}
+                        </optgroup>
+                      );
+                    })}
                   </select>
                 </label>
                 <label className="flex flex-col gap-1.5">
@@ -477,6 +536,7 @@ export function SubirCarpeta({
                     {fila.subiendo && <p className="caption text-muted">Subiendo… {fila.progreso}%</p>}
                     {fila.problema && <p className="caption mt-1 text-danger">{fila.problema}</p>}
                     {fila.advertencia && <p className="caption mt-1 text-muted">{fila.advertencia}</p>}
+                    {fila.nota && <p className="caption mt-1 text-faint">{fila.nota}</p>}
                   </div>
                 </li>
               ))}
@@ -495,7 +555,7 @@ export function SubirCarpeta({
         <Boton type="button" onClick={confirmar} cargando={guardando} disabled={filas.length === 0}>
           Confirmar y guardar obras
         </Boton>
-        <BotonEnlace href="/admin/trabajos-recientes">Cancelar</BotonEnlace>
+        <BotonEnlace href="/admin/obras">Cancelar</BotonEnlace>
       </div>
 
       <p className="caption text-faint">Las fotos se suben directamente y las obras se guardan juntas al confirmar.</p>

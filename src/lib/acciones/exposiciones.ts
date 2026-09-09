@@ -14,17 +14,29 @@ import {
 } from "./comun";
 import { erroresPorCampo, exposicionSchema, slugify } from "@/lib/validacion";
 import { rutaDeImagenValida } from "@/lib/subida-directa";
+import type { TipoDeGrupo } from "@/types/database";
 
+/** Dónde vive cada tipo de grupo en el panel. */
+function seccionDe(tipo: TipoDeGrupo): string {
+  return tipo === "trabajo" ? "/admin/trabajos" : "/admin/exposiciones";
+}
+
+/**
+ * Los dos índices y las dos páginas de detalle: exposiciones y conjuntos de
+ * trabajo comparten tabla, así que un cambio puede tocar cualquiera de los dos.
+ */
 function revalidarExposiciones(): void {
   revalidatePath("/exposiciones");
   revalidatePath("/exposiciones/[slug]", "page");
   revalidatePath("/exposiciones/[slug]/obras", "page");
-  revalidatePath("/trabajos-recientes");
+  revalidatePath("/trabajos");
+  revalidatePath("/trabajos/[slug]", "page");
   revalidatePath("/admin/exposiciones");
-  revalidatePath("/admin/trabajos-recientes");
+  revalidatePath("/admin/trabajos");
+  revalidatePath("/admin/obras");
 }
 
-function leerCampos(formData: FormData) {
+function leerCampos(formData: FormData, tipo: TipoDeGrupo) {
   const analisis = exposicionSchema.safeParse({
     titulo: String(formData.get("titulo") ?? ""),
     lugar: String(formData.get("lugar") ?? ""),
@@ -40,7 +52,10 @@ function leerCampos(formData: FormData) {
     datos: {
       titulo: d.titulo,
       slug: slugify(d.titulo),
-      lugar: d.lugar ? d.lugar : null,
+      tipo,
+      // Un conjunto de trabajo no tuvo sala: su formulario no muestra el campo
+      // y el dato no se guarda ni por accidente.
+      lugar: tipo === "trabajo" ? null : d.lugar ? d.lugar : null,
       anio: d.anio ?? null,
       descripcion: d.descripcion ? d.descripcion : null,
       publicada: d.publicada,
@@ -48,13 +63,19 @@ function leerCampos(formData: FormData) {
   } as const;
 }
 
-/** El final de la lista editorial, para nuevas exposiciones. */
+/**
+ * El final de la lista editorial de su tipo. Se cuenta por tipo porque cada
+ * pestaña ordena su propia lista: mezclarlos dejaría huecos en los números sin
+ * cambiar nada de lo que se ve.
+ */
 async function siguienteOrden(
   supabase: NonNullable<Awaited<ReturnType<typeof clienteConSesion>>>,
+  tipo: TipoDeGrupo,
 ): Promise<number> {
   const { data } = await supabase
     .from("exposicion")
     .select("orden")
+    .eq("tipo", tipo)
     .order("orden", { ascending: false })
     .limit(1)
     .maybeSingle();
@@ -62,14 +83,18 @@ async function siguienteOrden(
 }
 
 /**
- * Alta rápida desde el formulario de obra. La exposición nace oculta para no
- * publicar una ficha incompleta si Jessica cancela el alta de la obra.
+ * Alta rápida desde el formulario de obra y desde la subida por carpeta.
+ *
+ * Crea un **conjunto de trabajo**, no una muestra: es la entidad liviana —sin
+ * lugar, año ni vistas de sala— y es lo que se necesita al vuelo mientras se
+ * sube. Una exposición se registra en su propia sección, donde están sus
+ * campos. Nace oculto para no publicar una ficha vacía si Jessica cancela.
  */
-export async function crearExposicionRapida(
+export async function crearGrupoRapido(
   titulo: string,
 ): Promise<{ id: string; titulo: string; slug: string } | { error: string }> {
   const limpio = titulo.trim();
-  if (limpio.length < 2) return { error: "La exposición necesita un título." };
+  if (limpio.length < 2) return { error: "El conjunto necesita un nombre." };
 
   const supabase = await clienteConSesion();
   if (!supabase) return { error: "Tu sesión expiró. Vuelve a entrar." };
@@ -80,14 +105,15 @@ export async function crearExposicionRapida(
     .insert({
       titulo: limpio,
       slug,
+      tipo: "trabajo",
       publicada: false,
-      orden: await siguienteOrden(supabase),
+      orden: await siguienteOrden(supabase, "trabajo"),
     })
     .select("id")
     .single();
 
   if (error || !data) {
-    return { error: "No pudimos crear la exposición. ¿Ya existe una con ese título?" };
+    return { error: "No pudimos crear el conjunto. ¿Ya existe uno con ese nombre?" };
   }
 
   revalidarExposiciones();
@@ -134,54 +160,73 @@ async function guardarFotos(
   return null;
 }
 
+/** Crea una muestra o un conjunto de trabajo: el mismo formulario, otro tipo. */
 export async function crearExposicion(
+  tipo: TipoDeGrupo,
   _previo: Resultado,
   formData: FormData,
 ): Promise<Resultado> {
-  const campos = leerCampos(formData);
+  const campos = leerCampos(formData, tipo);
   if ("errores" in campos) return fallo("Revisa los campos marcados.", campos.errores);
 
+  const esTrabajo = tipo === "trabajo";
   const supabase = await clienteConSesion();
   if (!supabase) return SIN_SESION;
 
   const { data, error } = await supabase
     .from("exposicion")
-    .insert({ ...campos.datos, orden: await siguienteOrden(supabase) })
+    .insert({ ...campos.datos, orden: await siguienteOrden(supabase, tipo) })
     .select("id")
     .single();
 
   if (error || !data) {
-    return fallo("No pudimos crear la exposición. ¿Ya existe una con ese título?");
+    return fallo(
+      esTrabajo
+        ? "No pudimos crear el conjunto. ¿Ya existe uno con ese nombre?"
+        : "No pudimos crear la exposición. ¿Ya existe una con ese título?",
+    );
   }
 
-  const problemaFotos = await guardarFotos(supabase, data.id, formData, 0);
-  if (problemaFotos) return fallo(problemaFotos);
+  // Las vistas de sala solo existen en una muestra.
+  if (!esTrabajo) {
+    const problemaFotos = await guardarFotos(supabase, data.id, formData, 0);
+    if (problemaFotos) return fallo(problemaFotos);
+  }
 
   revalidarExposiciones();
-  redirect("/admin/exposiciones?aviso=exposicion-creada");
+  redirect(`${seccionDe(tipo)}?aviso=${esTrabajo ? "trabajo-creado" : "exposicion-creada"}`);
 }
 
 export async function editarExposicion(
   id: string,
+  tipo: TipoDeGrupo,
   _previo: Resultado,
   formData: FormData,
 ): Promise<Resultado> {
-  const campos = leerCampos(formData);
+  const campos = leerCampos(formData, tipo);
   if ("errores" in campos) return fallo("Revisa los campos marcados.", campos.errores);
 
   const supabase = await clienteConSesion();
   if (!supabase) return SIN_SESION;
 
   const { error } = await supabase.from("exposicion").update(campos.datos).eq("id", id);
-  if (error) return fallo("No pudimos guardar los cambios de la exposición.");
+  if (error) {
+    return fallo(
+      tipo === "trabajo"
+        ? "No pudimos guardar los cambios del conjunto."
+        : "No pudimos guardar los cambios de la exposición.",
+    );
+  }
 
-  const { count } = await supabase
-    .from("exposicion_foto")
-    .select("id", { count: "exact", head: true })
-    .eq("exposicion_id", id);
+  if (tipo !== "trabajo") {
+    const { count } = await supabase
+      .from("exposicion_foto")
+      .select("id", { count: "exact", head: true })
+      .eq("exposicion_id", id);
 
-  const problemaFotos = await guardarFotos(supabase, id, formData, count ?? 0);
-  if (problemaFotos) return fallo(problemaFotos);
+    const problemaFotos = await guardarFotos(supabase, id, formData, count ?? 0);
+    if (problemaFotos) return fallo(problemaFotos);
+  }
 
   revalidarExposiciones();
   return ok("Cambios guardados.");
@@ -231,7 +276,7 @@ export async function alternarExposicionPublicada(
   revalidarExposiciones();
 }
 
-/** Guarda el orden editorial de la lista de exposiciones. */
+/** Guarda el orden editorial de una lista de grupos, de muestras o de trabajos. */
 export async function reordenarExposiciones(ids: string[]): Promise<void> {
   const supabase = await clienteConSesion();
   if (!supabase) return;

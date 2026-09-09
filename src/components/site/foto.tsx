@@ -14,6 +14,18 @@ interface FotoProps {
    * proporción tal cual, para la portada y la vista ampliada.
    */
   variante?: "mosaico" | "exacta";
+  /**
+   * Marco de proporción fija, que ignora la de la foto — los cuadrados del
+   * tríptico de portada.
+   */
+  proporcionFija?: number;
+  /**
+   * `contenida` es la regla del sitio: la obra entra completa en su marco y
+   * nunca se recorta (§08). `recortada` es la excepción del tríptico del
+   * Inicio, donde lo que se busca son tres cuadrados llenos e iguales; ahí la
+   * foto completa está a un toque, en la vista ampliada.
+   */
+  encuadre?: "contenida" | "recortada";
   /** La primera foto visible se carga con prioridad (LCP). */
   prioridad?: boolean;
   /** Las clases que fijan el tamaño del marco: `w-full` en la retícula. */
@@ -35,10 +47,14 @@ export function Foto({
   alto,
   sizes,
   variante = "mosaico",
+  proporcionFija,
+  encuadre = "contenida",
   prioridad = false,
   className = "",
 }: FotoProps) {
-  const ratio = variante === "mosaico" ? proporcionEnMosaico(ancho, alto) : proporcion(ancho, alto);
+  const ratio =
+    proporcionFija ??
+    (variante === "mosaico" ? proporcionEnMosaico(ancho, alto) : proporcion(ancho, alto));
 
   return (
     <div className={`relative ${className}`} style={{ aspectRatio: ratio }}>
@@ -48,7 +64,7 @@ export function Foto({
         fill
         sizes={sizes}
         priority={prioridad}
-        className="object-contain"
+        className={encuadre === "recortada" ? "object-cover" : "object-contain"}
       />
     </div>
   );

@@ -1,16 +1,20 @@
 import type { MetadataRoute } from "next";
-import { listarExposiciones } from "@/lib/data/consultas";
+import { listarExposiciones, listarTrabajos } from "@/lib/data/consultas";
 import { navPublica } from "@/lib/site-config";
 import { urlDelSitio } from "@/lib/entorno";
 
 /**
- * El mapa del sitio incluye las páginas de obras y de exposición, que no están
- * en el menú: se llega a ellas navegando, pero cada una tiene su dirección y
- * conviene que el buscador las encuentre.
+ * El mapa del sitio incluye las páginas de cada grupo —muestras y conjuntos de
+ * trabajo— y las de obras, que no están en el menú: se llega a ellas
+ * navegando, pero cada una tiene su dirección y conviene que el buscador las
+ * encuentre.
  */
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const ahora = new Date();
-  const exposiciones = await listarExposiciones();
+  const [exposiciones, trabajos] = await Promise.all([
+    listarExposiciones(),
+    listarTrabajos(),
+  ]);
 
   const fijas = ["/privacidad", ...navPublica.map(({ href }) => href)];
 
@@ -33,6 +37,12 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       lastModified: actualizado_en ? new Date(actualizado_en) : ahora,
       changeFrequency: "monthly" as const,
       priority: 0.6,
+    })),
+    ...trabajos.map(({ slug, actualizado_en }) => ({
+      url: `${urlDelSitio()}/trabajos/${slug}`,
+      lastModified: actualizado_en ? new Date(actualizado_en) : ahora,
+      changeFrequency: "monthly" as const,
+      priority: 0.7,
     })),
   ];
 }

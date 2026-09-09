@@ -10,6 +10,12 @@ export type MensajeOrigen = "contacto" | "clases";
 
 export type PaginaClave = "sobre-mi" | "clases" | "configuracion";
 
+/**
+ * Un grupo de obras con nombre es lo mismo tenga sala o no: la exposición
+ * además tiene lugar, año y vistas de montaje; el conjunto de trabajos, no.
+ */
+export type TipoDeGrupo = "exposicion" | "trabajo";
+
 export type ObraRow = {
   id: string;
   titulo: string;
@@ -33,6 +39,8 @@ export type ExposicionRow = {
   id: string;
   titulo: string;
   slug: string;
+  /** «exposicion» si tuvo sala; «trabajo» si es un conjunto sin muestra. */
+  tipo: TipoDeGrupo;
   lugar: string | null;
   anio: number | null;
   descripcion: string | null;
@@ -85,6 +93,14 @@ export type SobreMiContenido = {
  * El enlace de WhatsApp y la URL de Instagram se derivan de estos valores, así
  * ella completa un solo campo por cosa.
  */
+/** Una de las fotos del tríptico que encabeza el Inicio. */
+export type ImagenPortada = {
+  path: string;
+  alt: string | null;
+  ancho: number | null;
+  alto: number | null;
+};
+
 export type ConfiguracionContenido = {
   email: string;
   /** Tal como se lee, por ejemplo «+56 9 8747 2258». */
@@ -93,11 +109,11 @@ export type ConfiguracionContenido = {
   instagram: string;
   /** La frase que cierra la portada. */
   cita: string;
-  /** Imagen independiente que encabeza el Inicio. */
-  portada_path: string | null;
-  portada_alt: string | null;
-  portada_ancho: number | null;
-  portada_alto: number | null;
+  /**
+   * Las fotos del tríptico del Inicio, en orden y hasta tres. Son imágenes
+   * independientes de la obra catalogada: se suben en «Inicio» del panel.
+   */
+  portadas: ImagenPortada[];
 };
 
 /** Contenido de la página «Clases». */
@@ -160,7 +176,7 @@ export type Database = {
         Row: ExposicionRow;
         Insert: Escribible<
           ExposicionRow,
-          "id" | "publicada" | "orden" | "creado_en" | "actualizado_en"
+          "id" | "tipo" | "publicada" | "orden" | "creado_en" | "actualizado_en"
         >;
         Update: Partial<ExposicionRow>;
         Relationships: [];

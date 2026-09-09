@@ -7,7 +7,7 @@ import { supabaseConfigurado, urlDelSitio } from "@/lib/entorno";
 import { fallo, ok, type Resultado } from "./resultado";
 
 /** Ruta a la que se entra después de iniciar sesión. */
-const DESTINO = "/admin/trabajos-recientes";
+const DESTINO = "/admin/obras";
 
 export async function iniciarSesion(
   _previo: Resultado,

@@ -17,16 +17,24 @@ import { erroresPorCampo, obraSchema, slugify } from "@/lib/validacion";
 import { rutaDeImagenValida } from "@/lib/subida-directa";
 import type { ObraEnLoteEntrada } from "@/lib/data/tipos";
 
-/** Rutas que dependen de las obras. */
+/**
+ * Rutas que dependen de las obras.
+ *
+ * Son las dos secciones completas porque una obra puede colgar de una muestra
+ * o de un conjunto de trabajo, y el conteo de su tarjeta cambia con ella.
+ */
 function revalidarObras(): void {
   revalidatePath("/");
-  revalidatePath("/trabajos-recientes");
   revalidatePath("/exposiciones");
   revalidatePath("/exposiciones/[slug]", "page");
   revalidatePath("/exposiciones/[slug]/obras", "page");
-  revalidatePath("/admin/trabajos-recientes");
+  revalidatePath("/trabajos");
+  revalidatePath("/trabajos/[slug]", "page");
+  revalidatePath("/admin/obras");
   revalidatePath("/admin/exposiciones");
   revalidatePath("/admin/exposiciones/[id]", "page");
+  revalidatePath("/admin/trabajos");
+  revalidatePath("/admin/trabajos/[id]", "page");
 }
 
 /**
@@ -142,7 +150,7 @@ export async function crearObra(_previo: Resultado, formData: FormData): Promise
   }
 
   revalidarObras();
-  redirect("/admin/trabajos-recientes?aviso=obra-creada");
+  redirect("/admin/obras?aviso=obra-creada");
 }
 
 /**

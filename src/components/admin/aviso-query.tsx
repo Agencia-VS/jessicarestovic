@@ -4,6 +4,7 @@ const AVISOS: Record<string, string> = {
   "obra-creada": "Obra publicada.",
   "obras-creadas": "Obras guardadas.",
   "exposicion-creada": "Exposición publicada.",
+  "trabajo-creado": "Conjunto de trabajo creado.",
 };
 
 /** Muestra el aviso que quedó en la URL tras un redirect. */

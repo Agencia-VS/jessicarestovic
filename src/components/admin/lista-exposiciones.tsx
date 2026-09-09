@@ -10,8 +10,25 @@ import {
 import { Confirmar } from "./confirmar";
 import type { Exposicion } from "@/lib/data/tipos";
 
-/** Lista reordenable de exposiciones, con lugar, año y contenido a la vista. */
-export function ListaExposiciones({ exposiciones }: { exposiciones: Exposicion[] }) {
+interface ListaExposicionesProps {
+  exposiciones: Exposicion[];
+  /** La sección donde se editan: «/admin/exposiciones» o «/admin/trabajos». */
+  base?: string;
+  /** Un conjunto de trabajo no tiene lugar ni año que mostrar. */
+  conLugar?: boolean;
+}
+
+/**
+ * Lista reordenable de grupos, con su contenido a la vista.
+ *
+ * La comparten «Exposiciones» y «Trabajos»: es la misma lista y el mismo
+ * arrastre, y cada pestaña ordena solo su propio tipo.
+ */
+export function ListaExposiciones({
+  exposiciones,
+  base = "/admin/exposiciones",
+  conLugar = true,
+}: ListaExposicionesProps) {
   const [lista, setLista] = useState(exposiciones);
   const [arrastrada, setArrastrada] = useState<string | null>(null);
   const [, iniciar] = useTransition();
@@ -52,15 +69,22 @@ export function ListaExposiciones({ exposiciones }: { exposiciones: Exposicion[]
           }`}
         >
           <div className="flex flex-wrap items-baseline justify-between gap-x-6 gap-y-3">
-            <Link href={`/admin/exposiciones/${expo.id}`} className="flex flex-col gap-0.5">
+            <Link href={`${base}/${expo.id}`} className="flex flex-col gap-0.5">
               <span className="text-[1.0625rem] leading-snug">{expo.titulo}</span>
               <span className="caption text-muted">
-                {[expo.lugar, expo.anio ? String(expo.anio) : null]
+                {[
+                  conLugar
+                    ? [expo.lugar, expo.anio ? String(expo.anio) : null]
+                        .filter(Boolean)
+                        .join(" · ") || "Sin lugar ni año"
+                    : null,
+                  expo.fotos.length > 0
+                    ? `${expo.fotos.length} ${expo.fotos.length === 1 ? "foto" : "fotos"}`
+                    : null,
+                  `${expo.obrasPublicadas} ${expo.obrasPublicadas === 1 ? "obra publicada" : "obras publicadas"}`,
+                ]
                   .filter(Boolean)
-                  .join(" · ") || "Sin lugar ni año"}
-                {expo.fotos.length > 0 &&
-                  ` · ${expo.fotos.length} ${expo.fotos.length === 1 ? "foto" : "fotos"}`}
-                {` · ${expo.obrasPublicadas} ${expo.obrasPublicadas === 1 ? "obra publicada" : "obras publicadas"}`}
+                  .join(" · ")}
               </span>
             </Link>
 

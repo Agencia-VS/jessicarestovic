@@ -1,5 +1,5 @@
 import { createClient as crearCliente } from "@supabase/supabase-js";
-import type { Database } from "@/types/database";
+import type { Database, TipoDeGrupo } from "@/types/database";
 import { supabaseEnv } from "@/lib/entorno";
 
 /**
@@ -18,9 +18,16 @@ export function createBuildClient() {
   });
 }
 
-/** Los slugs de las exposiciones publicadas. Vacío si no hay base todavía. */
-export async function slugsDeExposiciones(): Promise<string[]> {
+/**
+ * Los slugs publicados de un tipo de grupo — muestras o conjuntos de trabajo.
+ * Vacío si no hay base todavía.
+ */
+export async function slugsDeGrupos(tipo: TipoDeGrupo): Promise<string[]> {
   const supabase = createBuildClient();
-  const { data } = await supabase.from("exposicion").select("slug").eq("publicada", true);
+  const { data } = await supabase
+    .from("exposicion")
+    .select("slug")
+    .eq("tipo", tipo)
+    .eq("publicada", true);
   return (data ?? []).map(({ slug }) => slug);
 }

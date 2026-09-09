@@ -1,9 +1,54 @@
-import type { ConfiguracionContenido } from "@/types/database";
+import type { ConfiguracionContenido, ImagenPortada } from "@/types/database";
 
 /**
  * Fuente única de verdad para los datos del sitio: identidad, navegación y
  * contacto. Todo lo que aparece en más de un lugar vive acá.
  */
+
+/** Cuántas fotos forman el tríptico del Inicio. */
+export const CELDAS_PORTADA = 3;
+
+/**
+ * El prefijo de los campos de una celda del tríptico. Lo comparten el
+ * formulario del panel y la acción que guarda, así los nombres no se escriben
+ * dos veces.
+ */
+export function campoPortada(indice: number): string {
+  return `portada${indice + 1}`;
+}
+
+/**
+ * Las fotos del Inicio tal como las lee el sitio, vengan del documento nuevo
+ * o del anterior.
+ *
+ * Cuando la portada era una sola foto vivía en claves planas
+ * (`portada_path`, `portada_alt`, …). Un documento guardado con esa forma se
+ * lee como un tríptico de una sola foto, así que nadie pierde la portada que
+ * ya subió y no hace falta migrar el JSON: la primera vez que se guarda desde
+ * el panel, el documento queda con la forma nueva.
+ */
+export function normalizarPortadas(contenido: ConfiguracionContenido): ImagenPortada[] {
+  if (Array.isArray(contenido.portadas) && contenido.portadas.length > 0) {
+    return contenido.portadas.slice(0, CELDAS_PORTADA);
+  }
+
+  const antiguo = contenido as ConfiguracionContenido & {
+    portada_path?: string | null;
+    portada_alt?: string | null;
+    portada_ancho?: number | null;
+    portada_alto?: number | null;
+  };
+  if (!antiguo.portada_path) return [];
+
+  return [
+    {
+      path: antiguo.portada_path,
+      alt: antiguo.portada_alt ?? null,
+      ancho: antiguo.portada_ancho ?? null,
+      alto: antiguo.portada_alto ?? null,
+    },
+  ];
+}
 
 /**
  * Valores por defecto de la configuración editable. Se usan mientras no haya
@@ -15,10 +60,7 @@ export const CONFIGURACION_POR_DEFECTO: ConfiguracionContenido = {
   instagram: "@jessica_restovic",
   cita:
     "Un trabajo obsesivo en que el tiempo y el ritmo pausado del hacer es el gestor de espacios íntimos.",
-  portada_path: null,
-  portada_alt: null,
-  portada_ancho: null,
-  portada_alto: null,
+  portadas: [],
 };
 
 /**
@@ -77,26 +119,29 @@ export interface NavItem {
 /**
  * Navegación pública.
  *
- * No hay índice general de obra: cada exposición es la puerta al cuerpo de
- * obra, que se organiza dentro de la trayectoria.
+ * No hay índice general de obra: se entra por un grupo. «Exposiciones» son los
+ * grupos que tuvieron sala y «Trabajos» los que no —«Trabajos recientes»,
+ * «Ilustraciones en Acuarela»—, cada uno con su conteo.
  */
 export const navPublica: readonly NavItem[] = [
   { href: "/exposiciones", label: "Exposiciones" },
-  { href: "/trabajos-recientes", label: "Trabajos recientes" },
+  { href: "/trabajos", label: "Trabajos" },
   { href: "/sobre-mi", label: "Sobre mí" },
   { href: "/clases", label: "Clases" },
   { href: "/contacto", label: "Contacto" },
 ] as const;
 
 /**
- * Las páginas de obras viven bajo una exposición y en el menú marcan
- * «Exposiciones».
+ * Navegación del panel — las secciones del brief (§07).
+ *
+ * «Obras» son las piezas: se suben, se ordenan y se asignan a un grupo.
+ * «Exposiciones» y «Trabajos» son los grupos, separados igual que en el sitio.
  */
-/** Navegación del panel — las secciones del brief (§07). */
 export const navAdmin: readonly NavItem[] = [
   { href: "/admin/inicio", label: "Inicio" },
-  { href: "/admin/trabajos-recientes", label: "Trabajos recientes" },
+  { href: "/admin/obras", label: "Obras" },
   { href: "/admin/exposiciones", label: "Exposiciones" },
+  { href: "/admin/trabajos", label: "Trabajos" },
   { href: "/admin/sobre-mi", label: "Sobre mí" },
   { href: "/admin/clases", label: "Clases" },
   { href: "/admin/mensajes", label: "Mensajes" },

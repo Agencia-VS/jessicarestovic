@@ -92,10 +92,21 @@ export function Area({ etiqueta, nombre, error, ayuda, requerido, rows = 5, ...r
   );
 }
 
+interface Opcion {
+  valor: string;
+  etiqueta: string;
+}
+
 interface SelectProps
   extends CampoBaseProps,
     Pick<React.ComponentPropsWithoutRef<"select">, "value" | "onChange" | "disabled"> {
-  opciones: { valor: string; etiqueta: string }[];
+  opciones: Opcion[];
+  /**
+   * Opciones bajo un encabezado, después de las sueltas — «Exposiciones» y
+   * «Trabajos» en el formulario de obra. Es un `optgroup` nativo: se ve
+   * agrupado también en el selector del celular.
+   */
+  grupos?: { etiqueta: string; opciones: Opcion[] }[];
   defaultValue?: string;
 }
 
@@ -107,6 +118,7 @@ export function Select({
   ayuda,
   requerido,
   opciones,
+  grupos = [],
   defaultValue,
   value,
   onChange,
@@ -138,6 +150,17 @@ export function Select({
             {texto}
           </option>
         ))}
+        {grupos
+          .filter((grupo) => grupo.opciones.length > 0)
+          .map((grupo) => (
+            <optgroup key={grupo.etiqueta} label={grupo.etiqueta}>
+              {grupo.opciones.map(({ valor, etiqueta: texto }) => (
+                <option key={valor} value={valor}>
+                  {texto}
+                </option>
+              ))}
+            </optgroup>
+          ))}
       </select>
       {ayuda && !error && <p className="caption text-faint">{ayuda}</p>}
       {error && (

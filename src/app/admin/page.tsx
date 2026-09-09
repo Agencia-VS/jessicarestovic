@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
 
 export default function AdminIndex() {
-  redirect("/admin/trabajos-recientes");
+  redirect("/admin/obras");
 }

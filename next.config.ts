@@ -23,7 +23,10 @@ const nextConfig: NextConfig = {
       { source: "/serie/de-lo-residual", destination: "/exposiciones/de-lo-residual-y-lo-efimero/obras", permanent: true },
       { source: "/serie/espacios-intimos", destination: "/exposiciones/ensambles-al-cubo/obras", permanent: true },
       { source: "/serie/:slug", destination: "/exposiciones", permanent: true },
-      { source: "/admin/obras/:path*", destination: "/admin/trabajos-recientes/:path*", permanent: false },
+      // «Trabajos recientes» dejó de ser una página que junta todo y pasó a ser
+      // un conjunto dentro de «Trabajos».
+      { source: "/trabajos-recientes", destination: "/trabajos", permanent: true },
+      { source: "/admin/trabajos-recientes/:path*", destination: "/admin/obras/:path*", permanent: false },
       { source: "/admin/series/:path*", destination: "/admin/exposiciones/:path*", permanent: false },
     ];
   },
