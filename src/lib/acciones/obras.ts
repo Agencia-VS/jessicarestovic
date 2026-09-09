@@ -15,6 +15,7 @@ import {
 } from "./comun";
 import { erroresPorCampo, obraSchema, slugify } from "@/lib/validacion";
 import { rutaDeImagenValida } from "@/lib/subida-directa";
+import { BUCKET_IMAGENES } from "@/lib/images";
 import type { ObraEnLoteEntrada } from "@/lib/data/tipos";
 import { seccionDeGrupo } from "@/lib/site-config";
 
@@ -152,6 +153,17 @@ export async function crearObra(_previo: Resultado, formData: FormData): Promise
   const supabase = await clienteConSesion();
   if (!supabase) return SIN_SESION;
 
+  // Que el PUT firmado respondiera 2xx no garantiza que el objeto quedara en
+  // el bucket. Sin esto, la ficha se guarda apuntando a un archivo que no
+  // existe y en el sitio aparece el texto alternativo en vez de la foto.
+  const { data: archivo, error: errorArchivo } = await supabase.storage
+    .from(BUCKET_IMAGENES)
+    .info(imagenPath);
+
+  if (errorArchivo || !archivo) {
+    return fallo("La foto no quedó disponible en Storage. Vuelve a subirla y espera a que llegue al 100%.");
+  }
+
   const conjunto = await canonizarConjunto(
     supabase,
     campos.datos.exposicion_id,
@@ -277,6 +289,26 @@ export async function crearObrasEnLote(
       orden,
     };
   });
+
+  // Que el PUT firmado haya respondido 2xx no garantiza que el objeto quedara
+  // en el bucket. Sin esta comprobación, una subida a medias deja la ficha
+  // guardada apuntando a un archivo que no existe: en el sitio se ve el texto
+  // alternativo en vez de la foto, y no hay nada que explique por qué.
+  const faltantes: string[] = [];
+  await Promise.all(
+    rutas.map(async (path) => {
+      const { data, error } = await supabase.storage.from(BUCKET_IMAGENES).info(path);
+      if (error || !data) faltantes.push(path);
+    }),
+  );
+
+  if (faltantes.length > 0) {
+    return {
+      error: `${faltantes.length} de ${rutas.length} ${
+        faltantes.length === 1 ? "foto no quedó" : "fotos no quedaron"
+      } disponibles en Storage. Vuelve a subirlas y espera a que cada una llegue al 100%.`,
+    };
+  }
 
   const { error } = await supabase.from("obra").insert(filas);
   if (error) {
