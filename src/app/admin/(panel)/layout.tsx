@@ -31,14 +31,22 @@ export default async function PanelLayout({ children }: { children: React.ReactN
 
           <NavAdmin sinLeer={sinLeer} />
 
-          <Link
-            href="/"
-            target="_blank"
-            rel="noopener"
-            className="caption hidden text-muted underline underline-offset-4 transition-colors hover:text-ink md:block"
-          >
-            Ver el sitio
-          </Link>
+          <div className="hidden flex-col gap-2 md:flex">
+            <Link
+              href="/"
+              target="_blank"
+              rel="noopener"
+              className="caption text-muted underline underline-offset-4 transition-colors hover:text-ink"
+            >
+              Ver el sitio
+            </Link>
+            <Link
+              href="/admin/diagnostico"
+              className="caption text-faint underline underline-offset-4 transition-colors hover:text-ink"
+            >
+              Diagnóstico
+            </Link>
+          </div>
         </div>
 
         <main className="min-w-0 flex-1">{children}</main>
