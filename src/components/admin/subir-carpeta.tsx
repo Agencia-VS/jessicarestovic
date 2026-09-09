@@ -75,6 +75,14 @@ function partesDe(ruta: string): string[] {
   return ruta.split(/[\\/]/).filter(Boolean);
 }
 
+/**
+ * Busca el grupo cuyo nombre calza con el de la carpeta, por slug exacto.
+ *
+ * Es deliberadamente conservador: una coincidencia equivocada es peor que
+ * ninguna, porque Jessica tendría que notarla. El efecto útil es que si ya creó
+ * el conjunto «Ilustraciones en Acuarela» en el panel, soltar una carpeta con
+ * ese nombre lo asigna sola.
+ */
 function exposicionPorNombre(nombre: string, exposiciones: Exposicion[]): Exposicion | undefined {
   const slug = slugify(nombre);
   return exposiciones.find((exposicion) => exposicion.slug === slug || slugify(exposicion.titulo) === slug);
@@ -390,7 +398,7 @@ export function SubirCarpeta({
       setMensaje(resultado.error);
       return;
     }
-    router.push(`/admin/trabajos-recientes?aviso=obras-creadas&cantidad=${resultado.cantidad}`);
+    router.push(`/admin/obras?aviso=obras-creadas&cantidad=${resultado.cantidad}`);
   };
 
   const porGrupo = useMemo(
@@ -442,18 +450,30 @@ export function SubirCarpeta({
               </div>
               <div className="grid grid-cols-1 gap-5 sm:grid-cols-3">
                 <label className="flex flex-col gap-1.5">
-                  <span className="eyebrow text-muted">Exposición</span>
+                  <span className="eyebrow text-muted">Exposición o conjunto</span>
                   <select
                     value={grupo.exposicionId}
                     onChange={(evento) => cambiarGrupo(grupo.id, { exposicionId: evento.target.value })}
                     className="w-full border-b border-line bg-transparent py-2.5 text-sm text-ink focus:border-ink focus:outline-none"
                   >
-                    <option value="">Sin exposición</option>
-                    {exposiciones.map((exposicion) => (
-                      <option key={exposicion.id} value={exposicion.id}>
-                        {exposicion.titulo}{!exposicion.publicada ? " (oculta)" : ""}
-                      </option>
-                    ))}
+                    <option value="">Sin asignar</option>
+                    {(["exposicion", "trabajo"] as const).map((tipo) => {
+                      const delTipo = exposiciones.filter((grupo) => grupo.tipo === tipo);
+                      if (delTipo.length === 0) return null;
+                      return (
+                        <optgroup
+                          key={tipo}
+                          label={tipo === "trabajo" ? "Trabajos" : "Exposiciones"}
+                        >
+                          {delTipo.map((opcion) => (
+                            <option key={opcion.id} value={opcion.id}>
+                              {opcion.titulo}
+                              {!opcion.publicada ? " (oculto)" : ""}
+                            </option>
+                          ))}
+                        </optgroup>
+                      );
+                    })}
                   </select>
                 </label>
                 <label className="flex flex-col gap-1.5">
@@ -535,7 +555,7 @@ export function SubirCarpeta({
         <Boton type="button" onClick={confirmar} cargando={guardando} disabled={filas.length === 0}>
           Confirmar y guardar obras
         </Boton>
-        <BotonEnlace href="/admin/trabajos-recientes">Cancelar</BotonEnlace>
+        <BotonEnlace href="/admin/obras">Cancelar</BotonEnlace>
       </div>
 
       <p className="caption text-faint">Las fotos se suben directamente y las obras se guardan juntas al confirmar.</p>

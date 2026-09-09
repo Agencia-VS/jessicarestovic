@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef } from "react";
-import type { Exposicion, Obra } from "@/lib/data/tipos";
+import type { Exposicion, FotoLista, Obra } from "@/lib/data/tipos";
 import { Foto } from "./foto";
 
 /**
@@ -25,14 +25,6 @@ export interface PiezaAmpliada {
   subtitulo: string | null;
   /** Los datos de ficha de la derecha; vacío es válido y no dibuja nada. */
   ficha: { clave: string; valor: string }[];
-}
-
-/** Una foto que no es obra catalogada: solo su archivo y su descripción. */
-export interface FotoSuelta {
-  src: string;
-  alt: string;
-  ancho: number | null;
-  alto: number | null;
 }
 
 /** Las obras de una retícula, con su ficha completa. */
@@ -76,7 +68,7 @@ export function piezasDeVistas(exposicion: Exposicion): PiezaAmpliada[] {
  * Fotos sueltas, como las del tríptico del Inicio: el visor muestra solo la
  * foto y el contador, porque no hay título ni ficha que mostrar.
  */
-export function piezasDeFotos(fotos: FotoSuelta[]): PiezaAmpliada[] {
+export function piezasDeFotos(fotos: FotoLista[]): PiezaAmpliada[] {
   return fotos.map((foto) => ({
     id: foto.src,
     imagenUrl: foto.src,

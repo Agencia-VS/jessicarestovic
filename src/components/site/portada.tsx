@@ -3,7 +3,8 @@
 import { useState } from "react";
 import { Foto, Hueco } from "./foto";
 import { EnlaceSuave } from "./enlace-suave";
-import { Lightbox, piezasDeFotos, type FotoSuelta } from "./lightbox";
+import { Lightbox, piezasDeFotos } from "./lightbox";
+import type { FotoLista } from "@/lib/data/tipos";
 import { CELDAS_PORTADA } from "@/lib/site-config";
 
 /**
@@ -18,7 +19,7 @@ interface PortadaProps {
    * ninguna queda el hueco; con una o dos, se reparten el ancho entre las que
    * haya.
    */
-  imagenes: FotoSuelta[];
+  imagenes: FotoLista[];
   /** La frase de portada, editable desde el panel. */
   cita: string;
 }

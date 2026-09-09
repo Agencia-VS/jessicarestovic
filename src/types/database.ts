@@ -10,6 +10,12 @@ export type MensajeOrigen = "contacto" | "clases";
 
 export type PaginaClave = "sobre-mi" | "clases" | "configuracion";
 
+/**
+ * Un grupo de obras con nombre es lo mismo tenga sala o no: la exposición
+ * además tiene lugar, año y vistas de montaje; el conjunto de trabajos, no.
+ */
+export type TipoDeGrupo = "exposicion" | "trabajo";
+
 export type ObraRow = {
   id: string;
   titulo: string;
@@ -33,6 +39,8 @@ export type ExposicionRow = {
   id: string;
   titulo: string;
   slug: string;
+  /** «exposicion» si tuvo sala; «trabajo» si es un conjunto sin muestra. */
+  tipo: TipoDeGrupo;
   lugar: string | null;
   anio: number | null;
   descripcion: string | null;
@@ -168,7 +176,7 @@ export type Database = {
         Row: ExposicionRow;
         Insert: Escribible<
           ExposicionRow,
-          "id" | "publicada" | "orden" | "creado_en" | "actualizado_en"
+          "id" | "tipo" | "publicada" | "orden" | "creado_en" | "actualizado_en"
         >;
         Update: Partial<ExposicionRow>;
         Relationships: [];

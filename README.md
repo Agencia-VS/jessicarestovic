@@ -58,19 +58,33 @@ Los tokens de color, las tipografías y las utilidades (`marco`, `gutter`,
 
 ### Mapa de páginas
 
-No hay índice general de obra: la trayectoria es la puerta al cuerpo de obra.
-Cada exposición contiene su cuerpo de obra; los conjuntos con nombre viven
-dentro de esa muestra y no son otra entidad.
+No hay índice general de obra: se entra por un grupo. Un grupo es un conjunto
+de obras con nombre, y hay de dos clases —**la diferencia es si hubo sala**:
+
+- Una **exposición** se mostró en algún lugar, así que tiene lugar, año y
+  vistas de montaje. Vive en «Exposiciones».
+- Un **conjunto de trabajo** no pasó por una sala: «Trabajos recientes»,
+  «Ilustraciones en Acuarela», «Otros trabajos». Vive en «Trabajos», y como no
+  hay montaje que documentar, su tarjeta lleva directo a las obras.
+
+Los dos comparten tabla, formulario, retícula y visor: lo único que cambia es
+`exposicion.tipo`. Dentro de cualquiera de los dos, un **conjunto con nombre**
+(`obra.conjunto`) subdivide la retícula sin ser otra entidad — así vive
+«Espacios Íntimos» dentro de «Ensambles al Cubo».
 
 | Página | Qué muestra |
 | --- | --- |
 | `/` | Un tríptico de tres fotos y una sola línea de texto |
-| `/exposiciones` | Índice de muestras: una portada por exposición, con su total de imágenes |
+| `/exposiciones` | Índice de muestras: una imagen por exposición, con su total de vistas |
 | `/exposiciones/[slug]` | Una muestra: ficha, texto y todas sus vistas de montaje |
 | `/exposiciones/[slug]/obras` | Las obras de una muestra, agrupadas por conjunto |
-| `/trabajos-recientes` | Lo último cargado, sin importar la exposición |
+| `/trabajos` | Índice de conjuntos de trabajo, con su total de obras |
+| `/trabajos/[slug]` | Las obras de un conjunto, agrupadas por conjunto con nombre |
 | `/sobre-mi` · `/clases` · `/contacto` | Biografía, talleres y contacto |
 | `/privacidad` | Qué datos recogen los formularios y para qué |
+
+`/trabajos-recientes` redirige a `/trabajos` con un 308: dejó de ser una página
+que juntaba todo y pasó a ser uno de los conjuntos.
 
 ## Puesta en marcha
 
@@ -97,7 +111,7 @@ exponen. Ver «Variables privadas» más abajo.
 ### 2. Aplicar las migraciones
 
 **La forma más rápida:** abrir el **SQL Editor** del panel de Supabase y pegar
-`supabase/puesta-en-marcha.sql` completo. Junta las cinco migraciones en orden
+`supabase/puesta-en-marcha.sql` completo. Junta las seis migraciones en orden
 y se puede volver a correr sin duplicar contenido ni fallar.
 
 Ese archivo se genera desde las migraciones, así que no se edita a mano:
@@ -121,6 +135,7 @@ supabase db push
 | `0003_contenido_inicial.sql` | Las 7 exposiciones reales del sitio actual |
 | `0004_configuracion.sql` | Datos de contacto y frase de portada, editables desde el panel |
 | `0005_medidas_fotos_sala.sql` | Medidas de las fotos de sala y técnicas de Clases con descripción |
+| `0006_conjuntos_de_trabajo.sql` | `exposicion.tipo`, el conjunto «Trabajos recientes» y las obras sin grupo reasignadas a él |
 
 La verificación de sintaxis y orden se hace con `npm run sql`; la aplicación
 contra el proyecto real se debe ejecutar desde el SQL Editor o con el CLI,
@@ -162,10 +177,10 @@ exigente del sitio (la vista ampliada en un monitor grande con densidad doble)
 y `next/image` nunca agranda más allá del original, así que subir más solo
 ocuparía espacio. Las medidas que se guardan son las de la copia subida.
 
-En «Trabajos
-recientes» también está «Subir carpeta»: revisa nombres, exposición, conjunto,
-año y técnica, sube con dos cargas simultáneas como máximo y registra todas las
-obras en un solo insert. Los formatos HEIC se rechazan con instrucciones para
+En «Obras» también está «Subir carpeta»: revisa nombres, grupo, conjunto, año
+y técnica, sube con dos cargas simultáneas como máximo y registra todas las
+obras en un solo insert. Si el nombre de la carpeta calza por slug con un grupo
+existente, se asigna solo. Los formatos HEIC se rechazan con instrucciones para
 convertirlos a JPG.
 
 ## Estructura
@@ -173,18 +188,18 @@ convertirlos a JPG.
 ```
 src/
 ├── app/
-│   ├── page.tsx              Inicio — la imagen de portada
+│   ├── page.tsx              Inicio — el tríptico de portada
 │   ├── exposiciones/         Índice de muestras y la página de cada una
 │   ├── exposiciones/[slug]/obras  Obras de una exposición
-│   ├── trabajos-recientes/   Lo último cargado
+│   ├── trabajos/             Índice de conjuntos de trabajo y cada uno
 │   ├── sobre-mi/             Biografía y retrato
 │   ├── clases/               Talleres y formulario de interés
 │   ├── contacto/             Correo, WhatsApp, Instagram y formulario
 │   ├── privacidad/           Qué datos se recogen y para qué
 │   └── admin/
 │       ├── login/            Acceso (fuera del marco del panel)
-│       └── (panel)/          Trabajos recientes, Exposiciones, Sobre mí, Clases,
-│                              Mensajes y Configuración
+│       └── (panel)/          Inicio, Obras, Exposiciones, Trabajos, Sobre mí,
+│                              Clases, Mensajes y Configuración
 ├── components/
 │   ├── site/                 Componentes del sitio público
 │   ├── admin/                Componentes del panel
@@ -194,6 +209,7 @@ src/
 │   ├── data/                 Consultas, tipos de dominio y contenido de demo
 │   ├── supabase/             Clientes (navegador, servidor, sesión)
 │   ├── images.ts             Especificación de imágenes y validación
+│   ├── reducir-imagen.ts     Achica la foto en el navegador antes de subirla
 │   ├── subida-directa.ts     PUT firmado desde el navegador y rutas seguras
 │   ├── site-config.ts        Identidad, navegación y datos de contacto
 │   └── validacion.ts         Esquemas de Zod
@@ -269,6 +285,11 @@ Las 7 exposiciones se siembran con los datos reales del sitio actual. «Espacios
 Íntimos» vive como conjunto con nombre dentro de «Ensambles al Cubo», sin
 duplicar conceptos ni rutas.
 
+La migración `0006` siembra además el conjunto de trabajo «Trabajos recientes»
+y le asigna las obras que no pertenecían a ninguna muestra, para que nada quede
+sin una página donde verse. Los demás conjuntos —«Ilustraciones en Acuarela»,
+«Otros trabajos»— los crea Jessica en «Trabajos» del panel.
+
 Falta cargar desde el panel:
 
 - Las fotos de las obras y de las exposiciones.
@@ -282,6 +303,8 @@ Falta cargar desde el panel:
 - Los **años** de las muestras. Hoy solo «Volúmenes» (2013) tiene fecha; el
   resto aparece con «—», pero el orden del listado lo fija Jessica y no depende
   del año.
+- Crear sus **conjuntos de trabajo** en «Trabajos» y repartir ahí las obras que
+  hoy están en «Trabajos recientes».
 
 ## Comandos
 

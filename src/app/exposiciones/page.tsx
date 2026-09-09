@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { Pagina, Seccion } from "@/components/site/pagina";
 import { FiltrosExposiciones } from "@/components/site/filtros-exposiciones";
-import { PortadasExposiciones } from "@/components/site/mosaico-vistas";
+import { TarjetasDeGrupos } from "@/components/site/tarjetas-de-grupos";
 import { EstadoVacio } from "@/components/ui/estado-vacio";
 import { listarExposiciones } from "@/lib/data/consultas";
 
@@ -30,7 +30,11 @@ export default async function ExposicionesPage() {
         {exposiciones.length > 0 ? (
           <>
             <FiltrosExposiciones exposiciones={exposiciones} activo={null} />
-            <PortadasExposiciones exposiciones={exposiciones} />
+            <TarjetasDeGrupos
+              grupos={exposiciones}
+              hrefDe={({ slug }) => `/exposiciones/${slug}`}
+              cuenta="vistas"
+            />
           </>
         ) : (
           <EstadoVacio

@@ -8,18 +8,40 @@ import { Aviso } from "./aviso";
 import { Confirmar } from "./confirmar";
 import { INICIAL } from "@/lib/acciones/resultado";
 import { crearExposicion, editarExposicion, eliminarFoto } from "@/lib/acciones/exposiciones";
-import type { Exposicion, Obra } from "@/lib/data/tipos";
+import type { Exposicion, Obra, TipoDeGrupo } from "@/lib/data/tipos";
 
 interface FormularioExposicionProps {
   exposicion?: Exposicion;
-  /** Obras que ya pertenecen a la muestra, para el bloque de solo lectura. */
+  /** Obras que ya pertenecen al grupo, para el bloque de solo lectura. */
   obras?: Obra[];
+  /**
+   * Qué se está creando. Al editar manda el tipo del grupo, que no cambia:
+   * una muestra no se convierte en conjunto ni al revés.
+   */
+  tipo?: TipoDeGrupo;
 }
 
-/** El mismo formulario para crear y editar una exposición. */
-export function FormularioExposicion({ exposicion, obras = [] }: FormularioExposicionProps) {
+/**
+ * El mismo formulario para crear y editar un grupo de obras, sea una muestra o
+ * un conjunto de trabajo.
+ *
+ * Lo que cambia con el tipo es lo que solo tiene sentido con sala: el lugar y
+ * las vistas de montaje. El resto —título, año, descripción, el interruptor de
+ * publicada y el bloque de obras— es idéntico, así que es un formulario y no
+ * dos.
+ */
+export function FormularioExposicion({
+  exposicion,
+  obras = [],
+  tipo: tipoInicial = "exposicion",
+}: FormularioExposicionProps) {
   const editando = Boolean(exposicion);
-  const accionBase = exposicion ? editarExposicion.bind(null, exposicion.id) : crearExposicion;
+  const tipo = exposicion?.tipo ?? tipoInicial;
+  const esTrabajo = tipo === "trabajo";
+  const seccion = esTrabajo ? "/admin/trabajos" : "/admin/exposiciones";
+  const accionBase = exposicion
+    ? editarExposicion.bind(null, exposicion.id, tipo)
+    : crearExposicion.bind(null, tipo);
   const [resultado, accion, guardando] = useActionState(accionBase, INICIAL);
   const [subiendoFotos, setSubiendoFotos] = useState(false);
   const [, iniciar] = useTransition();
@@ -38,13 +60,16 @@ export function FormularioExposicion({ exposicion, obras = [] }: FormularioExpos
       />
 
       <div className="grid grid-cols-1 gap-7 sm:grid-cols-2">
-        <Campo
-          etiqueta="Lugar"
-          nombre="lugar"
-          defaultValue={exposicion?.lugar ?? ""}
-          error={errores.lugar}
-          placeholder="Fundación Guayasamín, Quito"
-        />
+        {/* El lugar solo existe si hubo sala. */}
+        {!esTrabajo && (
+          <Campo
+            etiqueta="Lugar"
+            nombre="lugar"
+            defaultValue={exposicion?.lugar ?? ""}
+            error={errores.lugar}
+            placeholder="Fundación Guayasamín, Quito"
+          />
+        )}
         <Campo
           etiqueta="Año"
           nombre="anio"
@@ -63,23 +88,27 @@ export function FormularioExposicion({ exposicion, obras = [] }: FormularioExpos
         rows={5}
         defaultValue={exposicion?.descripcion ?? ""}
         error={errores.descripcion}
-        ayuda="Se muestra al desplegar la exposición en el listado."
+        ayuda={
+          esTrabajo
+            ? "Se muestra sobre las obras del conjunto."
+            : "Se muestra al desplegar la exposición en el listado."
+        }
       />
 
       {exposicion && (
         <div className="flex flex-col gap-3 border-t border-line pt-6">
           <div className="flex flex-wrap items-baseline justify-between gap-3">
             <span className="eyebrow text-muted">
-              Obras de esta muestra
+              {esTrabajo ? "Obras de este conjunto" : "Obras de esta muestra"}
               <span className="ml-2 normal-case tracking-normal text-faint">
                 {obras.length}
               </span>
             </span>
             <BotonEnlace
-              href={`/admin/trabajos-recientes/nueva?exposicion=${exposicion.id}`}
+              href={`/admin/obras/nueva?exposicion=${exposicion.id}`}
               variante="secundario"
             >
-              Subir una obra a esta muestra
+              {esTrabajo ? "Subir una obra a este conjunto" : "Subir una obra a esta muestra"}
             </BotonEnlace>
           </div>
           {obras.length > 0 ? (
@@ -98,12 +127,16 @@ export function FormularioExposicion({ exposicion, obras = [] }: FormularioExpos
               ))}
             </ul>
           ) : (
-            <p className="caption text-faint">Todavía no hay obras asignadas a esta muestra.</p>
+            <p className="caption text-faint">
+              {esTrabajo
+                ? "Todavía no hay obras asignadas a este conjunto."
+                : "Todavía no hay obras asignadas a esta muestra."}
+            </p>
           )}
         </div>
       )}
 
-      {exposicion && exposicion.fotos.length > 0 && (
+      {!esTrabajo && exposicion && exposicion.fotos.length > 0 && (
         <div className="flex flex-col gap-3">
           <span className="eyebrow text-muted">Fotos cargadas</span>
           <ul className="grid grid-cols-2 gap-4 sm:grid-cols-3">
@@ -122,22 +155,27 @@ export function FormularioExposicion({ exposicion, obras = [] }: FormularioExpos
         </div>
       )}
 
-      <SubirFotos alCambiarEstado={setSubiendoFotos} />
+      {/* Las vistas de montaje solo tienen sentido en una muestra. */}
+      {!esTrabajo && <SubirFotos alCambiarEstado={setSubiendoFotos} />}
 
       <div className="border-t border-line pt-6">
         <Interruptor
           etiqueta="Publicada"
           nombre="publicada"
-          detalle="Si la desmarcas, la exposición deja de verse en el sitio pero no se borra."
+          detalle={
+            esTrabajo
+              ? "Si lo desmarcas, el conjunto deja de verse en el sitio pero no se borra."
+              : "Si la desmarcas, la exposición deja de verse en el sitio pero no se borra."
+          }
           defaultChecked={exposicion?.publicada ?? true}
         />
       </div>
 
       <div className="flex flex-wrap gap-3">
         <Boton type="submit" cargando={guardando} disabled={subiendoFotos}>
-          {editando ? "Guardar cambios" : "Publicar exposición"}
+          {editando ? "Guardar cambios" : esTrabajo ? "Crear conjunto" : "Publicar exposición"}
         </Boton>
-        <BotonEnlace href="/admin/exposiciones">Volver</BotonEnlace>
+        <BotonEnlace href={seccion}>Volver</BotonEnlace>
       </div>
     </form>
   );

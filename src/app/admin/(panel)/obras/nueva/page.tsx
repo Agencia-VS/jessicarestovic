@@ -1,6 +1,6 @@
 import { EncabezadoPanel } from "@/components/admin/encabezado-panel";
 import { FormularioObra } from "@/components/admin/formulario-obra";
-import { listarConjuntos, listarExposiciones } from "@/lib/data/consultas";
+import { listarConjuntos, listarGrupos } from "@/lib/data/consultas";
 
 export const metadata = { title: "Nueva obra" };
 
@@ -11,7 +11,7 @@ export default async function NuevaObraPage({
 }) {
   const [{ exposicion: exposicionInicial }, exposiciones, conjuntos] = await Promise.all([
     searchParams,
-    listarExposiciones(false),
+    listarGrupos("todos", false),
     listarConjuntos(),
   ]);
 

@@ -119,26 +119,29 @@ export interface NavItem {
 /**
  * Navegación pública.
  *
- * No hay índice general de obra: cada exposición es la puerta al cuerpo de
- * obra, que se organiza dentro de la trayectoria.
+ * No hay índice general de obra: se entra por un grupo. «Exposiciones» son los
+ * grupos que tuvieron sala y «Trabajos» los que no —«Trabajos recientes»,
+ * «Ilustraciones en Acuarela»—, cada uno con su conteo.
  */
 export const navPublica: readonly NavItem[] = [
   { href: "/exposiciones", label: "Exposiciones" },
-  { href: "/trabajos-recientes", label: "Trabajos recientes" },
+  { href: "/trabajos", label: "Trabajos" },
   { href: "/sobre-mi", label: "Sobre mí" },
   { href: "/clases", label: "Clases" },
   { href: "/contacto", label: "Contacto" },
 ] as const;
 
 /**
- * Las páginas de obras viven bajo una exposición y en el menú marcan
- * «Exposiciones».
+ * Navegación del panel — las secciones del brief (§07).
+ *
+ * «Obras» son las piezas: se suben, se ordenan y se asignan a un grupo.
+ * «Exposiciones» y «Trabajos» son los grupos, separados igual que en el sitio.
  */
-/** Navegación del panel — las secciones del brief (§07). */
 export const navAdmin: readonly NavItem[] = [
   { href: "/admin/inicio", label: "Inicio" },
-  { href: "/admin/trabajos-recientes", label: "Trabajos recientes" },
+  { href: "/admin/obras", label: "Obras" },
   { href: "/admin/exposiciones", label: "Exposiciones" },
+  { href: "/admin/trabajos", label: "Trabajos" },
   { href: "/admin/sobre-mi", label: "Sobre mí" },
   { href: "/admin/clases", label: "Clases" },
   { href: "/admin/mensajes", label: "Mensajes" },

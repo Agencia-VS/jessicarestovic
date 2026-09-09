@@ -3,22 +3,32 @@ import type { Exposicion } from "@/lib/data/tipos";
 
 interface FiltrosExposicionesProps {
   exposiciones: Exposicion[];
-  /** El slug de la muestra abierta, o `null` cuando se ven todas. */
+  /** El slug del grupo abierto, o `null` cuando se ven todos. */
   activo: string | null;
+  /** La sección donde vive la fila: «/exposiciones» o «/trabajos». */
+  base?: string;
+  /** Cómo se llama la opción que muestra todos. */
+  todos?: string;
 }
 
 /**
- * La fila de muestras que hace de filtro. Son enlaces, no botones: cada
- * exposición tiene su propia dirección, así se puede compartir y el buscador
- * la indexa —lo que la maqueta resolvía con estado en el navegador.
+ * La fila de grupos que hace de filtro, en «Exposiciones» y en «Trabajos». Son
+ * enlaces, no botones: cada grupo tiene su propia dirección, así se puede
+ * compartir y el buscador lo indexa —lo que la maqueta resolvía con estado en
+ * el navegador.
  */
-export function FiltrosExposiciones({ exposiciones, activo }: FiltrosExposicionesProps) {
+export function FiltrosExposiciones({
+  exposiciones,
+  activo,
+  base = "/exposiciones",
+  todos = "Todas",
+}: FiltrosExposicionesProps) {
   const opciones = [
-    { slug: null, titulo: "Todas", href: "/exposiciones" },
+    { slug: null, titulo: todos, href: base },
     ...exposiciones.map(({ slug, titulo }) => ({
       slug,
       titulo,
-      href: `/exposiciones/${slug}`,
+      href: `${base}/${slug}`,
     })),
   ];
 

@@ -3,29 +3,29 @@ import { EncabezadoPanel } from "@/components/admin/encabezado-panel";
 import { FormularioExposicion } from "@/components/admin/formulario-exposicion";
 import { listarObrasDeExposicion, obtenerExposicion } from "@/lib/data/consultas";
 
-export const metadata = { title: "Editar exposición" };
+export const metadata = { title: "Editar conjunto" };
 
-export default async function EditarExposicionPage({
+export default async function EditarTrabajoPage({
   params,
 }: {
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const [exposicion, obras] = await Promise.all([
+  const [trabajo, obras] = await Promise.all([
     obtenerExposicion(id),
     listarObrasDeExposicion(id),
   ]);
 
-  // Un conjunto de trabajo se edita en «Trabajos».
-  if (!exposicion || exposicion.tipo !== "exposicion") notFound();
+  // Una muestra se edita en «Exposiciones», donde están sus campos.
+  if (!trabajo || trabajo.tipo !== "trabajo") notFound();
 
   return (
     <>
       <EncabezadoPanel
-        titulo={exposicion.titulo}
-        detalle="Las fotos que subas se agregan a las que ya están cargadas."
+        titulo={trabajo.titulo}
+        detalle="Las obras se suben en «Obras» y se asignan a este conjunto."
       />
-      <FormularioExposicion exposicion={exposicion} obras={obras} />
+      <FormularioExposicion exposicion={trabajo} obras={obras} tipo="trabajo" />
     </>
   );
 }

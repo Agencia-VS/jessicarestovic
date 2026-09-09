@@ -7,11 +7,12 @@ import { Boton, BotonEnlace } from "@/components/ui/boton";
 import { SubirImagen } from "./subir-imagen";
 import { Aviso } from "./aviso";
 import { INICIAL } from "@/lib/acciones/resultado";
-import { crearExposicionRapida } from "@/lib/acciones/exposiciones";
+import { crearGrupoRapido } from "@/lib/acciones/exposiciones";
 import { crearObra, editarObra } from "@/lib/acciones/obras";
 import type { Exposicion, Obra } from "@/lib/data/tipos";
 
 interface FormularioObraProps {
+  /** Todos los grupos, muestras y conjuntos de trabajo, para el desplegable. */
   exposiciones: Exposicion[];
   conjuntos: string[];
   exposicionInicial?: string;
@@ -19,7 +20,13 @@ interface FormularioObraProps {
   obra?: Obra;
 }
 
-/** Formulario de obra, con exposición y conjunto como única agrupación. */
+/**
+ * Formulario de obra. La obra pertenece a un grupo —una muestra o un conjunto
+ * de trabajo— y, dentro de él, opcionalmente a un conjunto con nombre.
+ *
+ * El desplegable ofrece los dos tipos separados por encabezado, porque para
+ * Jessica la pregunta es una sola: dónde va esta obra.
+ */
 export function FormularioObra({
   exposiciones,
   conjuntos,
@@ -43,15 +50,26 @@ export function FormularioObra({
 
   const errores = resultado.errores ?? {};
 
+  /** Las opciones de un tipo, rotuladas con su año y si está oculto. */
+  const opcionesDe = (tipo: Exposicion["tipo"]) =>
+    listaExposiciones
+      .filter((grupo) => grupo.tipo === tipo)
+      .map((grupo) => ({
+        valor: grupo.id,
+        etiqueta: `${grupo.titulo}${grupo.anio ? ` · ${grupo.anio}` : ""}${
+          grupo.publicada ? "" : " (oculto)"
+        }`,
+      }));
+
   const cambiarExposicion = (valor: string) => {
     setExposicionElegida(valor);
     if (valor !== (obra?.exposicion_id ?? exposicionInicial ?? "")) setConjunto("");
   };
 
-  const crearExposicion = () => {
+  const crearGrupo = () => {
     setProblemaExposicion(null);
     iniciar(async () => {
-      const salida = await crearExposicionRapida(tituloExposicion);
+      const salida = await crearGrupoRapido(tituloExposicion);
       if ("error" in salida) {
         setProblemaExposicion(salida.error);
         return;
@@ -63,6 +81,7 @@ export function FormularioObra({
           id: salida.id,
           titulo: salida.titulo,
           slug: salida.slug,
+          tipo: "trabajo",
           lugar: null,
           anio: null,
           descripcion: null,
@@ -72,6 +91,7 @@ export function FormularioObra({
           actualizado_en: "",
           fotos: [],
           obrasPublicadas: 0,
+          portada: null,
         },
       ]);
       setExposicionElegida(salida.id);
@@ -97,20 +117,16 @@ export function FormularioObra({
 
       <div className="flex flex-col gap-4">
         <Select
-          etiqueta="Exposición"
+          etiqueta="Exposición o conjunto"
           nombre="exposicion_id"
           value={exposicionElegida}
           onChange={(evento) => cambiarExposicion(evento.target.value)}
-          opciones={[
-            { valor: "", etiqueta: "Sin exposición" },
-            ...listaExposiciones.map((exposicion) => ({
-              valor: exposicion.id,
-              etiqueta: `${exposicion.titulo}${exposicion.anio ? ` · ${exposicion.anio}` : ""}${
-                exposicion.publicada ? "" : " (oculta)"
-              }`,
-            })),
+          opciones={[{ valor: "", etiqueta: "Sin asignar" }]}
+          grupos={[
+            { etiqueta: "Exposiciones", opciones: opcionesDe("exposicion") },
+            { etiqueta: "Trabajos", opciones: opcionesDe("trabajo") },
           ]}
-          ayuda="Una obra puede quedar sin exposición y se conserva en el panel."
+          ayuda="Una obra puede quedar sin asignar y se conserva en el panel, pero no se ve en el sitio."
         />
 
         {creandoExposicion ? (
@@ -120,15 +136,18 @@ export function FormularioObra({
                 type="text"
                 value={tituloExposicion}
                 onChange={(evento) => setTituloExposicion(evento.target.value)}
-                placeholder="Título de la exposición nueva"
+                placeholder="Nombre del conjunto nuevo"
                 autoFocus
                 className="w-full border-b border-line bg-transparent py-2.5 text-[0.9375rem] placeholder:text-faint focus:border-ink focus:outline-none"
               />
-              <Boton type="button" variante="secundario" onClick={crearExposicion}>
+              <Boton type="button" variante="secundario" onClick={crearGrupo}>
                 Crear
               </Boton>
             </div>
-            <p className="caption text-faint">Nace oculta. Complétala después en Exposiciones.</p>
+            <p className="caption text-faint">
+              Nace oculto. Complétalo después en Trabajos. Una exposición se
+              registra en «Exposiciones», donde están su lugar y sus fotos de sala.
+            </p>
             {problemaExposicion && (
               <p role="alert" className="caption text-danger">
                 {problemaExposicion}
@@ -148,7 +167,7 @@ export function FormularioObra({
             onClick={() => setCreandoExposicion(true)}
             className="caption self-start text-ink underline underline-offset-4"
           >
-            Crear exposición nueva
+            Crear un conjunto nuevo
           </button>
         )}
 
@@ -218,7 +237,7 @@ export function FormularioObra({
         <Interruptor
           etiqueta="Destacada en Inicio"
           nombre="destacada"
-          detalle="Se usa como portada alternativa si no hay una foto cargada en Inicio."
+          detalle="Se usa en el tríptico del Inicio mientras no haya fotos cargadas ahí."
           defaultChecked={obra?.destacada ?? false}
         />
         <Interruptor
@@ -233,7 +252,7 @@ export function FormularioObra({
         <Boton type="submit" cargando={guardando} disabled={subiendoImagen}>
           {editando ? "Guardar cambios" : "Publicar obra"}
         </Boton>
-        <BotonEnlace href="/admin/trabajos-recientes">Volver</BotonEnlace>
+        <BotonEnlace href="/admin/obras">Volver</BotonEnlace>
       </div>
     </form>
   );

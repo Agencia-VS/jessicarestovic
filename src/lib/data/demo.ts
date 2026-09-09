@@ -1,4 +1,4 @@
-import type { Exposicion, FotoDeSala, Obra } from "./tipos";
+import type { Exposicion, FotoDeSala, Obra, TipoDeGrupo } from "./tipos";
 import type { ClasesContenido, SobreMiContenido } from "@/types/database";
 import { CELDAS_PORTADA } from "@/lib/site-config";
 
@@ -43,9 +43,14 @@ interface DefinicionExpo {
   vistas: number;
   tecnica?: string;
   piezas: DefinicionPieza[];
+  /** Por omisión, una muestra. Los conjuntos de trabajo lo declaran. */
+  tipo?: TipoDeGrupo;
 }
 
-/** Las siete exposiciones de la auditoría, en el orden editorial sembrado. */
+/**
+ * Los grupos de obra del contenido de referencia: las siete exposiciones de la
+ * auditoría y dos conjuntos de trabajo, en el orden editorial sembrado.
+ */
 const EXPOS: DefinicionExpo[] = [
   {
     slug: "fundacion-guayasamin",
@@ -140,12 +145,45 @@ const EXPOS: DefinicionExpo[] = [
       { titulo: "A partir de lo simple III", bloque: "horizontal" },
     ],
   },
+  // Los conjuntos de trabajo: sin sala, así que sin lugar y sin vistas de
+  // montaje. Su tarjeta se ilustra con su primera obra.
+  {
+    slug: "trabajos-recientes",
+    titulo: "Trabajos recientes",
+    lugar: null,
+    anio: null,
+    descripcion: "Lo último salido del taller, todavía sin agrupar.",
+    vistas: 0,
+    tipo: "trabajo",
+    piezas: [
+      { titulo: "Sin título I", bloque: "cuadradoII" },
+      { titulo: "Sin título II", bloque: "vertical" },
+      { titulo: "Sin título III", bloque: "horizontal" },
+    ],
+  },
+  {
+    slug: "ilustraciones-en-acuarela",
+    titulo: "Ilustraciones en Acuarela",
+    lugar: null,
+    anio: null,
+    descripcion: "Trabajo por encargo y ejercicios de taller en acuarela.",
+    vistas: 0,
+    tipo: "trabajo",
+    tecnica: "Acuarela sobre papel",
+    piezas: [
+      { titulo: "Acuarela I", bloque: "verticalIII" },
+      { titulo: "Acuarela II", bloque: "cuadrado" },
+      { titulo: "Acuarela III", bloque: "verticalIV" },
+      { titulo: "Acuarela IV", bloque: "retrato" },
+    ],
+  },
 ];
 
 const EXPOSICIONES_BASE = EXPOS.map((expo, indice) => ({
   id: `demo-expo-${expo.slug}`,
   titulo: expo.titulo,
   slug: expo.slug,
+  tipo: expo.tipo ?? ("exposicion" as TipoDeGrupo),
   lugar: expo.lugar,
   anio: expo.anio,
   descripcion: expo.descripcion,
@@ -211,13 +249,29 @@ function vistasDe(expo: DefinicionExpo, desde: number): FotoDeSala[] {
   });
 }
 
-export const DEMO_EXPOSICIONES: Exposicion[] = EXPOSICIONES_BASE.map((exposicion, indice) => ({
-  ...exposicion,
-  obrasPublicadas: OBRAS.filter(
+export const DEMO_EXPOSICIONES: Exposicion[] = EXPOSICIONES_BASE.map((exposicion, indice) => {
+  const fotos = vistasDe(EXPOS[indice]!, indice * 3);
+  const obras = OBRAS.filter(
     (obra) => obra.exposicion_id === exposicion.id && obra.publicada,
-  ).length,
-  fotos: vistasDe(EXPOS[indice]!, indice * 3),
-}));
+  );
+  // La misma regla que en la consulta real: la vista de sala manda, y si no
+  // hay, la primera obra.
+  const ilustra = fotos[0] ?? obras[0] ?? null;
+
+  return {
+    ...exposicion,
+    obrasPublicadas: obras.length,
+    fotos,
+    portada: ilustra
+      ? {
+          src: ilustra.imagenUrl,
+          alt: ilustra.imagen_alt,
+          ancho: ilustra.imagen_ancho,
+          alto: ilustra.imagen_alto,
+        }
+      : null,
+  };
+});
 
 export const DEMO_SOBRE_MI: SobreMiContenido = {
   titulo: "Sobre mí",

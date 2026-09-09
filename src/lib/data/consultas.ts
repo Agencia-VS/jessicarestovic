@@ -19,6 +19,7 @@ import type {
   MensajeRow,
   Obra,
   SobreMiContenido,
+  TipoDeGrupo,
 } from "./tipos";
 
 /**
@@ -41,20 +42,59 @@ function conUrl(obra: Omit<Obra, "imagenUrl">): Obra {
   return { ...obra, imagenUrl: urlImagen(obra.imagen_path) };
 }
 
-type ExposicionCruda = Omit<Exposicion, "obrasPublicadas" | "fotos"> & {
+type ExposicionCruda = Omit<Exposicion, "obrasPublicadas" | "fotos" | "portada"> & {
   fotos: FotoDeSala[] | null;
 };
 
-/** Deja una exposición con las fotos en el orden editorial y sus URLs listas. */
+/**
+ * Lo mínimo de una obra que necesita el índice: cuántas hay en el grupo y con
+ * cuál se ilustra su tarjeta. No se traen las obras completas porque el índice
+ * no las muestra.
+ */
+const SELECT_OBRA_DE_TARJETA =
+  "exposicion_id, imagen_path, imagen_alt, imagen_ancho, imagen_alto";
+
+type ObraDeTarjeta = {
+  exposicion_id: string | null;
+  imagen_path: string;
+  imagen_alt: string;
+  imagen_ancho: number | null;
+  imagen_alto: number | null;
+};
+
+/**
+ * Deja un grupo con las fotos en el orden editorial, sus URLs listas y la
+ * imagen de su tarjeta: la primera vista de sala si tiene, y si no la primera
+ * obra. Un conjunto de trabajos nunca tiene vistas, así que siempre muestra
+ * obra; y una muestra sin fotos de sala deja de verse como un hueco gris.
+ */
 function normalizarExposicion(
   cruda: ExposicionCruda,
-  obrasPublicadas = 0,
+  obras: ObraDeTarjeta[] = [],
 ): Exposicion {
   const fotos = [...(cruda.fotos ?? [])]
     .sort((a, b) => a.orden - b.orden)
     .map((foto) => ({ ...foto, imagenUrl: urlImagen(foto.imagen_path) }));
 
-  return { ...cruda, fotos, obrasPublicadas };
+  const [vista] = fotos;
+  const [primeraObra] = obras;
+  const portada = vista
+    ? {
+        src: vista.imagenUrl,
+        alt: vista.imagen_alt,
+        ancho: vista.imagen_ancho,
+        alto: vista.imagen_alto,
+      }
+    : primeraObra
+      ? {
+          src: urlImagen(primeraObra.imagen_path),
+          alt: primeraObra.imagen_alt,
+          ancho: primeraObra.imagen_ancho,
+          alto: primeraObra.imagen_alto,
+        }
+      : null;
+
+  return { ...cruda, fotos, obrasPublicadas: obras.length, portada };
 }
 
 // --- Obras -----------------------------------------------------------------
@@ -131,24 +171,6 @@ export async function listarObrasDeExposicion(exposicionId: string): Promise<Obr
   return ((data ?? []) as unknown as Omit<Obra, "imagenUrl">[]).map(conUrl);
 }
 
-/**
- * Las últimas obras cargadas, para «Trabajos recientes». El orden es la fecha
- * de subida y no el orden manual de la retícula de cada exposición.
- */
-export async function listarObrasRecientes(limite = 12): Promise<Obra[]> {
-  if (!supabaseConfigurado()) return DEMO_OBRAS.slice(0, limite);
-  const supabase = await createClient();
-
-  const { data } = await supabase
-    .from("obra")
-    .select(SELECT_OBRA)
-    .eq("publicada", true)
-    .order("creado_en", { ascending: false })
-    .limit(limite);
-
-  return ((data ?? []) as unknown as Omit<Obra, "imagenUrl">[]).map(conUrl);
-}
-
 // --- Exposiciones ----------------------------------------------------------
 
 /** Cuenta la técnica que más se repite en un grupo de obras. */
@@ -190,28 +212,58 @@ export function agruparPorConjunto(obras: Obra[]): GrupoDeObras[] {
   ];
 }
 
-export async function listarExposiciones(soloPublicadas = true): Promise<Exposicion[]> {
-  if (!supabaseConfigurado()) return soloPublicadas ? DEMO_EXPOSICIONES : [];
+/**
+ * Los grupos de obra de un tipo, en el orden editorial que fijó Jessica.
+ *
+ * Exposiciones y conjuntos de trabajo comparten tabla, así que también
+ * comparten esta consulta: lo único que cambia es el filtro. `«todos»` es para
+ * el desplegable del formulario de obra, que ofrece las dos cosas.
+ */
+export async function listarGrupos(
+  tipo: TipoDeGrupo | "todos" = "todos",
+  soloPublicadas = true,
+): Promise<Exposicion[]> {
+  if (!supabaseConfigurado()) {
+    if (!soloPublicadas) return [];
+    return DEMO_EXPOSICIONES.filter((grupo) => tipo === "todos" || grupo.tipo === tipo);
+  }
   const supabase = await createClient();
 
   let consulta = supabase.from("exposicion").select(SELECT_EXPO);
+  if (tipo !== "todos") consulta = consulta.eq("tipo", tipo);
   if (soloPublicadas) consulta = consulta.eq("publicada", true);
 
-  const [{ data: exposiciones }, { data: obras }] = await Promise.all([
+  const [{ data: grupos }, { data: obras }] = await Promise.all([
     consulta.order("orden").order("creado_en", { ascending: false }),
-    supabase.from("obra").select("exposicion_id").eq("publicada", true),
+    supabase
+      .from("obra")
+      .select(SELECT_OBRA_DE_TARJETA)
+      .eq("publicada", true)
+      .order("orden")
+      .order("creado_en"),
   ]);
 
-  const conteo = new Map<string, number>();
+  const porGrupo = new Map<string, ObraDeTarjeta[]>();
   for (const obra of obras ?? []) {
-    if (obra.exposicion_id) {
-      conteo.set(obra.exposicion_id, (conteo.get(obra.exposicion_id) ?? 0) + 1);
-    }
+    if (!obra.exposicion_id) continue;
+    const lista = porGrupo.get(obra.exposicion_id);
+    if (lista) lista.push(obra);
+    else porGrupo.set(obra.exposicion_id, [obra]);
   }
 
-  return ((exposiciones ?? []) as unknown as ExposicionCruda[]).map((expo) =>
-    normalizarExposicion(expo, conteo.get(expo.id) ?? 0),
+  return ((grupos ?? []) as unknown as ExposicionCruda[]).map((grupo) =>
+    normalizarExposicion(grupo, porGrupo.get(grupo.id) ?? []),
   );
+}
+
+/** Las muestras: los grupos que tuvieron sala. */
+export function listarExposiciones(soloPublicadas = true): Promise<Exposicion[]> {
+  return listarGrupos("exposicion", soloPublicadas);
+}
+
+/** Los conjuntos de trabajo: los grupos que no pasaron por una sala. */
+export function listarTrabajos(soloPublicadas = true): Promise<Exposicion[]> {
+  return listarGrupos("trabajo", soloPublicadas);
 }
 
 export async function obtenerExposicion(id: string): Promise<Exposicion | null> {
@@ -220,18 +272,21 @@ export async function obtenerExposicion(id: string): Promise<Exposicion | null> 
 
   const [{ data }, { data: obras }] = await Promise.all([
     supabase.from("exposicion").select(SELECT_EXPO).eq("id", id).maybeSingle(),
-    supabase.from("obra").select("exposicion_id").eq("exposicion_id", id).eq("publicada", true),
+    supabase
+      .from("obra")
+      .select(SELECT_OBRA_DE_TARJETA)
+      .eq("exposicion_id", id)
+      .eq("publicada", true)
+      .order("orden")
+      .order("creado_en"),
   ]);
 
   return data
-    ? normalizarExposicion(
-        data as unknown as ExposicionCruda,
-        obras?.length ?? 0,
-      )
+    ? normalizarExposicion(data as unknown as ExposicionCruda, obras ?? [])
     : null;
 }
 
-/** La exposición que pide una URL como `/exposiciones/volumenes`. */
+/** El grupo que pide una URL como `/exposiciones/volumenes` o `/trabajos/acuarela`. */
 export async function obtenerExposicionPorSlug(slug: string): Promise<Exposicion | null> {
   if (!supabaseConfigurado()) {
     return DEMO_EXPOSICIONES.find((expo) => expo.slug === slug) ?? null;
@@ -249,11 +304,13 @@ export async function obtenerExposicionPorSlug(slug: string): Promise<Exposicion
 
   const { data: obras } = await supabase
     .from("obra")
-    .select("exposicion_id")
+    .select(SELECT_OBRA_DE_TARJETA)
     .eq("exposicion_id", data.id)
-    .eq("publicada", true);
+    .eq("publicada", true)
+    .order("orden")
+    .order("creado_en");
 
-  return normalizarExposicion(data as unknown as ExposicionCruda, obras?.length ?? 0);
+  return normalizarExposicion(data as unknown as ExposicionCruda, obras ?? []);
 }
 
 /** Una exposición con sus obras publicadas y el agrupado del segundo nivel. */

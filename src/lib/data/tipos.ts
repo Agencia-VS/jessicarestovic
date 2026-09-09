@@ -5,6 +5,7 @@ import type {
   MensajeRow,
   ObraRow,
   SobreMiContenido,
+  TipoDeGrupo,
 } from "@/types/database";
 
 /**
@@ -30,10 +31,34 @@ export interface FotoDeSala extends ExposicionFotoRow {
   imagenUrl: string;
 }
 
-/** Una exposición con sus fotos de sala. */
+/**
+ * Una foto lista para pintar: la URL ya resuelta y las medidas con que se
+ * reserva su espacio. Es la forma mínima que necesitan la portada del Inicio,
+ * las tarjetas del índice y la vista ampliada.
+ */
+export interface FotoLista {
+  src: string;
+  alt: string;
+  ancho: number | null;
+  alto: number | null;
+}
+
+/**
+ * Un grupo de obras con nombre: una exposición o un conjunto de trabajos.
+ *
+ * Comparten tipo porque comparten tabla y comportamiento; lo que cambia es que
+ * la exposición tuvo sala —de ahí `lugar`, `anio` y `fotos`— y el conjunto de
+ * trabajos no.
+ */
 export interface Exposicion extends ExposicionRow {
   fotos: FotoDeSala[];
   obrasPublicadas: number;
+  /**
+   * La imagen de su tarjeta en el índice: la primera vista de sala si tiene, y
+   * si no la primera obra. Un conjunto de trabajos nunca tiene vistas, así que
+   * siempre muestra obra.
+   */
+  portada: FotoLista | null;
 }
 
 /** Un bloque de obras de una exposición, con conjunto opcional. */
@@ -66,4 +91,10 @@ export interface ObraEnLoteEntrada {
   publicada: boolean;
 }
 
-export type { ClasesContenido, ExposicionFotoRow, MensajeRow, SobreMiContenido };
+export type {
+  ClasesContenido,
+  ExposicionFotoRow,
+  MensajeRow,
+  SobreMiContenido,
+  TipoDeGrupo,
+};
