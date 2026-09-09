@@ -2,13 +2,25 @@
  * Especificación de imágenes del brief (§08) y utilidades para resolver la URL
  * pública de una imagen.
  *
- * Jessica sube la foto en buena calidad y el sistema se encarga del resto:
+ * Jessica sube la foto en buena calidad y el sistema se encarga del resto: el
+ * navegador reduce lo que hace falta antes de subirla (`reducir-imagen.ts`) y
  * `next/image` genera las versiones para celular y escritorio y las sirve en
- * AVIF o WebP. Por eso acá solo validamos lo que ella no puede arreglar
- * después: que la foto tenga resolución suficiente y no pese demasiado.
+ * AVIF o WebP.
+ *
+ * Por eso `pesoMaxBytes` es generoso: no es lo que se guarda, es lo más grande
+ * que aceptamos leer de su computador. Un archivo de cámara de 24 MB entra sin
+ * problema y sube como una copia de dos o tres. Y las medidas mínimas solo
+ * advierten, nunca bloquean: una foto disponible siempre es preferible a
+ * obligarla a conseguir otra versión.
  */
 
 const MB = 1024 * 1024;
+
+/**
+ * Lo más grande que aceptamos leer, no lo que se guarda: el navegador reduce
+ * antes de subir. Una foto de cámara de 5000 px y 24 MB tiene que entrar.
+ */
+const PESO_MAX = 40 * MB;
 
 export interface EspecImagen {
   /** Etiqueta que se muestra como ayuda en el formulario de subida. */
@@ -29,16 +41,16 @@ export const ESPECS_IMAGEN = {
     ladoMayorMin: 1800,
     anchoMin: null,
     altoMin: null,
-    pesoMaxBytes: 15 * MB,
+    pesoMaxBytes: PESO_MAX,
     formatos: ["image/jpeg", "image/png", "image/webp", "image/avif"],
   },
   destacada: {
-    uso: "Destacada de Inicio",
-    proporcion: "Horizontal, libre",
-    ladoMayorMin: 2400,
-    anchoMin: 2400,
-    altoMin: 1600,
-    pesoMaxBytes: 10 * MB,
+    uso: "Fotos del tríptico de Inicio",
+    proporcion: "Cuadrada de preferencia: en el Inicio se recorta al cuadrado",
+    ladoMayorMin: 1600,
+    anchoMin: null,
+    altoMin: null,
+    pesoMaxBytes: PESO_MAX,
     formatos: ["image/jpeg", "image/png", "image/webp", "image/avif"],
   },
   retrato: {
@@ -50,7 +62,7 @@ export const ESPECS_IMAGEN = {
     // archivo innecesariamente grande.
     anchoMin: 800,
     altoMin: 1000,
-    pesoMaxBytes: 10 * MB,
+    pesoMaxBytes: PESO_MAX,
     formatos: ["image/jpeg", "image/png", "image/webp", "image/avif"],
   },
   exposicion: {
@@ -59,7 +71,7 @@ export const ESPECS_IMAGEN = {
     ladoMayorMin: 2000,
     anchoMin: null,
     altoMin: null,
-    pesoMaxBytes: 10 * MB,
+    pesoMaxBytes: PESO_MAX,
     formatos: ["image/jpeg", "image/png", "image/webp", "image/avif"],
   },
 } as const satisfies Record<string, EspecImagen>;

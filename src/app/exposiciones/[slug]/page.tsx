@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { Pagina, Seccion } from "@/components/site/pagina";
 import { FiltrosExposiciones } from "@/components/site/filtros-exposiciones";
-import { VistasDeSala } from "@/components/site/mosaico-vistas";
+import { VistasDeSala } from "@/components/site/vistas-de-sala";
 import { FichaDatos } from "@/components/site/ficha-datos";
 import { EnlaceSuave } from "@/components/site/enlace-suave";
 import { EstadoVacio } from "@/components/ui/estado-vacio";

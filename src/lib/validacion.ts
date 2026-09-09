@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { CELDAS_PORTADA } from "./site-config";
 
 /** Mensajes de error en lenguaje simple, sin vocabulario técnico (§07). */
 
@@ -61,7 +62,8 @@ export const configuracionSchema = z.object({
 
 export const portadaSchema = z.object({
   cita: texto(400).min(1, "La frase de portada no puede quedar vacía."),
-  portada_alt: texto(300).optional().or(z.literal("")),
+  /** Una descripción por celda del tríptico, en el mismo orden. */
+  alts: z.array(texto(300)).max(CELDAS_PORTADA),
 });
 
 export const clasesSchema = z.object({

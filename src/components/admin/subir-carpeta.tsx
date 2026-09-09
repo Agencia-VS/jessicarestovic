@@ -7,6 +7,7 @@ import { crearObrasEnLote } from "@/lib/acciones/obras";
 import { advertirDimensiones, ayudaImagen, validarArchivo } from "@/lib/images";
 import { slugify } from "@/lib/validacion";
 import { subirArchivoPorUrl } from "@/lib/subida-directa";
+import { avisoDeReduccion, reducirImagen, type Medidas } from "@/lib/reducir-imagen";
 import type { Exposicion, ObraEnLoteEntrada } from "@/lib/data/tipos";
 import { Boton, BotonEnlace } from "@/components/ui/boton";
 
@@ -27,7 +28,10 @@ interface Fila {
   titulo: string;
   problema: string | null;
   advertencia: string | null;
-  medidas: { ancho: number; alto: number } | null;
+  /** Las de la copia que se sube, no las del archivo original. */
+  medidas: Medidas | null;
+  /** Aviso informativo: la foto se subió reducida. */
+  nota: string | null;
   ruta: string | null;
   progreso: number;
   subiendo: boolean;
@@ -52,6 +56,16 @@ const ROMANOS: Array<[string, string]> = [
   ["II", "2"],
   ["I", "1"],
 ];
+
+/** Las medidas reales del archivo, leídas de su vista previa. */
+function medirImagen(url: string): Promise<Medidas> {
+  return new Promise((resolver, rechazar) => {
+    const imagen = new Image();
+    imagen.onload = () => resolver({ ancho: imagen.naturalWidth, alto: imagen.naturalHeight });
+    imagen.onerror = () => rechazar(new Error("No pudimos leer esa foto."));
+    imagen.src = url;
+  });
+}
 
 function rutaRelativa(archivo: File): string {
   return (archivo as File & { webkitRelativePath?: string }).webkitRelativePath || archivo.name;
@@ -215,6 +229,7 @@ export function SubirCarpeta({
         titulo: titulo.titulo,
         problema: problemaArchivo ?? titulo.problema,
         advertencia: null,
+        nota: null,
         medidas: null,
         ruta: null,
         progreso: 0,
@@ -239,24 +254,48 @@ export function SubirCarpeta({
     setGrupos([...gruposNuevos.values()]);
     setFilas(filasNuevas);
 
-    for (const fila of filasNuevas) {
-      if (fila.problema) continue;
-      const imagen = new Image();
-      imagen.onload = () => {
+    void prepararFilas(filasNuevas, id);
+  };
+
+  /**
+   * Mide y reduce cada foto, de dos en dos.
+   *
+   * De dos en dos y no todas juntas porque decodificar treinta fotos de 24 MP a
+   * la vez son gigabytes de memoria: en un celular la pestaña muere. Hasta que
+   * cada fila tenga sus medidas, «Subir» no deja continuar, así que la revisión
+   * y la preparación avanzan en paralelo sin que ella espere una pantalla en
+   * blanco.
+   */
+  const prepararFilas = async (filasNuevas: Fila[], id: number) => {
+    const pendientes = filasNuevas.filter((fila) => !fila.problema);
+    let siguiente = 0;
+
+    const trabajador = async () => {
+      while (siguiente < pendientes.length) {
+        const fila = pendientes[siguiente++]!;
         if (id !== version.current) return;
-        const medidas = { ancho: imagen.naturalWidth, alto: imagen.naturalHeight };
-        actualizarFila(fila.id, {
-          medidas,
-          advertencia: advertirDimensiones(medidas.ancho, medidas.alto, "obra"),
-        });
-      };
-      imagen.onerror = () => {
-        if (id === version.current) {
-          actualizarFila(fila.id, { problema: "No pudimos leer esa foto." });
+        try {
+          const originales = await medirImagen(fila.previa);
+          if (id !== version.current) return;
+          const copia = await reducirImagen(fila.archivo, originales);
+          if (id !== version.current) return;
+          actualizarFila(fila.id, {
+            archivo: copia.archivo,
+            medidas: { ancho: copia.ancho, alto: copia.alto },
+            advertencia: advertirDimensiones(originales.ancho, originales.alto, "obra"),
+            nota: avisoDeReduccion(fila.archivo, copia),
+          });
+        } catch {
+          if (id === version.current) {
+            actualizarFila(fila.id, { problema: "No pudimos leer esa foto." });
+          }
         }
-      };
-      imagen.src = fila.previa;
-    }
+      }
+    };
+
+    await Promise.all(
+      Array.from({ length: Math.min(2, pendientes.length) }, () => trabajador()),
+    );
   };
 
   const cambiarGrupo = (grupoId: string, cambio: Partial<Grupo>) => {
@@ -477,6 +516,7 @@ export function SubirCarpeta({
                     {fila.subiendo && <p className="caption text-muted">Subiendo… {fila.progreso}%</p>}
                     {fila.problema && <p className="caption mt-1 text-danger">{fila.problema}</p>}
                     {fila.advertencia && <p className="caption mt-1 text-muted">{fila.advertencia}</p>}
+                    {fila.nota && <p className="caption mt-1 text-faint">{fila.nota}</p>}
                   </div>
                 </li>
               ))}

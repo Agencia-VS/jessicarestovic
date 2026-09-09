@@ -85,6 +85,14 @@ export type SobreMiContenido = {
  * El enlace de WhatsApp y la URL de Instagram se derivan de estos valores, así
  * ella completa un solo campo por cosa.
  */
+/** Una de las fotos del tríptico que encabeza el Inicio. */
+export type ImagenPortada = {
+  path: string;
+  alt: string | null;
+  ancho: number | null;
+  alto: number | null;
+};
+
 export type ConfiguracionContenido = {
   email: string;
   /** Tal como se lee, por ejemplo «+56 9 8747 2258». */
@@ -93,11 +101,11 @@ export type ConfiguracionContenido = {
   instagram: string;
   /** La frase que cierra la portada. */
   cita: string;
-  /** Imagen independiente que encabeza el Inicio. */
-  portada_path: string | null;
-  portada_alt: string | null;
-  portada_ancho: number | null;
-  portada_alto: number | null;
+  /**
+   * Las fotos del tríptico del Inicio, en orden y hasta tres. Son imágenes
+   * independientes de la obra catalogada: se suben en «Inicio» del panel.
+   */
+  portadas: ImagenPortada[];
 };
 
 /** Contenido de la página «Clases». */

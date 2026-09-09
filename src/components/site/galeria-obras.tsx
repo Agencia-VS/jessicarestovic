@@ -5,7 +5,7 @@ import type { Obra } from "@/lib/data/tipos";
 import { proporcionEnMosaico } from "@/lib/images";
 import { filasJustificadas } from "@/lib/mosaico";
 import { fichaDe, FiguraObra } from "./figura-obra";
-import { Lightbox } from "./lightbox";
+import { Lightbox, piezasDeObras } from "./lightbox";
 
 interface GaleriaObrasProps {
   obras: Obra[];
@@ -60,7 +60,7 @@ export function GaleriaObras({ obras, pie = "exposicion" }: GaleriaObrasProps) {
       </div>
 
       <Lightbox
-        obras={obras}
+        piezas={piezasDeObras(obras)}
         indice={abierta}
         onCerrar={() => setAbierta(null)}
         onCambiar={setAbierta}

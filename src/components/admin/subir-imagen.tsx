@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { borrarSubidaPendiente, prepararSubidaImagen } from "@/lib/acciones/subida-directa";
 import { advertirDimensiones, ayudaImagen, validarArchivo, type TipoImagen } from "@/lib/images";
 import { subirArchivoPorUrl } from "@/lib/subida-directa";
+import { avisoDeReduccion, reducirImagen } from "@/lib/reducir-imagen";
 
 interface SubirImagenProps {
   /** Nombre del campo en el formulario; la ruta se envía como `${nombre}_path`. */
@@ -29,6 +30,10 @@ interface Medidas {
  *
  * El input no tiene `name`: los bytes no se envían a la Server Action. Al
  * guardar, el formulario solo manda la ruta corta y las medidas.
+ *
+ * Antes de subir, el navegador reduce la foto si hace falta —una de cámara
+ * puede traer 5000 px y 24 MB—, así que las medidas que viajan son las de la
+ * copia subida y no las del archivo que ella eligió.
  */
 export function SubirImagen({
   nombre,
@@ -48,7 +53,9 @@ export function SubirImagen({
   const [medidas, setMedidas] = useState<Medidas | null>(null);
   const [problema, setProblema] = useState<string | null>(null);
   const [advertencia, setAdvertencia] = useState<string | null>(null);
+  const [nota, setNota] = useState<string | null>(null);
   const [progreso, setProgreso] = useState(0);
+  const [preparando, setPreparando] = useState(false);
   const [subiendo, setSubiendo] = useState(false);
   const [arrastrando, setArrastrando] = useState(false);
 
@@ -58,8 +65,8 @@ export function SubirImagen({
   }, [previa]);
 
   useEffect(() => {
-    alCambiarEstado?.(subiendo || (seleccionada && !ruta));
-  }, [alCambiarEstado, ruta, seleccionada, subiendo]);
+    alCambiarEstado?.(preparando || subiendo || (seleccionada && !ruta));
+  }, [alCambiarEstado, preparando, ruta, seleccionada, subiendo]);
 
   const descartarRutaPendiente = () => {
     const anterior = rutaPendiente.current;
@@ -109,6 +116,7 @@ export function SubirImagen({
     setSeleccionada(Boolean(archivo));
     setProblema(null);
     setAdvertencia(null);
+    setNota(null);
     setMedidas(null);
     setProgreso(0);
 
@@ -131,9 +139,18 @@ export function SubirImagen({
     const imagen = new Image();
     imagen.onload = () => {
       if (id !== version.current) return;
-      setMedidas({ ancho: imagen.naturalWidth, alto: imagen.naturalHeight });
-      setAdvertencia(advertirDimensiones(imagen.naturalWidth, imagen.naturalHeight, tipo));
-      void subir(archivo, id);
+      const originales = { ancho: imagen.naturalWidth, alto: imagen.naturalHeight };
+      setAdvertencia(advertirDimensiones(originales.ancho, originales.alto, tipo));
+
+      void (async () => {
+        setPreparando(true);
+        const copia = await reducirImagen(archivo, originales);
+        setPreparando(false);
+        if (id !== version.current) return;
+        setMedidas({ ancho: copia.ancho, alto: copia.alto });
+        setNota(avisoDeReduccion(archivo, copia));
+        await subir(copia.archivo, id);
+      })();
     };
     imagen.onerror = () => {
       if (id === version.current) setProblema("No pudimos leer esa foto. Prueba con un JPG, PNG, WebP o AVIF.");
@@ -202,7 +219,13 @@ export function SubirImagen({
         />
 
         <span className="caption text-ink underline underline-offset-4">
-          {subiendo ? `Subiendo… ${progreso}%` : mostrada ? "Cambiar la foto" : "Elegir una foto"}
+          {preparando
+            ? "Preparando la foto…"
+            : subiendo
+              ? `Subiendo… ${progreso}%`
+              : mostrada
+                ? "Cambiar la foto"
+                : "Elegir una foto"}
         </span>
       </label>
 
@@ -213,6 +236,7 @@ export function SubirImagen({
       ) : (
         <>
           {advertencia && <p className="caption text-muted">{advertencia}</p>}
+          {nota && <p className="caption text-muted">{nota}</p>}
           <p className="caption text-faint">{ayudaImagen(tipo)}</p>
         </>
       )}

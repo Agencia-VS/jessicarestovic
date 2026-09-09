@@ -50,35 +50,3 @@ export function PortadasExposiciones({ exposiciones }: { exposiciones: Exposicio
     </div>
   );
 }
-
-/**
- * Las vistas de montaje de una muestra, en foto completa. También acá se ven
- * enteras: una sala recortada pierde justamente lo que documenta.
- */
-export function VistasDeSala({ exposicion }: { exposicion: Exposicion }) {
-  const lugar = [exposicion.lugar, exposicion.anio].filter(Boolean).join(" · ");
-  const total = exposicion.fotos.length;
-
-  return (
-    <div className="mosaico">
-      {exposicion.fotos.map((foto, indice) => (
-        <figure key={foto.id} className="mb-[clamp(1.875rem,3.8vw,3.875rem)] break-inside-avoid">
-          <div className="flex flex-col gap-3">
-            <Foto
-              src={foto.imagenUrl}
-              alt={foto.imagen_alt}
-              ancho={foto.imagen_ancho}
-              alto={foto.imagen_alto}
-              sizes={SIZES_MOSAICO}
-              prioridad={indice === 0}
-              className="w-full"
-            />
-            <figcaption className="pie text-faint">
-              {[lugar, `Vista ${indice + 1} de ${total}`].filter(Boolean).join(" · ")}
-            </figcaption>
-          </div>
-        </figure>
-      ))}
-    </div>
-  );
-}

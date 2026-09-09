@@ -12,11 +12,11 @@ export default async function InicioAdminPage() {
     <>
       <EncabezadoPanel
         titulo="Inicio"
-        detalle="La foto y la frase que aparecen en la portada del sitio."
+        detalle="Las tres fotos y la frase que aparecen en la portada del sitio."
       />
       <FormularioPortada
         contenido={contenido}
-        portadaUrl={contenido.portada_path ? urlImagen(contenido.portada_path) : null}
+        portadaUrls={contenido.portadas.map(({ path }) => urlImagen(path))}
       />
     </>
   );

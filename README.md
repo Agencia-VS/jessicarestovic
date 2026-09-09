@@ -32,6 +32,21 @@ pared de obras es una retícula justificada: cada fila comparte altura, el
 ancho de cada pieza sigue su proporción real y nada se recorta. Las vistas de
 sala y las portadas conservan columnas CSS de alturas variables.
 
+La **única excepción es el tríptico del Inicio**, y es deliberada: son tres
+cuadrados iguales apenas separados, así que ahí la foto sí se recorta para
+llenar su celda —contenida, una pieza vertical dejaría su cuadrado a medio
+ancho y la fila se vería desparejo—. No esconde nada, porque al tocar
+cualquiera de los tres se abre completa y sin recortar. En el celular se
+apilan en vez de encogerse: tres cuadrados en fila sobre 350 px darían una
+franja de 114 px, donde la obra no se ve.
+
+**Cualquier foto del sitio se abre en grande al tocarla**, y las flechas —o
+`←`/`→`, o arrastrando en el celular, o `Esc` para cerrar— recorren la
+secuencia con la que se abrió: las obras de esa muestra, las vistas de esa
+sala, las tres del Inicio. El visor es uno solo
+(`components/site/lightbox.tsx`) y lo único que cambia por tipo de foto es qué
+se lee abajo: los `piezasDe…` de ese archivo son esa traducción.
+
 Tipografías: *Public Sans* (texto de apoyo, navegación, pies de obra) y
 *Newsreader* (títulos, nombres de obra y párrafos de presentación). El
 logotipo es la firma manuscrita de Jessica, en AVIF con un PNG transparente de
@@ -49,7 +64,7 @@ dentro de esa muestra y no son otra entidad.
 
 | Página | Qué muestra |
 | --- | --- |
-| `/` | Una imagen de portada y una sola línea de texto |
+| `/` | Un tríptico de tres fotos y una sola línea de texto |
 | `/exposiciones` | Índice de muestras: una portada por exposición, con su total de imágenes |
 | `/exposiciones/[slug]` | Una muestra: ficha, texto y todas sus vistas de montaje |
 | `/exposiciones/[slug]/obras` | Las obras de una muestra, agrupadas por conjunto |
@@ -135,8 +150,19 @@ Importar el repositorio en Vercel y cargar las tres variables de entorno
 principal despliega solo.
 
 Las imágenes no pasan por Vercel: el panel pide una URL firmada en una Server
-Action y el navegador hace un `PUT` directo a Supabase Storage. Esto permite
-subir fotos de hasta 15 MB sin ampliar el body de la acción. En «Trabajos
+Action y el navegador hace un `PUT` directo a Supabase Storage, así el tope de
+4,5 MB del body de una función no aplica.
+
+Y antes de subir, **el navegador reduce la foto si hace falta**
+(`lib/reducir-imagen.ts`): las que le entregan a Jessica vienen de cámara, con
+5000 px de lado y hasta 24 MB. Se acepta el archivo tal como está —hasta 40 MB—
+y lo que viaja es una copia de 3000 px en el lado mayor, de dos o tres megas.
+El original no se modifica ni sale de su computador. 3000 px cubre el uso más
+exigente del sitio (la vista ampliada en un monitor grande con densidad doble)
+y `next/image` nunca agranda más allá del original, así que subir más solo
+ocuparía espacio. Las medidas que se guardan son las de la copia subida.
+
+En «Trabajos
 recientes» también está «Subir carpeta»: revisa nombres, exposición, conjunto,
 año y técnica, sube con dos cargas simultáneas como máximo y registra todas las
 obras en un solo insert. Los formatos HEIC se rechazan con instrucciones para
@@ -249,8 +275,10 @@ Falta cargar desde el panel:
 - La biografía de «Sobre mí» y el retrato (el texto de `/about` sirve casi tal
   cual).
 - Revisar el texto de «Clases».
-- Subir la foto de portada desde **Inicio**. Si todavía no existe, el
-  Inicio usa como alternativa la primera obra marcada como **destacada**.
+- Subir las **tres fotos del tríptico** desde **Inicio**. Mientras no haya
+  subido ninguna, el Inicio se arma con las obras marcadas como **destacadas**,
+  así no se ve vacío recién montado. Con una o dos fotos también funciona: se
+  reparten el ancho entre las que haya.
 - Los **años** de las muestras. Hoy solo «Volúmenes» (2013) tiene fecha; el
   resto aparece con «—», pero el orden del listado lo fija Jessica y no depende
   del año.
@@ -267,7 +295,7 @@ npm run typecheck  # TypeScript sin emitir
 
 ## Contacto de Jessica
 
-La imagen y la frase de portada se editan desde **Inicio** en el panel. Los
+Las tres fotos y la frase de portada se editan desde **Inicio** en el panel. Los
 datos de contacto se editan desde **Configuración**. Jessica completa un campo
 por cosa —nunca una URL—, y el sitio deriva el enlace de WhatsApp de los dígitos
 del teléfono y el de Instagram del usuario.

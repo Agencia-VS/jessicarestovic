@@ -1,5 +1,6 @@
 import type { Exposicion, FotoDeSala, Obra } from "./tipos";
 import type { ClasesContenido, SobreMiContenido } from "@/types/database";
+import { CELDAS_PORTADA } from "@/lib/site-config";
 
 /**
  * Contenido de referencia para cuando todavía no hay base de datos conectada.
@@ -178,7 +179,8 @@ const OBRAS: Obra[] = EXPOS.flatMap((definicion, indiceExpo) => {
       imagen_alt: `${pieza.titulo} — bloque de color de referencia, no la obra real`,
       imagen_ancho: bloque.ancho,
       imagen_alto: bloque.alto,
-      destacada: definicion.slug === "ensambles-al-cubo" && indicePieza === 3,
+      destacada:
+        definicion.slug === "ensambles-al-cubo" && indicePieza < CELDAS_PORTADA,
       publicada: true,
       orden: indicePieza,
       creado_en: AHORA,
