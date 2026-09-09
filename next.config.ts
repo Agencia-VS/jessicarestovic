@@ -26,7 +26,12 @@ const nextConfig: NextConfig = {
       // «Trabajos recientes» dejó de ser una página que junta todo y pasó a ser
       // un conjunto dentro de «Trabajos».
       { source: "/trabajos-recientes", destination: "/trabajos", permanent: true },
-      { source: "/admin/trabajos-recientes/:path*", destination: "/admin/obras/:path*", permanent: false },
+      { source: "/trabajos-recientes/:path+", destination: "/trabajos", permanent: true },
+      // El índice plano de obras desapareció: las fotos viven dentro de su
+      // grupo. Las rutas de una obra suelta —alta, edición, carpeta— siguen.
+      { source: "/admin/obras", destination: "/admin/trabajos", permanent: false },
+      { source: "/admin/trabajos-recientes", destination: "/admin/trabajos", permanent: false },
+      { source: "/admin/trabajos-recientes/:path+", destination: "/admin/obras/:path+", permanent: false },
       { source: "/admin/series/:path*", destination: "/admin/exposiciones/:path*", permanent: false },
     ];
   },

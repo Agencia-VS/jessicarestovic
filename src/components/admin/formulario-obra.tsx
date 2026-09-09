@@ -10,6 +10,7 @@ import { INICIAL } from "@/lib/acciones/resultado";
 import { crearGrupoRapido } from "@/lib/acciones/exposiciones";
 import { crearObra, editarObra } from "@/lib/acciones/obras";
 import type { Exposicion, Obra } from "@/lib/data/tipos";
+import { seccionDeGrupo } from "@/lib/site-config";
 
 interface FormularioObraProps {
   /** Todos los grupos, muestras y conjuntos de trabajo, para el desplegable. */
@@ -49,6 +50,12 @@ export function FormularioObra({
   const [, iniciar] = useTransition();
 
   const errores = resultado.errores ?? {};
+
+  // Se vuelve al grupo del que se entró: ya no hay una sección de obras.
+  const grupoElegido = listaExposiciones.find((grupo) => grupo.id === exposicionElegida);
+  const volverA = grupoElegido
+    ? `${seccionDeGrupo(grupoElegido.tipo)}/${grupoElegido.id}`
+    : "/admin/trabajos";
 
   /** Las opciones de un tipo, rotuladas con su año y si está oculto. */
   const opcionesDe = (tipo: Exposicion["tipo"]) =>
@@ -252,7 +259,7 @@ export function FormularioObra({
         <Boton type="submit" cargando={guardando} disabled={subiendoImagen}>
           {editando ? "Guardar cambios" : "Publicar obra"}
         </Boton>
-        <BotonEnlace href="/admin/obras">Volver</BotonEnlace>
+        <BotonEnlace href={volverA}>Volver</BotonEnlace>
       </div>
     </form>
   );

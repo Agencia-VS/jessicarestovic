@@ -19,7 +19,7 @@ export default async function NuevaObraPage({
     <>
       <EncabezadoPanel
         titulo="Nueva obra"
-        detalle="La obra queda publicada al guardar. Año, técnica y medidas son opcionales."
+        detalle="Una sola foto, con su ficha completa. Año, técnica y medidas son opcionales."
       />
       <FormularioObra
         exposiciones={exposiciones}

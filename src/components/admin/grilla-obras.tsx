@@ -13,13 +13,18 @@ import { Confirmar } from "./confirmar";
 
 interface GrillaObrasProps {
   obras: Obra[];
+  /**
+   * El encabezado con el nombre del grupo. Se omite cuando la grilla ya vive
+   * dentro de la página de ese grupo y el nombre está arriba.
+   */
+  conEncabezado?: boolean;
 }
 
 /**
- * Grilla de trabajos recientes. Las tarjetas se agrupan por exposición y el
- * arrastre solo escribe el orden dentro de ese grupo, que es donde se consume.
+ * Grilla de obras. Las tarjetas se agrupan por grupo y el arrastre solo
+ * escribe el orden dentro de ese grupo, que es donde se consume.
  */
-export function GrillaObras({ obras }: GrillaObrasProps) {
+export function GrillaObras({ obras, conEncabezado = true }: GrillaObrasProps) {
   const [lista, setLista] = useState(obras);
   const [arrastrada, setArrastrada] = useState<string | null>(null);
   const [, iniciar] = useTransition();
@@ -72,9 +77,11 @@ export function GrillaObras({ obras }: GrillaObrasProps) {
     <div className="flex flex-col gap-12">
       {[...grupos.values()].map((grupo) => (
         <section key={grupo.titulo} className="flex flex-col gap-5">
-          <h2 className="font-display text-[clamp(1.5rem,2.8vw,2.25rem)] leading-tight font-light">
-            {grupo.titulo}
-          </h2>
+          {conEncabezado && (
+            <h2 className="font-display text-[clamp(1.5rem,2.8vw,2.25rem)] leading-tight font-light">
+              {grupo.titulo}
+            </h2>
+          )}
           <ul className="grid grid-cols-1 gap-x-6 gap-y-8 sm:grid-cols-2 lg:grid-cols-3">
             {grupo.obras.map((obra) => (
               <li

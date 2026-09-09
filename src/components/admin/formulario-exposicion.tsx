@@ -8,12 +8,10 @@ import { Aviso } from "./aviso";
 import { Confirmar } from "./confirmar";
 import { INICIAL } from "@/lib/acciones/resultado";
 import { crearExposicion, editarExposicion, eliminarFoto } from "@/lib/acciones/exposiciones";
-import type { Exposicion, Obra, TipoDeGrupo } from "@/lib/data/tipos";
+import type { Exposicion, TipoDeGrupo } from "@/lib/data/tipos";
 
 interface FormularioExposicionProps {
   exposicion?: Exposicion;
-  /** Obras que ya pertenecen al grupo, para el bloque de solo lectura. */
-  obras?: Obra[];
   /**
    * Qué se está creando. Al editar manda el tipo del grupo, que no cambia:
    * una muestra no se convierte en conjunto ni al revés.
@@ -26,13 +24,15 @@ interface FormularioExposicionProps {
  * un conjunto de trabajo.
  *
  * Lo que cambia con el tipo es lo que solo tiene sentido con sala: el lugar y
- * las vistas de montaje. El resto —título, año, descripción, el interruptor de
- * publicada y el bloque de obras— es idéntico, así que es un formulario y no
- * dos.
+ * las vistas de montaje. El resto —título, año, descripción y el interruptor
+ * de publicada— es idéntico, así que es un formulario y no dos.
+ *
+ * Las obras del grupo no están acá sino debajo, en la página: son su propia
+ * superficie, con su arrastre y su alta, y no tendría sentido meter una grilla
+ * con botones dentro de un `<form>`.
  */
 export function FormularioExposicion({
   exposicion,
-  obras = [],
   tipo: tipoInicial = "exposicion",
 }: FormularioExposicionProps) {
   const editando = Boolean(exposicion);
@@ -94,47 +94,6 @@ export function FormularioExposicion({
             : "Se muestra al desplegar la exposición en el listado."
         }
       />
-
-      {exposicion && (
-        <div className="flex flex-col gap-3 border-t border-line pt-6">
-          <div className="flex flex-wrap items-baseline justify-between gap-3">
-            <span className="eyebrow text-muted">
-              {esTrabajo ? "Obras de este conjunto" : "Obras de esta muestra"}
-              <span className="ml-2 normal-case tracking-normal text-faint">
-                {obras.length}
-              </span>
-            </span>
-            <BotonEnlace
-              href={`/admin/obras/nueva?exposicion=${exposicion.id}`}
-              variante="secundario"
-            >
-              {esTrabajo ? "Subir una obra a este conjunto" : "Subir una obra a esta muestra"}
-            </BotonEnlace>
-          </div>
-          {obras.length > 0 ? (
-            <ul className="border-t border-line-soft">
-              {obras.map((obra) => (
-                <li
-                  key={obra.id}
-                  className="flex items-baseline justify-between gap-4 border-b border-line-soft py-3"
-                >
-                  <span className="text-sm text-ink">{obra.titulo}</span>
-                  <span className="caption text-muted">
-                    {obra.conjunto ?? "Sin conjunto"}
-                    {!obra.publicada && " · Oculta"}
-                  </span>
-                </li>
-              ))}
-            </ul>
-          ) : (
-            <p className="caption text-faint">
-              {esTrabajo
-                ? "Todavía no hay obras asignadas a este conjunto."
-                : "Todavía no hay obras asignadas a esta muestra."}
-            </p>
-          )}
-        </div>
-      )}
 
       {!esTrabajo && exposicion && exposicion.fotos.length > 0 && (
         <div className="flex flex-col gap-3">

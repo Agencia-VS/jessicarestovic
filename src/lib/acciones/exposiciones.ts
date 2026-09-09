@@ -15,11 +15,7 @@ import {
 import { erroresPorCampo, exposicionSchema, slugify } from "@/lib/validacion";
 import { rutaDeImagenValida } from "@/lib/subida-directa";
 import type { TipoDeGrupo } from "@/types/database";
-
-/** Dónde vive cada tipo de grupo en el panel. */
-function seccionDe(tipo: TipoDeGrupo): string {
-  return tipo === "trabajo" ? "/admin/trabajos" : "/admin/exposiciones";
-}
+import { seccionDeGrupo } from "@/lib/site-config";
 
 /**
  * Los dos índices y las dos páginas de detalle: exposiciones y conjuntos de
@@ -32,8 +28,9 @@ function revalidarExposiciones(): void {
   revalidatePath("/trabajos");
   revalidatePath("/trabajos/[slug]", "page");
   revalidatePath("/admin/exposiciones");
+  revalidatePath("/admin/exposiciones/[id]", "page");
   revalidatePath("/admin/trabajos");
-  revalidatePath("/admin/obras");
+  revalidatePath("/admin/trabajos/[id]", "page");
 }
 
 function leerCampos(formData: FormData, tipo: TipoDeGrupo) {
@@ -194,7 +191,9 @@ export async function crearExposicion(
   }
 
   revalidarExposiciones();
-  redirect(`${seccionDe(tipo)}?aviso=${esTrabajo ? "trabajo-creado" : "exposicion-creada"}`);
+  redirect(
+    `${seccionDeGrupo(tipo)}?aviso=${esTrabajo ? "trabajo-creado" : "exposicion-creada"}`,
+  );
 }
 
 export async function editarExposicion(

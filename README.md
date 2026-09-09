@@ -177,11 +177,17 @@ exigente del sitio (la vista ampliada en un monitor grande con densidad doble)
 y `next/image` nunca agranda más allá del original, así que subir más solo
 ocuparía espacio. Las medidas que se guardan son las de la copia subida.
 
-En «Obras» también está «Subir carpeta»: revisa nombres, grupo, conjunto, año
-y técnica, sube con dos cargas simultáneas como máximo y registra todas las
-obras en un solo insert. Si el nombre de la carpeta calza por slug con un grupo
-existente, se asigna solo. Los formatos HEIC se rechazan con instrucciones para
-convertirlos a JPG.
+**Las fotos se suben dentro de su grupo**, no en una sección aparte: se entra a
+una exposición o a un conjunto de trabajo y ahí mismo están sus fotos, su orden
+y su alta — el mismo gesto que las vistas de sala. No hay que elegir el grupo en
+un desplegable porque ya se está dentro de él.
+
+«Subir fotos» acepta varias de una vez o una carpeta completa: revisa nombres,
+grupo, conjunto, año y técnica, sube con dos cargas simultáneas como máximo y
+registra todas las obras en un solo insert. Si el nombre de la carpeta calza por
+slug con un grupo existente, se asigna solo, y cada subcarpeta se propone como
+un conjunto. Los formatos HEIC se rechazan con instrucciones para convertirlos a
+JPG.
 
 ## Estructura
 
@@ -198,8 +204,9 @@ src/
 │   ├── privacidad/           Qué datos se recogen y para qué
 │   └── admin/
 │       ├── login/            Acceso (fuera del marco del panel)
-│       └── (panel)/          Inicio, Obras, Exposiciones, Trabajos, Sobre mí,
+│       └── (panel)/          Inicio, Exposiciones, Trabajos, Sobre mí,
 │                              Clases, Mensajes y Configuración
+│                              (las fotos se suben dentro de cada grupo)
 ├── components/
 │   ├── site/                 Componentes del sitio público
 │   ├── admin/                Componentes del panel
@@ -304,7 +311,8 @@ Falta cargar desde el panel:
   resto aparece con «—», pero el orden del listado lo fija Jessica y no depende
   del año.
 - Crear sus **conjuntos de trabajo** en «Trabajos» y repartir ahí las obras que
-  hoy están en «Trabajos recientes».
+  hoy están en «Trabajos recientes». Cada conjunto se abre y sus fotos se suben
+  ahí dentro.
 
 ## Comandos
 
