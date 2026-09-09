@@ -56,7 +56,7 @@ export async function actualizarSesion(request: NextRequest): Promise<NextRespon
 
   if (esLogin && user) {
     const destino = request.nextUrl.clone();
-    destino.pathname = "/admin/obras";
+    destino.pathname = "/admin/trabajos";
     destino.search = "";
     return NextResponse.redirect(destino);
   }

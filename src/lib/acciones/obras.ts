@@ -16,6 +16,7 @@ import {
 import { erroresPorCampo, obraSchema, slugify } from "@/lib/validacion";
 import { rutaDeImagenValida } from "@/lib/subida-directa";
 import type { ObraEnLoteEntrada } from "@/lib/data/tipos";
+import { seccionDeGrupo } from "@/lib/site-config";
 
 /**
  * Rutas que dependen de las obras.
@@ -30,7 +31,6 @@ function revalidarObras(): void {
   revalidatePath("/exposiciones/[slug]/obras", "page");
   revalidatePath("/trabajos");
   revalidatePath("/trabajos/[slug]", "page");
-  revalidatePath("/admin/obras");
   revalidatePath("/admin/exposiciones");
   revalidatePath("/admin/exposiciones/[id]", "page");
   revalidatePath("/admin/trabajos");
@@ -110,6 +110,28 @@ async function siguienteOrden(
   return (data?.orden ?? -1) + 1;
 }
 
+/**
+ * La página del grupo al que se acaba de subir, que es de donde se entró.
+ *
+ * Ya no hay una sección de obras a la que volver: las fotos viven dentro de su
+ * exposición o de su conjunto. Sin grupo asignado, el listado de conjuntos es
+ * el lugar menos sorprendente.
+ */
+async function paginaDelGrupo(
+  supabase: NonNullable<Awaited<ReturnType<typeof clienteConSesion>>>,
+  exposicionId: string | null,
+): Promise<string> {
+  if (!exposicionId) return "/admin/trabajos";
+
+  const { data } = await supabase
+    .from("exposicion")
+    .select("tipo")
+    .eq("id", exposicionId)
+    .maybeSingle();
+
+  return `${seccionDeGrupo(data?.tipo ?? "exposicion")}/${exposicionId}`;
+}
+
 /** Medidas que el navegador leyó de la foto antes de subirla. */
 function leerMedidas(formData: FormData) {
   return {
@@ -150,7 +172,7 @@ export async function crearObra(_previo: Resultado, formData: FormData): Promise
   }
 
   revalidarObras();
-  redirect("/admin/obras?aviso=obra-creada");
+  redirect(`${await paginaDelGrupo(supabase, campos.datos.exposicion_id)}?aviso=obra-creada`);
 }
 
 /**

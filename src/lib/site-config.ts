@@ -1,9 +1,18 @@
-import type { ConfiguracionContenido, ImagenPortada } from "@/types/database";
+import type {
+  ConfiguracionContenido,
+  ImagenPortada,
+  TipoDeGrupo,
+} from "@/types/database";
 
 /**
  * Fuente única de verdad para los datos del sitio: identidad, navegación y
  * contacto. Todo lo que aparece en más de un lugar vive acá.
  */
+
+/** La sección del panel donde se administra cada tipo de grupo. */
+export function seccionDeGrupo(tipo: TipoDeGrupo): string {
+  return tipo === "trabajo" ? "/admin/trabajos" : "/admin/exposiciones";
+}
 
 /** Cuántas fotos forman el tríptico del Inicio. */
 export const CELDAS_PORTADA = 3;
@@ -134,12 +143,12 @@ export const navPublica: readonly NavItem[] = [
 /**
  * Navegación del panel — las secciones del brief (§07).
  *
- * «Obras» son las piezas: se suben, se ordenan y se asignan a un grupo.
- * «Exposiciones» y «Trabajos» son los grupos, separados igual que en el sitio.
+ * No hay sección de obras: las fotos se suben **dentro** del grupo al que
+ * pertenecen, igual que las vistas de sala. Se entra a una exposición o a un
+ * conjunto de trabajo y ahí mismo están sus fotos, su orden y su alta.
  */
 export const navAdmin: readonly NavItem[] = [
   { href: "/admin/inicio", label: "Inicio" },
-  { href: "/admin/obras", label: "Obras" },
   { href: "/admin/exposiciones", label: "Exposiciones" },
   { href: "/admin/trabajos", label: "Trabajos" },
   { href: "/admin/sobre-mi", label: "Sobre mí" },

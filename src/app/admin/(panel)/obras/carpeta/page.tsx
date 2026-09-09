@@ -2,7 +2,7 @@ import { EncabezadoPanel } from "@/components/admin/encabezado-panel";
 import { SubirCarpeta } from "@/components/admin/subir-carpeta";
 import { listarConjuntos, listarGrupos } from "@/lib/data/consultas";
 
-export const metadata = { title: "Subir carpeta" };
+export const metadata = { title: "Subir fotos" };
 
 export default async function SubirCarpetaPage({
   searchParams,
@@ -18,8 +18,8 @@ export default async function SubirCarpetaPage({
   return (
     <>
       <EncabezadoPanel
-        titulo="Subir carpeta"
-        detalle="Revisa los nombres y agrupaciones antes de guardar. Las fotos no se registran como obras hasta que confirmes."
+        titulo="Subir fotos"
+        detalle="Varias de una vez, o una carpeta completa. Revisa los nombres y las agrupaciones antes de guardar: nada se registra hasta que confirmes."
       />
       <SubirCarpeta
         exposiciones={exposiciones}

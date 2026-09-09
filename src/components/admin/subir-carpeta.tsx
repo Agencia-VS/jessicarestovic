@@ -10,6 +10,7 @@ import { subirArchivoPorUrl } from "@/lib/subida-directa";
 import { avisoDeReduccion, reducirImagen, type Medidas } from "@/lib/reducir-imagen";
 import type { Exposicion, ObraEnLoteEntrada } from "@/lib/data/tipos";
 import { Boton, BotonEnlace } from "@/components/ui/boton";
+import { seccionDeGrupo } from "@/lib/site-config";
 
 interface Grupo {
   id: string;
@@ -398,7 +399,7 @@ export function SubirCarpeta({
       setMensaje(resultado.error);
       return;
     }
-    router.push(`/admin/obras?aviso=obras-creadas&cantidad=${resultado.cantidad}`);
+    router.push(`${volverA}?aviso=obras-creadas&cantidad=${resultado.cantidad}`);
   };
 
   const porGrupo = useMemo(
@@ -406,6 +407,15 @@ export function SubirCarpeta({
     [filas, grupos],
   );
   const exposicionInicialValida = exposicionInicial ?? "";
+
+  // Se entró desde un grupo, así que se vuelve a él. Si la carpeta reparte las
+  // fotos en varios grupos, el del primero es el que se abrió.
+  const grupoDeVuelta =
+    exposiciones.find((grupo) => grupo.id === exposicionInicial) ??
+    exposiciones.find((grupo) => grupo.id === grupos[0]?.exposicionId);
+  const volverA = grupoDeVuelta
+    ? `${seccionDeGrupo(grupoDeVuelta.tipo)}/${grupoDeVuelta.id}`
+    : "/admin/trabajos";
 
   return (
     <div className="flex flex-col gap-8">
@@ -424,8 +434,12 @@ export function SubirCarpeta({
           arrastrando ? "border-ink bg-line-soft" : "border-line hover:border-faint"
         }`}
       >
-        <span className="text-sm text-ink">Arrastra aquí una carpeta de fotos</span>
-        <span className="caption text-muted">También puedes tocar para elegirla desde el celular o computador.</span>
+        <span className="text-sm text-ink">Arrastra aquí las fotos, o una carpeta completa</span>
+        <span className="caption text-muted">
+          También puedes tocar para elegirlas desde el celular o el computador. Si
+          sueltas una carpeta con subcarpetas, cada subcarpeta se propone como un
+          conjunto.
+        </span>
         <input
           ref={inputRef}
           type="file"
@@ -434,7 +448,7 @@ export function SubirCarpeta({
           onChange={(evento) => preparar(evento.target.files ?? [])}
           className="sr-only"
         />
-        <span className="caption text-ink underline underline-offset-4">Elegir carpeta</span>
+        <span className="caption text-ink underline underline-offset-4">Elegir fotos</span>
       </label>
 
       <p className="caption text-faint">{ayudaImagen("obra")} Los archivos HEIC deben convertirse a JPG.</p>
@@ -555,7 +569,7 @@ export function SubirCarpeta({
         <Boton type="button" onClick={confirmar} cargando={guardando} disabled={filas.length === 0}>
           Confirmar y guardar obras
         </Boton>
-        <BotonEnlace href="/admin/obras">Cancelar</BotonEnlace>
+        <BotonEnlace href={volverA}>Cancelar</BotonEnlace>
       </div>
 
       <p className="caption text-faint">Las fotos se suben directamente y las obras se guardan juntas al confirmar.</p>
