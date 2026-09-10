@@ -2,10 +2,25 @@ import Image from "next/image";
 import Link from "next/link";
 import { siteConfig } from "@/lib/site-config";
 
-/** Medidas de la firma en cada lugar donde aparece. */
+/**
+ * Medidas de la firma en cada lugar donde aparece.
+ *
+ * El alto es el de la caja, no el del trazo: el PNG lleva un 17% de margen
+ * transparente (19px arriba y 10px abajo de 166), así que lo que se ve mide
+ * cuatro quintos de lo declarado.
+ */
 const ALTOS = {
-  // Cabecera: 34px en móvil, hasta 48px en escritorio.
-  cabecera: "h-[clamp(2.125rem,3.4vw,3rem)]",
+  /**
+   * Cabecera: 38px en móvil, hasta 56px en escritorio.
+   *
+   * El piso no es estético, es un presupuesto de ancho. La firma es muy
+   * apaisada (620:166), así que cada píxel de alto le cuesta casi cuatro de
+   * ancho al menú. A 667px —un iPhone en horizontal— la fila entera admite 40px
+   * de firma con la webfont cargada y 39 con la de respaldo: a 40 el menú se
+   * quiebra en el instante antes de que cargue la fuente. 38px deja 7px de
+   * holgura en el peor caso y sigue siendo un 12% más que antes.
+   */
+  cabecera: "h-[clamp(2.375rem,4vw,3.5rem)]",
   pie: "h-6",
   panel: "h-8",
 } as const;
