@@ -31,8 +31,24 @@ const PESO_QUE_OBLIGA = 6 * MB;
 /** Suficiente para que el reencodado no se note en obra fotografiada. */
 const CALIDAD = 0.92;
 
-/** WebP conserva transparencia y pesa menos; JPG es el respaldo universal. */
-const FORMATO_PREFERIDO = "image/webp";
+/**
+ * La copia mantiene el formato del original.
+ *
+ * Antes se reencodaba todo a WebP, que pesa menos. Salió mal: las fotos de
+ * obra dejaron de verse mientras las vistas de sala —que no pasan por acá y
+ * siguen siendo JPEG— se veían bien. Ese era el único cambio de variable entre
+ * las dos rutas, así que la copia deja de cambiar de formato: lo único que
+ * cambia es el tamaño.
+ *
+ * Los formatos que un lienzo sabe escribir. Cualquier otro —AVIF, por
+ * ejemplo— sale como JPG, que es el respaldo universal.
+ */
+const EXTENSION_POR_TIPO: Record<string, string> = {
+  "image/jpeg": "jpg",
+  "image/png": "png",
+  "image/webp": "webp",
+};
+
 const FORMATO_RESPALDO = "image/jpeg";
 
 export interface Medidas {
@@ -74,7 +90,7 @@ function reencodar(lienzo: HTMLCanvasElement, tipo: string): Promise<Blob | null
 
 function conExtension(nombre: string, tipo: string): string {
   const base = nombre.replace(/\.[^.]+$/, "") || "foto";
-  return `${base}.${tipo === FORMATO_PREFERIDO ? "webp" : "jpg"}`;
+  return `${base}.${EXTENSION_POR_TIPO[tipo] ?? "jpg"}`;
 }
 
 /**
@@ -105,10 +121,11 @@ export async function reducirImagen(archivo: File, medidas: Medidas): Promise<Fo
       if (!pincel) return sinTocar;
       pincel.drawImage(fuente, 0, 0, ancho, alto);
 
-      // Algunos navegadores ignoran el tipo pedido y devuelven PNG, que para
-      // una foto pesa más que el original. Se comprueba y se cae a JPG.
-      let blob = await reencodar(lienzo, FORMATO_PREFERIDO);
-      if (!blob || blob.type !== FORMATO_PREFERIDO) {
+      // El mismo formato que traía, si el lienzo lo sabe escribir. Si el
+      // navegador ignora el tipo pedido y devuelve otra cosa, se cae a JPG.
+      const deseado = EXTENSION_POR_TIPO[archivo.type] ? archivo.type : FORMATO_RESPALDO;
+      let blob = await reencodar(lienzo, deseado);
+      if (!blob || blob.type !== deseado) {
         blob = await reencodar(lienzo, FORMATO_RESPALDO);
       }
       // Si la copia no pesa menos, el original es mejor: se sube tal cual.
