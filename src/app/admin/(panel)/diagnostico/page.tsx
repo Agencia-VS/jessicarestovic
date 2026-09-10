@@ -2,7 +2,7 @@ import { headers } from "next/headers";
 import { EncabezadoPanel } from "@/components/admin/encabezado-panel";
 import { EstadoVacio } from "@/components/ui/estado-vacio";
 import { listarObrasAdmin } from "@/lib/data/consultas";
-import { clienteConSesion } from "@/lib/acciones/comun";
+import { clienteConSesion, type Cliente } from "@/lib/acciones/comun";
 import { BUCKET_IMAGENES } from "@/lib/images";
 import { hostDe } from "@/lib/url";
 
@@ -17,9 +17,16 @@ export const metadata = { title: "Diagnóstico" };
  * la plataforma. Desde fuera no se distinguen, y averiguarlo a distancia toma
  * varias vueltas.
  *
- * Esta página hace las tres preguntas de una vez, sobre una foto real y desde
- * el propio despliegue, y dice cuál falla. Vive dentro del panel, así que pide
+ * Esta página hace las tres preguntas de una vez, sobre fotos reales y desde el
+ * propio despliegue, y dice cuál falla. Vive dentro del panel, así que pide
  * sesión; no muestra ninguna clave.
+ *
+ * Una lección aprendida a costa de varias vueltas: la versión anterior probaba
+ * el optimizador contra «la primera foto» y rotulaba cualquier 400 como un
+ * problema de `remotePatterns`. Cuando justo esa foto era una de las que no
+ * tenía archivo, la página afirmaba con seguridad una causa equivocada. Ahora
+ * el orden es el correcto: primero se averigua de qué fotos falta el archivo, y
+ * el optimizador se prueba con una que sí lo tenga.
  */
 
 interface Prueba {
@@ -29,6 +36,12 @@ interface Prueba {
 }
 
 const TIEMPO_MAXIMO = 12_000;
+
+/** La carpeta del bucket donde viven las fotos de obra. */
+const CARPETA_OBRAS = "obras";
+
+/** Lo que devuelve `list` de una vez; se pagina hasta agotar la carpeta. */
+const POR_PAGINA = 1000;
 
 /** El origen que el navegador está usando, que puede no ser `SITE_URL`. */
 async function origenActual(): Promise<string> {
@@ -51,6 +64,30 @@ async function estadoDe(url: string): Promise<string> {
     return `HTTP ${respuesta.status} · ${tipo}`;
   } catch (error) {
     return error instanceof Error ? `no se pudo pedir: ${error.message}` : "no se pudo pedir";
+  }
+}
+
+/**
+ * Todas las rutas que existen de verdad en la carpeta de obras.
+ *
+ * Un solo listado paginado en vez de una consulta por foto: con cincuenta obras
+ * son cincuenta idas y vueltas contra una, y el dato que interesa —si el
+ * archivo está o no— es el mismo. Devuelve `null` si el listado falla, para no
+ * acusar de ausente a un archivo que sí puede estar.
+ */
+async function rutasEnStorage(supabase: Cliente): Promise<Set<string> | null> {
+  const rutas = new Set<string>();
+  let desde = 0;
+
+  for (;;) {
+    const { data, error } = await supabase.storage
+      .from(BUCKET_IMAGENES)
+      .list(CARPETA_OBRAS, { limit: POR_PAGINA, offset: desde });
+
+    if (error || !data) return null;
+    for (const archivo of data) rutas.add(`${CARPETA_OBRAS}/${archivo.name}`);
+    if (data.length < POR_PAGINA) return rutas;
+    desde += data.length;
   }
 }
 
@@ -85,35 +122,63 @@ export default async function DiagnosticoPage() {
       : "no lo conocía. El optimizador solo tiene el patrón genérico «*.supabase.co», y si la plataforma no interpreta ese comodín, rechaza las fotos con 400. Se arregla dejando la variable disponible para todos los entornos y volviendo a desplegar.",
   });
 
-  const [obra] = await listarObrasAdmin();
+  const obras = await listarObrasAdmin();
+  const supabase = obras.length > 0 ? await clienteConSesion() : null;
+  const rutas = supabase ? await rutasEnStorage(supabase) : null;
 
-  if (obra) {
-    const supabase = await clienteConSesion();
-    const info = supabase
-      ? await supabase.storage.from(BUCKET_IMAGENES).info(obra.imagen_path)
-      : null;
+  /**
+   * Las fotos cuya fila apunta a un archivo que no está en el bucket.
+   *
+   * Es el caso que costó encontrar: la fila se escribió y la subida no llegó,
+   * así que el sitio pide una URL que Storage responde con un 400 en JSON. El
+   * navegador no tiene imagen que pintar y muestra el texto alternativo. No se
+   * arregla solo —no hay archivo que mostrar—: hay que borrar la foto y
+   * subirla de nuevo.
+   */
+  // Solo se juzga lo que se listó: una ruta fuera de la carpeta de obras no
+  // está ausente, está sin comprobar.
+  const comprobables = obras.filter((obra) =>
+    obra.imagen_path.startsWith(`${CARPETA_OBRAS}/`),
+  );
+  const sinArchivo = rutas
+    ? comprobables.filter((obra) => !rutas.has(obra.imagen_path))
+    : [];
+  const sanas = rutas
+    ? comprobables.filter((obra) => rutas.has(obra.imagen_path))
+    : obras;
 
+  if (obras.length > 0) {
     pruebas.push({
-      nombre: "El archivo de la primera foto está en Storage",
-      ok: info ? Boolean(info.data) && !info.error : null,
-      detalle: info?.data
-        ? `${obra.imagen_path} · ${info.data.contentType ?? "sin tipo"} · ${Math.round((info.data.size ?? 0) / 1024)} kB`
-        : `${obra.imagen_path} · ${info?.error?.message ?? "no se pudo consultar"}`,
+      nombre: "Cada foto tiene su archivo en Storage",
+      ok: rutas ? sinArchivo.length === 0 : null,
+      detalle: !rutas
+        ? "no se pudo listar el bucket, así que esta prueba no concluye"
+        : sinArchivo.length === 0
+          ? `las ${comprobables.length} fotos tienen su archivo`
+          : `${sinArchivo.length} de ${comprobables.length} apuntan a un archivo que no está. Hay que borrarlas y subirlas de nuevo: ${sinArchivo
+              .map((obra) => `${obra.titulo} (${obra.exposicion?.titulo ?? "sin grupo"})`)
+              .join(" · ")}`,
     });
+  }
 
+  const muestra = sanas[0];
+
+  if (muestra) {
     pruebas.push({
       nombre: "La foto se puede leer sin sesión (bucket público)",
       ok: null,
-      detalle: `${obra.imagenUrl} → ${await estadoDe(obra.imagenUrl)}`,
+      detalle: `${muestra.titulo} → ${await estadoDe(muestra.imagenUrl)}`,
     });
 
     const origen = await origenActual();
     if (origen) {
-      const optimizada = `${origen}/_next/image?url=${encodeURIComponent(obra.imagenUrl)}&w=640&q=75`;
+      const optimizada = `${origen}/_next/image?url=${encodeURIComponent(muestra.imagenUrl)}&w=640&q=75`;
       pruebas.push({
         nombre: "El optimizador de imágenes acepta la foto",
         ok: null,
-        detalle: `${await estadoDe(optimizada)} — un 400 significa que la URL no calza con images.remotePatterns del despliegue`,
+        detalle: `${muestra.titulo} → ${await estadoDe(
+          optimizada,
+        )} — se prueba con una foto que sí tiene archivo, así que acá un 400 sí apunta a images.remotePatterns del despliegue. Un 200 significa que se puede volver a optimizar.`,
       });
     }
   }
@@ -125,12 +190,12 @@ export default async function DiagnosticoPage() {
         detalle="Por qué una foto no se ve. Ninguna prueba muestra claves."
       />
 
-      {obra ? null : (
+      {obras.length === 0 ? (
         <EstadoVacio
           titulo="Todavía no hay ninguna foto que revisar"
           detalle="Las pruebas de Storage y del optimizador necesitan al menos una obra cargada."
         />
-      )}
+      ) : null}
 
       <ul className="flex flex-col border-t border-line">
         {pruebas.map(({ nombre, ok, detalle }) => (
