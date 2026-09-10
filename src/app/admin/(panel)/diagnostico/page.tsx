@@ -76,6 +76,15 @@ export default async function DiagnosticoPage() {
     },
   ];
 
+  const hostDelBuild = process.env.HOST_IMAGENES_DEL_BUILD;
+  pruebas.push({
+    nombre: "El build conocía el host de Supabase",
+    ok: Boolean(hostDelBuild),
+    detalle: hostDelBuild
+      ? `${hostDelBuild} — el optimizador de imágenes tiene el patrón exacto`
+      : "no lo conocía. El optimizador solo tiene el patrón genérico «*.supabase.co», y si la plataforma no interpreta ese comodín, rechaza las fotos con 400. Se arregla dejando la variable disponible para todos los entornos y volviendo a desplegar.",
+  });
+
   const [obra] = await listarObrasAdmin();
 
   if (obra) {

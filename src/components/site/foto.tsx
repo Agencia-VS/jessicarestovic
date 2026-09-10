@@ -40,6 +40,26 @@ interface FotoProps {
  * `object-contain` sobre el mismo fondo del sitio, de modo que el aire de los
  * costados no se ve (§08 «Por qué no se recorta la obra»).
  */
+/**
+ * Las fotos remotas —las de Supabase Storage— se sirven sin pasar por el
+ * optimizador de imágenes de la plataforma.
+ *
+ * Es una renuncia deliberada y temporal. El optimizador está rechazando esas
+ * URLs con 400 y el navegador, ante un `src` que falla, pinta el texto
+ * alternativo: la obra no se ve. Sin optimizar no hay redimensionado ni
+ * conversión a AVIF, así que el navegador descarga el archivo tal cual —pero
+ * una foto pesada que se ve vale más que una liviana que no.
+ *
+ * El costo está acotado porque lo que se sube ya viene reducido a 3000 px de
+ * lado mayor (`reducir-imagen.ts`), no el archivo de cámara original.
+ *
+ * `/admin/diagnostico` dice cuál es la causa real; en cuanto se sepa, esto se
+ * revierte y el optimizador vuelve.
+ */
+function esRemota(src: string): boolean {
+  return src.startsWith("http");
+}
+
 export function Foto({
   src,
   alt,
@@ -64,6 +84,7 @@ export function Foto({
         fill
         sizes={sizes}
         priority={prioridad}
+        unoptimized={esRemota(src)}
         className={encuadre === "recortada" ? "object-cover" : "object-contain"}
       />
     </div>
