@@ -22,6 +22,17 @@ const MB = 1024 * 1024;
  */
 const PESO_MAX = 40 * MB;
 
+/**
+ * Lo más pesado que Storage acepta de verdad.
+ *
+ * Es el `file_size_limit` del bucket (`0002_rls_storage.sql`). `PESO_MAX` es
+ * otra cosa: lo más grande que aceptamos **leer** del computador, porque el
+ * navegador reduce antes de subir. Cuando ese margen no alcanzaba, el PUT moría
+ * con un 413 y el aviso hablaba de un tamaño que la validación acababa de dar
+ * por bueno.
+ */
+export const TOPE_DE_SUBIDA = 16 * MB;
+
 export interface EspecImagen {
   /** Etiqueta que se muestra como ayuda en el formulario de subida. */
   uso: string;
@@ -102,8 +113,23 @@ export function validarArchivo(archivo: File, tipo: TipoImagen): string | null {
     return "Este formato HEIC no se puede usar. En iPhone: Ajustes → Cámara → Formatos → Más compatible. Si ya tienes la foto, conviértela a JPG.";
   }
 
+  // TIFF merece su propio mensaje: es un formato de escáner y de imprenta muy
+  // habitual, y el aviso genérico deja sin saber qué hacer. No se puede
+  // aceptar aunque quisiéramos: ningún navegador sabe decodificarlo, así que
+  // el panel no puede medirlo, ni mostrar la miniatura, ni reducirlo antes de
+  // subir. Convertirlo a JPG es el único camino y conviene decirlo.
+  if (archivo.type === "image/tiff" || /\.(tif|tiff)$/.test(nombre)) {
+    return "Los archivos TIFF no se pueden usar en el sitio: el navegador no sabe abrirlos. Guárdalo o expórtalo como JPG y súbelo de nuevo.";
+  }
+
   const formatos: readonly string[] = spec.formatos;
-  if (!formatos.includes(archivo.type)) {
+  // Algunos sistemas entregan el archivo sin tipo —un AVIF en Windows, por
+  // ejemplo—, y rechazarlo por eso sería decirle que su foto no es una foto.
+  // Cuando no hay tipo, decide la extensión.
+  const tipoConocido = archivo.type
+    ? formatos.includes(archivo.type)
+    : /\.(jpe?g|png|webp|avif)$/.test(nombre);
+  if (!tipoConocido) {
     return "Ese archivo no es una foto que podamos usar. Sube un JPG, PNG, WebP o AVIF.";
   }
   if (archivo.size > spec.pesoMaxBytes) {

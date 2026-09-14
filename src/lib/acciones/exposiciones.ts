@@ -6,8 +6,10 @@ import {
   booleano,
   borrarImagen,
   clienteConSesion,
+  confirmarSubida,
   enteroONulo,
   fallo,
+  FALTA_EN_STORAGE,
   ok,
   SIN_SESION,
   type Resultado,
@@ -28,9 +30,9 @@ function revalidarExposiciones(): void {
   revalidatePath("/trabajos");
   revalidatePath("/trabajos/[slug]", "page");
   revalidatePath("/admin/exposiciones");
-  revalidatePath("/admin/exposiciones/[id]", "page");
+  revalidatePath("/admin/(panel)/exposiciones/[id]", "page");
   revalidatePath("/admin/trabajos");
-  revalidatePath("/admin/trabajos/[id]", "page");
+  revalidatePath("/admin/(panel)/trabajos/[id]", "page");
 }
 
 function leerCampos(formData: FormData, tipo: TipoDeGrupo) {
@@ -127,12 +129,31 @@ async function guardarFotos(
   const cantidad = Math.min(Math.max(enteroONulo(formData.get("fotos_count")) ?? 0, 0), 200);
   if (cantidad === 0) return null;
 
+  // Las rutas que esta muestra ya tiene guardadas. El formulario no se limpia
+  // al guardar bien —la acción responde sin redirigir—, así que un segundo
+  // «Guardar cambios» reenviaba los mismos campos ocultos y duplicaba cada
+  // foto de sala. Peor: quitar una de las copias borraba el archivo que la
+  // gemela seguía usando.
+  const { data: yaGuardadas } = await supabase
+    .from("exposicion_foto")
+    .select("imagen_path")
+    .eq("exposicion_id", exposicionId);
+  const conocidas = new Set((yaGuardadas ?? []).map((foto) => foto.imagen_path));
+
   const fotos = [];
   for (let indice = 0; indice < cantidad; indice += 1) {
     const path = String(formData.get(`fotos_path_${indice}`) ?? "").trim();
     if (!rutaDeImagenValida(path, "exposiciones")) {
       return "Una de las fotos todavía no terminó de subir. Espera un momento y vuelve a guardar.";
     }
+    if (conocidas.has(path)) continue;
+    conocidas.add(path);
+
+    // El mismo control que crearObra y crearObrasEnLote: sin él, una subida que
+    // respondió bien pero no quedó en el bucket se guarda igual y la página de
+    // la exposición muestra texto alternativo sin ningún error.
+    if (!(await confirmarSubida(supabase, path))) return FALTA_EN_STORAGE;
+
     const alt =
       String(formData.get(`foto_alt_${indice}`) ?? "").trim() ||
       "Vista de sala de la exposición";
@@ -143,9 +164,11 @@ async function guardarFotos(
       imagen_alt: alt,
       imagen_ancho: enteroONulo(formData.get(`foto_ancho_${indice}`)),
       imagen_alto: enteroONulo(formData.get(`foto_alto_${indice}`)),
-      orden: desdeOrden + indice,
+      orden: desdeOrden + fotos.length,
     });
   }
+
+  if (fotos.length === 0) return null;
 
   const { error } = await supabase.from("exposicion_foto").insert(fotos);
 
