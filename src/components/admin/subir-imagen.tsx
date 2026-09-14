@@ -88,24 +88,33 @@ export function SubirImagen({
 
       rutaFirmada = firma.path;
       rutaPendiente.current = firma.path;
-      await subirArchivoPorUrl(firma.url, archivo, setProgreso);
-      if (id !== version.current) return;
+      await subirArchivoPorUrl(firma.url, archivo, (avance) => {
+        if (id === version.current) setProgreso(avance);
+      });
+      if (id !== version.current) {
+        await borrarSubidaPendiente(firma.path, tipo);
+        return;
+      }
       setRuta(firma.path);
       setProblema(null);
     } catch (error) {
       if (rutaFirmada) await borrarSubidaPendiente(rutaFirmada, tipo);
       if (id === version.current) {
+        rutaPendiente.current = null;
         setProblema(
           error instanceof Error
             ? error.message
             : "No pudimos subir la foto. Revisa tu conexión y vuelve a intentar.",
         );
+        // La foto no quedó: se vuelve al estado «sin foto nueva» para que el
+        // resto del formulario se pueda seguir guardando.
+        setSeleccionada(false);
       }
     } finally {
-      if (id === version.current) {
-        rutaPendiente.current = null;
-        setSubiendo(false);
-      }
+      // `rutaPendiente` NO se limpia al terminar bien: es el único asidero para
+      // borrar esta subida si después se elige otra foto. Limpiarlo acá dejaba
+      // huérfano en el bucket cada archivo reemplazado.
+      if (id === version.current) setSubiendo(false);
     }
   };
 
@@ -129,6 +138,11 @@ export function SubirImagen({
     if (problemaArchivo) {
       setProblema(problemaArchivo);
       setPrevia(null);
+      // Sin esto el formulario queda inservible: `seleccionada` sin `ruta`
+      // significa «subida a medias», así que el padre deshabilita Guardar y ya
+      // no se puede corregir ni el título conservando la foto que ya estaba.
+      // La única salida era recargar la página.
+      setSeleccionada(false);
       if (inputRef.current) inputRef.current.value = "";
       return;
     }
@@ -153,7 +167,11 @@ export function SubirImagen({
       })();
     };
     imagen.onerror = () => {
-      if (id === version.current) setProblema("No pudimos leer esa foto. Prueba con un JPG, PNG, WebP o AVIF.");
+      if (id !== version.current) return;
+      setProblema("No pudimos leer esa foto. Prueba con un JPG, PNG, WebP o AVIF.");
+      // Igual que arriba: sin foto utilizable, el formulario tiene que seguir
+      // guardándose con la que ya tenía.
+      setSeleccionada(false);
     };
     imagen.src = url;
   };

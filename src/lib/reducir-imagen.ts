@@ -13,6 +13,8 @@
  * del computador ni se modifica; lo que se sube es una copia.
  */
 
+import { TOPE_DE_SUBIDA } from "./images";
+
 const MB = 1024 * 1024;
 
 /**
@@ -28,20 +30,30 @@ export const LADO_MAYOR_MAX = 3000;
 /** Sobre este peso conviene reencodar aunque las medidas ya estén bien. */
 const PESO_QUE_OBLIGA = 6 * MB;
 
-/** Suficiente para que el reencodado no se note en obra fotografiada. */
-const CALIDAD = 0.92;
+/**
+ * Los intentos, del mejor al peor, hasta que la copia entre en el tope.
+ *
+ * Primero se cede calidad, que casi no se nota en obra fotografiada, y solo
+ * después tamaño. Con JPEG suele bastar el primero; con PNG, que ignora la
+ * calidad, el que manda es la escala.
+ */
+const INTENTOS: ReadonlyArray<{ escala: number; calidad: number }> = [
+  { escala: 1, calidad: 0.92 },
+  { escala: 1, calidad: 0.82 },
+  { escala: 0.75, calidad: 0.82 },
+  { escala: 0.55, calidad: 0.78 },
+];
 
 /**
  * La copia mantiene el formato del original.
  *
  * Antes se reencodaba todo a WebP, que pesa menos. Salió mal: las fotos de
  * obra dejaron de verse mientras las vistas de sala —que no pasan por acá y
- * siguen siendo JPEG— se veían bien. Ese era el único cambio de variable entre
- * las dos rutas, así que la copia deja de cambiar de formato: lo único que
- * cambia es el tamaño.
+ * siguen siendo JPEG— se veían bien. La copia deja de cambiar de formato: lo
+ * único que cambia es el tamaño.
  *
- * Los formatos que un lienzo sabe escribir. Cualquier otro —AVIF, por
- * ejemplo— sale como JPG, que es el respaldo universal.
+ * Los formatos que un lienzo sabe escribir. Cualquier otro —AVIF, o un archivo
+ * que llegó sin tipo— sale como JPG, que es el respaldo universal.
  */
 const EXTENSION_POR_TIPO: Record<string, string> = {
   "image/jpeg": "jpg",
@@ -61,6 +73,21 @@ export interface FotoReducida extends Medidas {
   archivo: File;
   /** `false` cuando la foto ya era chica y se sube tal cual. */
   reducida: boolean;
+}
+
+/**
+ * Las medidas reales de una foto, leídas de su vista previa.
+ *
+ * Vive acá, junto al tipo `Medidas`, porque las tres vías de subida la
+ * necesitan y cada una la tenía escrita a mano con su propio mensaje de error.
+ */
+export function medirImagen(url: string): Promise<Medidas> {
+  return new Promise((resolver, rechazar) => {
+    const imagen = new Image();
+    imagen.onload = () => resolver({ ancho: imagen.naturalWidth, alto: imagen.naturalHeight });
+    imagen.onerror = () => rechazar(new Error("No pudimos leer esa foto."));
+    imagen.src = url;
+  });
 }
 
 /** Decodifica el archivo. `createImageBitmap` no existe en Safari antiguos. */
@@ -84,8 +111,8 @@ function cerrar(fuente: ImageBitmap | HTMLImageElement): void {
   if ("close" in fuente) fuente.close();
 }
 
-function reencodar(lienzo: HTMLCanvasElement, tipo: string): Promise<Blob | null> {
-  return new Promise((resolver) => lienzo.toBlob(resolver, tipo, CALIDAD));
+function reencodar(lienzo: HTMLCanvasElement, tipo: string, calidad: number): Promise<Blob | null> {
+  return new Promise((resolver) => lienzo.toBlob(resolver, tipo, calidad));
 }
 
 function conExtension(nombre: string, tipo: string): string {
@@ -105,36 +132,60 @@ export async function reducirImagen(archivo: File, medidas: Medidas): Promise<Fo
 
   const ladoMayor = Math.max(medidas.ancho, medidas.alto);
   const hayQueEncoger = ladoMayor > LADO_MAYOR_MAX;
-  if (!hayQueEncoger && archivo.size <= PESO_QUE_OBLIGA) return sinTocar;
+  // Un archivo sin tipo reconocible hay que reencodarlo aunque sea chico: la
+  // firma de la subida necesita un tipo que sepa nombrar.
+  const faltaFormato = !EXTENSION_POR_TIPO[archivo.type];
+  if (!hayQueEncoger && archivo.size <= PESO_QUE_OBLIGA && !faltaFormato) return sinTocar;
 
-  const escala = hayQueEncoger ? LADO_MAYOR_MAX / ladoMayor : 1;
-  const ancho = Math.max(1, Math.round(medidas.ancho * escala));
-  const alto = Math.max(1, Math.round(medidas.alto * escala));
+  const escalaBase = hayQueEncoger ? LADO_MAYOR_MAX / ladoMayor : 1;
+  const deseado = EXTENSION_POR_TIPO[archivo.type] ? archivo.type : FORMATO_RESPALDO;
 
   try {
     const fuente = await decodificar(archivo);
     try {
       const lienzo = document.createElement("canvas");
-      lienzo.width = ancho;
-      lienzo.height = alto;
       const pincel = lienzo.getContext("2d");
       if (!pincel) return sinTocar;
-      pincel.drawImage(fuente, 0, 0, ancho, alto);
 
-      // El mismo formato que traía, si el lienzo lo sabe escribir. Si el
-      // navegador ignora el tipo pedido y devuelve otra cosa, se cae a JPG.
-      const deseado = EXTENSION_POR_TIPO[archivo.type] ? archivo.type : FORMATO_RESPALDO;
-      let blob = await reencodar(lienzo, deseado);
-      if (!blob || blob.type !== deseado) {
-        blob = await reencodar(lienzo, FORMATO_RESPALDO);
+      let mejor: { blob: Blob; ancho: number; alto: number } | null = null;
+
+      for (const intento of INTENTOS) {
+        const escala = escalaBase * intento.escala;
+        const ancho = Math.max(1, Math.round(medidas.ancho * escala));
+        const alto = Math.max(1, Math.round(medidas.alto * escala));
+
+        lienzo.width = ancho;
+        lienzo.height = alto;
+        pincel.clearRect(0, 0, ancho, alto);
+        pincel.drawImage(fuente, 0, 0, ancho, alto);
+
+        // Si el navegador ignora el tipo pedido y devuelve otra cosa, se cae a
+        // JPG, que todo lienzo sabe escribir.
+        let blob = await reencodar(lienzo, deseado, intento.calidad);
+        if (!blob || blob.type !== deseado) {
+          blob = await reencodar(lienzo, FORMATO_RESPALDO, intento.calidad);
+        }
+        if (!blob) continue;
+
+        mejor = { blob, ancho, alto };
+        if (blob.size <= TOPE_DE_SUBIDA) break;
       }
-      // Si la copia no pesa menos, el original es mejor: se sube tal cual.
-      if (!blob || blob.size >= archivo.size) return sinTocar;
+
+      if (!mejor) return sinTocar;
+
+      // Si la copia no pesa menos y el original ya entraba tal cual, el
+      // original es mejor. Si el original no entra en el bucket, la copia se
+      // usa igual: es la única con opción de subir.
+      const originalSirve =
+        !faltaFormato && archivo.size <= TOPE_DE_SUBIDA && mejor.blob.size >= archivo.size;
+      if (originalSirve) return sinTocar;
 
       return {
-        archivo: new File([blob], conExtension(archivo.name, blob.type), { type: blob.type }),
-        ancho,
-        alto,
+        archivo: new File([mejor.blob], conExtension(archivo.name, mejor.blob.type), {
+          type: mejor.blob.type,
+        }),
+        ancho: mejor.ancho,
+        alto: mejor.alto,
         reducida: true,
       };
     } finally {

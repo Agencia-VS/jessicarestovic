@@ -4,12 +4,15 @@ import { useEffect, useRef, useState } from "react";
 import { borrarSubidaPendiente, prepararSubidaImagen } from "@/lib/acciones/subida-directa";
 import { advertirDimensiones, ayudaImagen, validarArchivo } from "@/lib/images";
 import { subirArchivoPorUrl } from "@/lib/subida-directa";
+import { avisoDeReduccion, medirImagen, reducirImagen } from "@/lib/reducir-imagen";
 
 interface Seleccion {
   archivo: File;
   previa: string;
   problema: string | null;
   advertencia: string | null;
+  /** Aviso informativo: la foto se subió reducida. */
+  nota: string | null;
   medidas: { ancho: number; alto: number } | null;
   ruta: string | null;
   progreso: number;
@@ -43,7 +46,13 @@ export function SubirFotos({ nombre = "fotos", alCambiarEstado }: SubirFotosProp
 
   useEffect(() => {
     return () => {
-      for (const item of seleccionActual.current) URL.revokeObjectURL(item.previa);
+      for (const item of seleccionActual.current) {
+        URL.revokeObjectURL(item.previa);
+        // Salir sin guardar dejaba estas fotos en el bucket sin ninguna fila
+        // que las nombrara: invisibles y para siempre. Borrarlas es seguro
+        // porque `borrarSubidaPendiente` se niega si ya están en uso.
+        if (item.ruta) void borrarSubidaPendiente(item.ruta, "exposicion");
+      }
     };
   }, []);
 
@@ -99,6 +108,7 @@ export function SubirFotos({ nombre = "fotos", alCambiarEstado }: SubirFotosProp
       previa: URL.createObjectURL(archivo),
       problema: validarArchivo(archivo, "exposicion"),
       advertencia: null,
+      nota: null,
       medidas: null,
       ruta: null,
       progreso: 0,
@@ -106,26 +116,54 @@ export function SubirFotos({ nombre = "fotos", alCambiarEstado }: SubirFotosProp
     } satisfies Seleccion));
     setSeleccion(lista);
 
-    lista.forEach((item, indice) => {
-      if (item.problema) return;
-      const imagen = new Image();
-      imagen.onload = () => {
+    void prepararYSubir(lista, id);
+  };
+
+  /**
+   * Mide, reduce y sube cada foto, de dos en dos.
+   *
+   * Antes se disparaban todas a la vez y sin reducir. Dos problemas: treinta
+   * fotos de 24 MP decodificadas en paralelo son gigabytes de memoria y en un
+   * celular la pestaña muere; y el archivo de cámara viajaba entero, así que
+   * una foto de sala de 20 MB pasaba la validación del panel y después Storage
+   * la rechazaba con un 413. Es el mismo tratamiento que ya recibían las obras.
+   */
+  const prepararYSubir = async (lista: Seleccion[], id: number) => {
+    const pendientes = lista
+      .map((item, indice) => ({ item, indice }))
+      .filter(({ item }) => !item.problema);
+    let siguiente = 0;
+
+    const trabajador = async () => {
+      while (siguiente < pendientes.length) {
+        const { item, indice } = pendientes[siguiente++]!;
         if (id !== version.current) return;
-        const ancho = imagen.naturalWidth;
-        const alto = imagen.naturalHeight;
-        actualizar(indice, {
-          advertencia: advertirDimensiones(ancho, alto, "exposicion"),
-          medidas: { ancho, alto },
-        });
-        void subir(item, indice, id);
-      };
-      imagen.onerror = () => {
-        if (id === version.current) {
-          actualizar(indice, { problema: "No pudimos leer esa foto. Prueba con un JPG, PNG, WebP o AVIF." });
+        try {
+          const originales = await medirImagen(item.previa);
+          if (id !== version.current) return;
+          const copia = await reducirImagen(item.archivo, originales);
+          if (id !== version.current) return;
+          actualizar(indice, {
+            archivo: copia.archivo,
+            advertencia: advertirDimensiones(originales.ancho, originales.alto, "exposicion"),
+            nota: avisoDeReduccion(item.archivo, copia),
+            // Las de la copia que se sube, no las del archivo original.
+            medidas: { ancho: copia.ancho, alto: copia.alto },
+          });
+          await subir({ ...item, archivo: copia.archivo }, indice, id);
+        } catch {
+          if (id === version.current) {
+            actualizar(indice, {
+              problema: "No pudimos leer esa foto. Prueba con un JPG, PNG, WebP o AVIF.",
+            });
+          }
         }
-      };
-      imagen.src = item.previa;
-    });
+      }
+    };
+
+    await Promise.all(
+      Array.from({ length: Math.min(2, pendientes.length) }, () => trabajador()),
+    );
   };
 
   const alSoltar = (evento: React.DragEvent) => {
@@ -214,6 +252,7 @@ export function SubirFotos({ nombre = "fotos", alCambiarEstado }: SubirFotosProp
                     {item.problema}
                   </p>
                 )}
+                {item.nota && <p className="caption text-faint">{item.nota}</p>}
                 {item.advertencia && (
                   <p className="caption text-muted">{item.advertencia}</p>
                 )}

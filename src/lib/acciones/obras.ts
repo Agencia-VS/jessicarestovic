@@ -6,8 +6,10 @@ import {
   booleano,
   borrarImagen,
   clienteConSesion,
+  confirmarSubida,
   enteroONulo,
   fallo,
+  FALTA_EN_STORAGE,
   ok,
   SIN_SESION,
   textoONulo,
@@ -15,9 +17,11 @@ import {
 } from "./comun";
 import { erroresPorCampo, obraSchema, slugify } from "@/lib/validacion";
 import { rutaDeImagenValida } from "@/lib/subida-directa";
-import { BUCKET_IMAGENES } from "@/lib/images";
 import type { ObraEnLoteEntrada } from "@/lib/data/tipos";
 import { seccionDeGrupo } from "@/lib/site-config";
+
+/** Cuántas comprobaciones de Storage se piden a la vez al guardar un lote. */
+const VERIFICACIONES_A_LA_VEZ = 8;
 
 /**
  * Rutas que dependen de las obras.
@@ -33,9 +37,9 @@ function revalidarObras(): void {
   revalidatePath("/trabajos");
   revalidatePath("/trabajos/[slug]", "page");
   revalidatePath("/admin/exposiciones");
-  revalidatePath("/admin/exposiciones/[id]", "page");
+  revalidatePath("/admin/(panel)/exposiciones/[id]", "page");
   revalidatePath("/admin/trabajos");
-  revalidatePath("/admin/trabajos/[id]", "page");
+  revalidatePath("/admin/(panel)/trabajos/[id]", "page");
 }
 
 /**
@@ -153,16 +157,7 @@ export async function crearObra(_previo: Resultado, formData: FormData): Promise
   const supabase = await clienteConSesion();
   if (!supabase) return SIN_SESION;
 
-  // Que el PUT firmado respondiera 2xx no garantiza que el objeto quedara en
-  // el bucket. Sin esto, la ficha se guarda apuntando a un archivo que no
-  // existe y en el sitio aparece el texto alternativo en vez de la foto.
-  const { data: archivo, error: errorArchivo } = await supabase.storage
-    .from(BUCKET_IMAGENES)
-    .info(imagenPath);
-
-  if (errorArchivo || !archivo) {
-    return fallo("La foto no quedó disponible en Storage. Vuelve a subirla y espera a que llegue al 100%.");
-  }
+  if (!(await confirmarSubida(supabase, imagenPath))) return fallo(FALTA_EN_STORAGE);
 
   const conjunto = await canonizarConjunto(
     supabase,
@@ -294,15 +289,24 @@ export async function crearObrasEnLote(
   // en el bucket. Sin esta comprobación, una subida a medias deja la ficha
   // guardada apuntando a un archivo que no existe: en el sitio se ve el texto
   // alternativo en vez de la foto, y no hay nada que explique por qué.
+  //
+  // De a ocho y no todas juntas: con doscientas fotos eran doscientas
+  // peticiones simultáneas desde una sola función, y bastaba que Storage
+  // limitara una para reportar como ausentes fotos que sí estaban y abortar
+  // el guardado completo.
   const faltantes: string[] = [];
-  await Promise.all(
-    rutas.map(async (path) => {
-      const { data, error } = await supabase.storage.from(BUCKET_IMAGENES).info(path);
-      if (error || !data) faltantes.push(path);
-    }),
-  );
+  for (let desde = 0; desde < rutas.length; desde += VERIFICACIONES_A_LA_VEZ) {
+    const tanda = rutas.slice(desde, desde + VERIFICACIONES_A_LA_VEZ);
+    const resultados = await Promise.all(
+      tanda.map(async (path) => ({ path, existe: await confirmarSubida(supabase, path) })),
+    );
+    for (const { path, existe } of resultados) if (!existe) faltantes.push(path);
+  }
 
   if (faltantes.length > 0) {
+    // Sin esto, las fotos que sí subieron quedaban en el bucket sin ninguna
+    // fila que las nombrara, en cada reintento.
+    await limpiarRutas();
     return {
       error: `${faltantes.length} de ${rutas.length} ${
         faltantes.length === 1 ? "foto no quedó" : "fotos no quedaron"
@@ -350,12 +354,14 @@ export async function editarObra(
     return fallo("La nueva foto no es válida o la subida todavía no terminó.");
   }
 
-  let imagen: { imagen_path: string; imagen_ancho: number | null; imagen_alto: number | null } | null =
-    null;
-
-  if (imagenPath) {
-    imagen = { imagen_path: imagenPath, ...leerMedidas(formData) };
+  // Antes esta vía no comprobaba que la foto nueva existiera —crearObra sí—, y
+  // más abajo borra la anterior. Con un archivo que no llegó, la obra se
+  // quedaba sin ninguna imagen y la original ya no se podía recuperar.
+  if (imagenPath && !(await confirmarSubida(supabase, imagenPath))) {
+    return fallo(FALTA_EN_STORAGE);
   }
+
+  const imagen = imagenPath ? { imagen_path: imagenPath, ...leerMedidas(formData) } : null;
 
   const { error } = await supabase
     .from("obra")

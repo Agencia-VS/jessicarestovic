@@ -7,7 +7,7 @@ import { crearObrasEnLote } from "@/lib/acciones/obras";
 import { advertirDimensiones, ayudaImagen, validarArchivo } from "@/lib/images";
 import { slugify } from "@/lib/validacion";
 import { subirArchivoPorUrl } from "@/lib/subida-directa";
-import { avisoDeReduccion, reducirImagen, type Medidas } from "@/lib/reducir-imagen";
+import { avisoDeReduccion, medirImagen, reducirImagen, type Medidas } from "@/lib/reducir-imagen";
 import type { Exposicion, ObraEnLoteEntrada } from "@/lib/data/tipos";
 import { Boton, BotonEnlace } from "@/components/ui/boton";
 import { seccionDeGrupo } from "@/lib/site-config";
@@ -58,18 +58,66 @@ const ROMANOS: Array<[string, string]> = [
   ["I", "1"],
 ];
 
-/** Las medidas reales del archivo, leídas de su vista previa. */
-function medirImagen(url: string): Promise<Medidas> {
-  return new Promise((resolver, rechazar) => {
-    const imagen = new Image();
-    imagen.onload = () => resolver({ ancho: imagen.naturalWidth, alto: imagen.naturalHeight });
-    imagen.onerror = () => rechazar(new Error("No pudimos leer esa foto."));
-    imagen.src = url;
-  });
-}
-
 function rutaRelativa(archivo: File): string {
   return (archivo as File & { webkitRelativePath?: string }).webkitRelativePath || archivo.name;
+}
+
+/** Anota la ruta dentro de la carpeta soltada, que es de donde salen los grupos. */
+function conRutaRelativa(archivo: File, ruta: string): File {
+  Object.defineProperty(archivo, "webkitRelativePath", { value: ruta, configurable: true });
+  return archivo;
+}
+
+/**
+ * Los archivos de lo que se soltó, entrando en las carpetas.
+ *
+ * `dataTransfer.files` **no** expande directorios: soltar una carpeta entrega
+ * una sola entrada de tamaño cero que el filtro descarta, así que soltar una
+ * carpeta no producía ninguna fila ni ningún aviso —silencio absoluto— aunque
+ * el texto de la zona lo ofreciera. La API que sí entra es `webkitGetAsEntry`.
+ *
+ * Las entradas se toman de forma síncrona a propósito: `DataTransfer` deja de
+ * ser válido en cuanto el manejador cede el control.
+ */
+async function archivosSoltados(transferencia: DataTransfer): Promise<File[]> {
+  const raices = Array.from(transferencia.items)
+    .map((item) => (typeof item.webkitGetAsEntry === "function" ? item.webkitGetAsEntry() : null))
+    .filter((entrada): entrada is FileSystemEntry => Boolean(entrada));
+
+  if (raices.length === 0) return Array.from(transferencia.files);
+
+  const archivos: File[] = [];
+
+  const leer = async (entrada: FileSystemEntry, prefijo: string): Promise<void> => {
+    if (entrada.isFile) {
+      const archivo = await new Promise<File | null>((resolver) => {
+        (entrada as FileSystemFileEntry).file(
+          (obtenido) => resolver(obtenido),
+          () => resolver(null),
+        );
+      });
+      if (archivo) archivos.push(conRutaRelativa(archivo, `${prefijo}${archivo.name}`));
+      return;
+    }
+    if (!entrada.isDirectory) return;
+
+    // `readEntries` entrega como mucho cien por llamada: hay que insistir
+    // hasta que devuelva vacío o una carpeta grande llegaría truncada.
+    const lector = (entrada as FileSystemDirectoryEntry).createReader();
+    for (;;) {
+      const lote = await new Promise<FileSystemEntry[]>((resolver) => {
+        lector.readEntries(
+          (leidas) => resolver(leidas),
+          () => resolver([]),
+        );
+      });
+      if (lote.length === 0) break;
+      for (const hija of lote) await leer(hija, `${prefijo}${entrada.name}/`);
+    }
+  };
+
+  for (const raiz of raices) await leer(raiz, "");
+  return archivos;
 }
 
 function partesDe(ruta: string): string[] {
@@ -155,8 +203,19 @@ export function SubirCarpeta({
   exposicionInicial,
 }: SubirCarpetaProps) {
   const inputRef = useRef<HTMLInputElement>(null);
+  const carpetaRef = useRef<HTMLInputElement>(null);
+  const opcionCarpetaRef = useRef<HTMLLabelElement>(null);
   const version = useRef(0);
   const filasActuales = useRef<Fila[]>([]);
+  /**
+   * Las obras ya se guardaron: lo que hay en el bucket dejó de ser «pendiente».
+   *
+   * Sin esta marca, el `router.push` con que termina un guardado exitoso
+   * desmontaba el componente y la limpieza de abajo borraba de Storage las
+   * fotos que se acababan de guardar. La obra quedaba en la base apuntando a
+   * un archivo inexistente y la galería mostraba el texto alternativo.
+   */
+  const guardado = useRef(false);
   const router = useRouter();
   const [grupos, setGrupos] = useState<Grupo[]>([]);
   const [filas, setFilas] = useState<Fila[]>([]);
@@ -168,10 +227,24 @@ export function SubirCarpeta({
     filasActuales.current = filas;
   }, [filas]);
 
+  /**
+   * El selector de carpetas es un control aparte, no el mismo.
+   *
+   * Antes se le ponía `webkitdirectory` al único input, y eso lo convierte en
+   * un selector **solo de carpetas**: dejaba de poder elegirse una foto suelta
+   * —el caso más común— y en iOS, que no admite el atributo, el control
+   * quedaba muerto. Ahora el principal elige archivos en cualquier dispositivo
+   * y el de carpeta aparece solo donde el navegador lo soporta.
+   */
   useEffect(() => {
-    if (!inputRef.current) return;
-    inputRef.current.setAttribute("webkitdirectory", "");
-    inputRef.current.setAttribute("directory", "");
+    if (!carpetaRef.current || !opcionCarpetaRef.current) return;
+    if (!("webkitdirectory" in HTMLInputElement.prototype)) return;
+    carpetaRef.current.setAttribute("webkitdirectory", "");
+    carpetaRef.current.setAttribute("directory", "");
+    // Nace oculta y se revela solo donde el navegador sabe abrir carpetas. Se
+    // hace sobre el DOM y no con estado para no renderizar dos veces ni
+    // arriesgar un desajuste con lo que vino del servidor.
+    opcionCarpetaRef.current.hidden = false;
   }, []);
 
   useEffect(() => {
@@ -189,7 +262,8 @@ export function SubirCarpeta({
     () => () => {
       for (const fila of filasActuales.current) {
         URL.revokeObjectURL(fila.previa);
-        if (fila.ruta) void borrarSubidaPendiente(fila.ruta, "obra");
+        // Si ya se guardaron, el archivo es de una obra viva: no se toca.
+        if (fila.ruta && !guardado.current) void borrarSubidaPendiente(fila.ruta, "obra");
       }
     },
     [],
@@ -197,6 +271,24 @@ export function SubirCarpeta({
 
   const actualizarFila = (id: string, cambio: Partial<Fila>) => {
     setFilas((previas) => previas.map((fila) => (fila.id === id ? { ...fila, ...cambio } : fila)));
+  };
+
+  /**
+   * Saca una foto del lote sin tocar el resto.
+   *
+   * Es lo que faltaba para que un archivo que no se puede usar —un .tif, un
+   * PDF suelto— dejara de bloquear la carpeta entera: como «Confirmar» se
+   * niega mientras alguna fila tenga un problema y no había forma de quitarla,
+   * la única salida era volver al explorador, sacar el archivo y re-elegir
+   * las cuarenta fotos de nuevo.
+   */
+  const quitarFila = (filaId: string) => {
+    const fila = filasActuales.current.find((candidata) => candidata.id === filaId);
+    if (fila) {
+      URL.revokeObjectURL(fila.previa);
+      if (fila.ruta) void borrarSubidaPendiente(fila.ruta, "obra");
+    }
+    setFilas((previas) => previas.filter((candidata) => candidata.id !== filaId));
   };
 
   const preparar = (archivos: FileList | File[]) => {
@@ -311,12 +403,25 @@ export function SubirCarpeta({
     setGrupos((previos) => previos.map((grupo) => (grupo.id === grupoId ? { ...grupo, ...cambio } : grupo)));
   };
 
-  const subirFila = async (fila: Fila): Promise<string | null> => {
+  /**
+   * `id` es la selección a la que pertenece esta fila.
+   *
+   * Si mientras se sube se elige otra carpeta, `version.current` avanza y todo
+   * lo de la anterior queda obsoleto: hay que dejar de escribir en filas que ya
+   * no existen y borrar lo que alcanzó a subirse. Antes la comprobación era
+   * `version.current > 0`, que es cierta desde la primera selección y por lo
+   * tanto no comprobaba nada.
+   */
+  const subirFila = async (fila: Fila, id: number): Promise<string | null> => {
     if (fila.ruta) return fila.ruta;
     actualizarFila(fila.id, { subiendo: true, progreso: 0 });
     let rutaFirmada: string | null = null;
     try {
       const firma = await prepararSubidaImagen("obra", fila.archivo.type, fila.archivo.size);
+      if (id !== version.current) {
+        if (!("error" in firma)) await borrarSubidaPendiente(firma.path, "obra");
+        return null;
+      }
       if ("error" in firma) {
         actualizarFila(fila.id, { problema: firma.error, subiendo: false });
         return null;
@@ -324,12 +429,17 @@ export function SubirCarpeta({
 
       rutaFirmada = firma.path;
       await subirArchivoPorUrl(firma.url, fila.archivo, (progreso) => {
-        if (version.current > 0) actualizarFila(fila.id, { progreso });
+        if (id === version.current) actualizarFila(fila.id, { progreso });
       });
+      if (id !== version.current) {
+        await borrarSubidaPendiente(firma.path, "obra");
+        return null;
+      }
       actualizarFila(fila.id, { ruta: firma.path, progreso: 100, subiendo: false });
       return firma.path;
     } catch (error) {
       if (rutaFirmada) await borrarSubidaPendiente(rutaFirmada, "obra");
+      if (id !== version.current) return null;
       actualizarFila(fila.id, {
         problema:
           error instanceof Error
@@ -353,19 +463,22 @@ export function SubirCarpeta({
     }
 
     setGuardando(true);
+    const id = version.current;
     const rutas = new Map<string, string>();
-    filas.filter((fila) => fila.ruta).forEach((fila) => rutas.set(fila.id, fila.ruta!));
     let siguiente = 0;
     const subirTrabajador = async () => {
       while (siguiente < filas.length) {
         const fila = filas[siguiente++]!;
-        const ruta = await subirFila(fila);
+        const ruta = await subirFila(fila, id);
         if (ruta) rutas.set(fila.id, ruta);
       }
     };
     await Promise.all(
       Array.from({ length: Math.min(2, filas.length) }, () => subirTrabajador()),
     );
+
+    // Se eligió otra carpeta mientras subía: este lote ya no es el vigente.
+    if (id !== version.current) return;
 
     if (rutas.size !== filas.length) {
       setGuardando(false);
@@ -399,6 +512,9 @@ export function SubirCarpeta({
       setMensaje(resultado.error);
       return;
     }
+    // Antes de navegar: las rutas dejaron de ser pendientes y la limpieza de
+    // desmontaje no debe tocarlas.
+    guardado.current = true;
     router.push(`${volverA}?aviso=obras-creadas&cantidad=${resultado.cantidad}`);
   };
 
@@ -406,8 +522,6 @@ export function SubirCarpeta({
     () => new Map(grupos.map((grupo) => [grupo.id, filas.filter((fila) => fila.grupoId === grupo.id)])),
     [filas, grupos],
   );
-  const exposicionInicialValida = exposicionInicial ?? "";
-
   // Se entró desde un grupo, así que se vuelve a él. Si la carpeta reparte las
   // fotos en varios grupos, el del primero es el que se abrió.
   const grupoDeVuelta =
@@ -428,7 +542,7 @@ export function SubirCarpeta({
         onDrop={(evento) => {
           evento.preventDefault();
           setArrastrando(false);
-          preparar(evento.dataTransfer.files);
+          void archivosSoltados(evento.dataTransfer).then(preparar);
         }}
         className={`flex cursor-pointer flex-col items-center justify-center gap-3 border border-dashed px-6 py-10 text-center ${
           arrastrando ? "border-ink bg-line-soft" : "border-line hover:border-faint"
@@ -451,10 +565,25 @@ export function SubirCarpeta({
         <span className="caption text-ink underline underline-offset-4">Elegir fotos</span>
       </label>
 
+      <label ref={opcionCarpetaRef} hidden className="-mt-6 cursor-pointer self-start">
+        <input
+          ref={carpetaRef}
+          type="file"
+          multiple
+          onChange={(evento) => preparar(evento.target.files ?? [])}
+          className="sr-only"
+        />
+        <span className="caption text-muted underline underline-offset-4">
+          o elegir una carpeta completa
+        </span>
+      </label>
+
       <p className="caption text-faint">{ayudaImagen("obra")} Los archivos HEIC deben convertirse a JPG.</p>
 
       {grupos.map((grupo) => {
         const grupoFilas = porGrupo.get(grupo.id) ?? [];
+        // Al quitar la última foto, el grupo deja de tener sentido.
+        if (grupoFilas.length === 0) return null;
         return (
           <section key={grupo.id} className="flex flex-col gap-4 border-t border-line pt-5">
             <div className="flex flex-col gap-4">
@@ -527,7 +656,16 @@ export function SubirCarpeta({
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img src={fila.previa} alt="" className="h-24 w-28 shrink-0 object-contain bg-line-soft" />
                   <div className="min-w-0 flex-1">
-                    <p className="caption truncate text-muted" title={fila.rutaRelativa}>{fila.rutaRelativa}</p>
+                    <div className="flex items-baseline justify-between gap-2">
+                      <p className="caption truncate text-muted" title={fila.rutaRelativa}>{fila.rutaRelativa}</p>
+                      <button
+                        type="button"
+                        onClick={() => quitarFila(fila.id)}
+                        className="caption shrink-0 text-muted underline underline-offset-4 hover:text-danger"
+                      >
+                        Quitar
+                      </button>
+                    </div>
                     <label className="mt-1 flex flex-col gap-1">
                       <span className="sr-only">Título de {fila.rutaRelativa}</span>
                       <input
@@ -573,7 +711,6 @@ export function SubirCarpeta({
       </div>
 
       <p className="caption text-faint">Las fotos se suben directamente y las obras se guardan juntas al confirmar.</p>
-      <p className="sr-only">Exposición inicial: {exposicionInicialValida}</p>
     </div>
   );
 }
