@@ -7,6 +7,8 @@ import type { MensajeRow } from "@/lib/data/tipos";
 
 const ORIGEN: Record<MensajeRow["origen"], string> = {
   contacto: "Contacto",
+  // La sección se retiró; la etiqueta queda para los mensajes que llegaron
+  // por ella en su momento.
   clases: "Clases",
 };
 
@@ -31,7 +33,7 @@ const FECHA = new Intl.DateTimeFormat("es-CL", {
 });
 
 /**
- * Bandeja con los envíos de Contacto y Clases, marcados leído / no leído, con
+ * Bandeja con los envíos del formulario de Contacto, marcados leído / no leído, con
  * el correo de quien escribió a un clic de distancia (§07).
  */
 export function BandejaMensajes({ mensajes }: { mensajes: MensajeRow[] }) {

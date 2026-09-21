@@ -16,7 +16,12 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     listarTrabajos(),
   ]);
 
-  const fijas = ["/privacidad", ...navPublica.map(({ href }) => href)];
+  // La portada ya va aparte más abajo; sin este filtro aparecería dos veces,
+  // porque «Inicio» entró al menú al retirarse la firma de la cabecera.
+  const fijas = [
+    "/privacidad",
+    ...navPublica.map(({ href }) => href).filter((href) => href !== "/"),
+  ];
 
   return [
     { url: urlDelSitio(), lastModified: ahora, changeFrequency: "monthly", priority: 1 },

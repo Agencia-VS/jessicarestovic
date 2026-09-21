@@ -99,7 +99,7 @@ export function CuerpoDeObras({
                     {grupo.nombre}
                   </h2>
                 )}
-                <GaleriaObras obras={grupo.obras} pie="ficha" />
+                <GaleriaObras obras={grupo.obras} contexto={grupo.nombre ?? titulo} />
               </section>
             ))}
           </div>

@@ -82,7 +82,7 @@ export const siteConfig = {
   nombre: "Jessica Restović",
   rol: "Artista visual",
   descripcion:
-    "Obra de Jessica Restović, artista visual: grafito sobre tela, ensambles y volúmenes. Exposiciones y talleres.",
+    "Obra de Jessica Restović, artista visual: grafito sobre tela, ensambles y volúmenes.",
   locale: "es_CL",
   lang: "es",
 } as const;
@@ -133,10 +133,13 @@ export interface NavItem {
  * «Ilustraciones en Acuarela»—, cada uno con su conteo.
  */
 export const navPublica: readonly NavItem[] = [
+  // «Inicio» existe porque la firma de la cabecera —que era el enlace a la
+  // portada— se retiró: sin esta pestaña no habría forma de volver desde el
+  // menú.
+  { href: "/", label: "Inicio" },
   { href: "/exposiciones", label: "Exposiciones" },
   { href: "/trabajos", label: "Trabajos" },
   { href: "/sobre-mi", label: "Sobre mí" },
-  { href: "/clases", label: "Clases" },
   { href: "/contacto", label: "Contacto" },
 ] as const;
 
@@ -152,7 +155,6 @@ export const navAdmin: readonly NavItem[] = [
   { href: "/admin/exposiciones", label: "Exposiciones" },
   { href: "/admin/trabajos", label: "Trabajos" },
   { href: "/admin/sobre-mi", label: "Sobre mí" },
-  { href: "/admin/clases", label: "Clases" },
   { href: "/admin/mensajes", label: "Mensajes" },
   { href: "/admin/configuracion", label: "Configuración" },
 ] as const;

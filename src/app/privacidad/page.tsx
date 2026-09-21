@@ -14,7 +14,7 @@ export const metadata: Metadata = {
 
 /**
  * La auditoría del sitio en Wix anotó que no había datos legales ni política
- * de privacidad (§03). Como los formularios de Contacto y Clases sí recogen
+ * de privacidad (§03). Como el formulario de Contacto sí recoge
  * datos, esta página dice exactamente cuáles y para qué — corto y sin
  * vocabulario técnico, como el resto del sitio.
  */
@@ -28,7 +28,7 @@ export default async function PrivacidadPage() {
 
         <div className="flex max-w-[62ch] flex-col gap-5 font-display text-[clamp(1rem,1.5vw,1.25rem)] leading-[1.7] font-light text-prose text-pretty">
           <p>
-            Los formularios de Contacto y Clases piden nombre, correo, teléfono y mensaje. Se
+            El formulario de Contacto pide nombre, correo, teléfono y mensaje. Se
             guardan para poder responder y nada más: no se venden, no se comparten con terceros
             y no se usan para enviar publicidad.
           </p>

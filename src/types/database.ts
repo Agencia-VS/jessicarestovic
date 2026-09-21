@@ -6,9 +6,16 @@
  *   npx supabase gen types typescript --project-id <ref> > src/types/database.ts
  */
 
+/**
+ * De dónde vino un mensaje.
+ *
+ * «clases» ya no se puede producir —esa sección se retiró— pero sigue acá
+ * porque los mensajes que llegaron por ese formulario están guardados con ese
+ * valor y la bandeja tiene que poder mostrarlos.
+ */
 export type MensajeOrigen = "contacto" | "clases";
 
-export type PaginaClave = "sobre-mi" | "clases" | "configuracion";
+export type PaginaClave = "sobre-mi" | "configuracion";
 
 /**
  * Un grupo de obras con nombre es lo mismo tenga sala o no: la exposición
@@ -114,14 +121,6 @@ export type ConfiguracionContenido = {
    * independientes de la obra catalogada: se suben en «Inicio» del panel.
    */
   portadas: ImagenPortada[];
-};
-
-/** Contenido de la página «Clases». */
-export type ClasesContenido = {
-  titulo: string;
-  introduccion: string;
-  tecnicas: string[];
-  nota: string | null;
 };
 
 /**

@@ -37,7 +37,13 @@ export default async function InicioPage() {
         }));
 
   return (
-    <Pagina comoTitulo>
+    <Pagina>
+      {/* El `<h1>` lo aportaba la firma de la cabecera, que se retiró. La
+          portada es obra y una frase, así que el encabezado va acá, visible
+          para buscadores y lectores de pantalla y no para el diseño. */}
+      <h1 className="sr-only">
+        {siteConfig.nombre} — {siteConfig.rol}
+      </h1>
       <Portada imagenes={imagenes} cita={config.cita} />
     </Pagina>
   );

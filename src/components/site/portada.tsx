@@ -3,7 +3,8 @@
 import { useState } from "react";
 import { Foto, Hueco } from "./foto";
 import { EnlaceSuave } from "./enlace-suave";
-import { Lightbox, piezasDeFotos } from "./lightbox";
+import { Lightbox } from "./lightbox";
+import { piezasDeFotos } from "./piezas";
 import type { FotoLista } from "@/lib/data/tipos";
 import { CELDAS_PORTADA } from "@/lib/site-config";
 

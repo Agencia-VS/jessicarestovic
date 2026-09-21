@@ -1,7 +1,9 @@
 import Link from "next/link";
 import type { Exposicion } from "@/lib/data/tipos";
 import { Foto, Hueco } from "./foto";
-import { SIZES_MOSAICO } from "./figura-obra";
+
+/** Ancho que ocupa una tarjeta del mosaico en cada tamaño de pantalla. */
+const SIZES_MOSAICO = "(max-width: 40rem) 100vw, (max-width: 64rem) 50vw, 330px";
 
 interface TarjetasDeGruposProps {
   grupos: Exposicion[];

@@ -12,7 +12,6 @@ import {
   type Resultado,
 } from "./comun";
 import {
-  clasesSchema,
   configuracionSchema,
   erroresPorCampo,
   portadaSchema,
@@ -26,7 +25,6 @@ import {
 } from "@/lib/site-config";
 import { BUCKET_IMAGENES } from "@/lib/images";
 import type {
-  ClasesContenido,
   ConfiguracionContenido,
   ImagenPortada,
   SobreMiContenido,
@@ -112,49 +110,6 @@ export async function guardarSobreMi(
   revalidatePath("/sobre-mi");
   revalidatePath("/admin/sobre-mi");
   return ok("Página «Sobre mí» actualizada.");
-}
-
-/** Guarda «Clases»: el texto y las técnicas que ofrece. */
-export async function guardarClases(
-  _previo: Resultado,
-  formData: FormData,
-): Promise<Resultado> {
-  const analisis = clasesSchema.safeParse({
-    titulo: String(formData.get("titulo") ?? ""),
-    introduccion: String(formData.get("introduccion") ?? ""),
-    tecnicas: String(formData.get("tecnicas") ?? ""),
-    nota: String(formData.get("nota") ?? ""),
-  });
-
-  if (!analisis.success) {
-    return fallo("Revisa los campos marcados.", erroresPorCampo(analisis.error));
-  }
-
-  const supabase = await clienteConSesion();
-  if (!supabase) return SIN_SESION;
-
-  const { titulo, introduccion, tecnicas, nota } = analisis.data;
-
-  const contenido: ClasesContenido = {
-    titulo,
-    introduccion,
-    // Una técnica por línea en el formulario.
-    tecnicas: (tecnicas ?? "")
-      .split("\n")
-      .map((linea) => linea.trim())
-      .filter(Boolean),
-    nota: nota ? nota : null,
-  };
-
-  const { error } = await supabase
-    .from("pagina")
-    .upsert({ clave: "clases", contenido }, { onConflict: "clave" });
-
-  if (error) return fallo("No pudimos guardar los cambios. Vuelve a intentar en un momento.");
-
-  revalidatePath("/clases");
-  revalidatePath("/admin/clases");
-  return ok("Página «Clases» actualizada.");
 }
 
 async function configuracionActual(

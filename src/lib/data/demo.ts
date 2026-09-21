@@ -1,5 +1,5 @@
 import type { Exposicion, FotoDeSala, Obra, TipoDeGrupo } from "./tipos";
-import type { ClasesContenido, SobreMiContenido } from "@/types/database";
+import type { SobreMiContenido } from "@/types/database";
 import { CELDAS_PORTADA } from "@/lib/site-config";
 
 /**
@@ -286,15 +286,3 @@ export const DEMO_SOBRE_MI: SobreMiContenido = {
   retrato_alt: null,
 };
 
-export const DEMO_CLASES: ClasesContenido = {
-  titulo: "Clases",
-  introduccion:
-    "Talleres en mi taller, para un máximo de tres personas por sesión. El trabajo es individual " +
-    "dentro del grupo: cada quien avanza en su propio proyecto.",
-  tecnicas: [
-    "Acuarela — Papel, aguadas, transparencia",
-    "Monocopia — Impresión única sobre placa",
-    "Dibujo — Grafito y carboncillo del natural",
-  ],
-  nota: "Cupos limitados: máximo 3 personas por taller.",
-};
