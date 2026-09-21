@@ -26,6 +26,14 @@ interface FotoProps {
    * foto completa está a un toque, en la vista ampliada.
    */
   encuadre?: "contenida" | "recortada";
+  /**
+   * Dónde se apoya la foto cuando sobra espacio en su marco.
+   *
+   * Una obra vertical en un marco ancho queda centrada, y entonces su borde no
+   * coincide con el margen de la página ni con el título que lleva encima. Con
+   * `izquierda` se apoya en el margen y la columna se lee alineada.
+   */
+  anclaje?: "centro" | "izquierda";
   /** La primera foto visible se carga con prioridad (LCP). */
   prioridad?: boolean;
   /** Las clases que fijan el tamaño del marco: `w-full` en la retícula. */
@@ -69,6 +77,7 @@ export function Foto({
   variante = "mosaico",
   proporcionFija,
   encuadre = "contenida",
+  anclaje = "centro",
   prioridad = false,
   className = "",
 }: FotoProps) {
@@ -85,7 +94,9 @@ export function Foto({
         sizes={sizes}
         priority={prioridad}
         unoptimized={esRemota(src)}
-        className={encuadre === "recortada" ? "object-cover" : "object-contain"}
+        className={`${encuadre === "recortada" ? "object-cover" : "object-contain"} ${
+          anclaje === "izquierda" ? "object-left" : ""
+        }`}
       />
     </div>
   );
