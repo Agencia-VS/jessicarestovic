@@ -1,8 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Foto } from "./foto";
 import { Lightbox } from "./lightbox";
+import { Paso } from "./paso";
 import type { PiezaAmpliada } from "./piezas";
 
 interface GaleriaProps {
@@ -41,11 +42,15 @@ const MEDIDAS = {
  * Una galería: la pintura principal en el primer tercio y, a su lado, las
  * miniaturas cuadradas ocupando los otros dos.
  *
- * Todo en una misma fila, que es como lo pidió Jessica. Cuando hay muchas
- * piezas las miniaturas **no** siguen creciendo hacia abajo: la tira llena sus
- * filas y sigue hacia la derecha, y se recorre deslizando. Eso mantiene la
- * pintura principal y su conjunto dentro de una sola pantalla, en vez de una
- * retícula que empuja todo lo demás fuera de vista.
+ * Todo en una misma fila. Cuando hay muchas piezas las miniaturas **no**
+ * siguen creciendo hacia abajo: la tira llena sus filas y sigue hacia la
+ * derecha. Eso mantiene la pintura principal y su conjunto dentro de una sola
+ * pantalla, en vez de una retícula que empuja todo lo demás fuera de vista.
+ *
+ * La tira avanza **con flechas, de página en página**, y no arrastrando. El
+ * desplazamiento libre no gustó: en un trackpad se pasa de largo, y sin una
+ * flecha a la vista nada anuncia que hay más miniaturas. Con dos botones la
+ * tira se lee como lo que es.
  *
  * En el teléfono la fila se parte —la portada arriba, la tira debajo— porque
  * un tercio de 390 px no es una pintura, es una estampilla.
@@ -58,10 +63,58 @@ const MEDIDAS = {
  */
 export function Galeria({ piezas, conTitulos = false, contexto }: GaleriaProps) {
   const [abierta, setAbierta] = useState<number | null>(null);
+  const pista = useRef<HTMLUListElement>(null);
+  const [pagina, setPagina] = useState(0);
 
   const portada = piezas[0];
-  if (!portada) return null;
   const miniaturas = piezas.slice(1);
+
+  /**
+   * Cuántas miniaturas entran en una página.
+   *
+   * Empieza en «todas» y se corrige al medir. No hay parpadeo porque la tira
+   * recorta lo que sobra, así que en el primer cuadro se ve exactamente la
+   * primera página igual.
+   */
+  const [porPagina, setPorPagina] = useState(miniaturas.length);
+
+  /**
+   * Se mide en vez de calcularse: cuántos cuadrados caben depende del ancho
+   * disponible y de cuántas filas tiene la tira, que cambian con la ventana.
+   * El observador responde también al cambio de tamaño, así que al angostarla
+   * las flechas siguen diciendo la verdad.
+   */
+  useEffect(() => {
+    const elemento = pista.current;
+    if (!elemento) return;
+
+    const medir = () => {
+      const celda = elemento.querySelector("li");
+      if (!celda || elemento.clientWidth === 0) return;
+
+      const estilo = getComputedStyle(elemento);
+      const lado = celda.getBoundingClientRect().width;
+      if (lado === 0) return;
+      const hueco = Number.parseFloat(estilo.columnGap) || 0;
+      const filas = estilo.gridTemplateRows.split(" ").filter(Boolean).length;
+      const columnas = Math.max(1, Math.floor((elemento.clientWidth + hueco) / (lado + hueco)));
+
+      setPorPagina(Math.max(1, columnas * filas));
+    };
+
+    const observador = new ResizeObserver(medir);
+    observador.observe(elemento);
+    return () => observador.disconnect();
+  }, []);
+
+  if (!portada) return null;
+
+  const paginas = Math.max(1, Math.ceil(miniaturas.length / porPagina));
+  // Al ensanchar la ventana caben más y sobran páginas: se acota al vuelo en
+  // vez de corregir el estado desde un efecto.
+  const actual = Math.min(pagina, paginas - 1);
+  const visibles = miniaturas.slice(actual * porPagina, (actual + 1) * porPagina);
+  const hayFlechas = paginas > 1;
 
   return (
     <>
@@ -101,34 +154,57 @@ export function Galeria({ piezas, conTitulos = false, contexto }: GaleriaProps) 
         </button>
 
         {miniaturas.length > 0 && (
-          <ul
-            // `grid-flow-col` es lo que hace la tira: llena las filas y sigue
-            // hacia la derecha en vez de hacia abajo. El desplazamiento lo
-            // hace el navegador, con su inercia y su gesto de siempre.
-            className="grid snap-x snap-mandatory auto-cols-[var(--lado)] grid-flow-col grid-rows-[repeat(2,var(--lado))] gap-[var(--hueco)] overflow-x-auto overscroll-x-contain lg:col-span-2 lg:grid-rows-[repeat(3,var(--lado))]"
-          >
-            {miniaturas.map((pieza, indice) => (
-              <li key={pieza.id} className="snap-start">
-                <button
-                  type="button"
-                  onClick={() => setAbierta(indice + 1)}
-                  aria-label={`Ver ${pieza.titulo ?? pieza.alt} de ${contexto} en grande`}
-                  className="block h-full w-full cursor-zoom-in"
-                >
-                  <Foto
-                    src={pieza.imagenUrl}
-                    alt={pieza.alt}
-                    ancho={pieza.ancho}
-                    alto={pieza.alto}
-                    proporcionFija={1}
-                    encuadre="recortada"
-                    sizes={SIZES_MINIATURA}
-                    className="h-full w-full"
-                  />
-                </button>
-              </li>
-            ))}
-          </ul>
+          <div className="flex min-w-0 items-center gap-[clamp(0.25rem,1vw,0.75rem)] lg:col-span-2">
+            {hayFlechas && (
+              <Paso
+                direccion="anterior"
+                onClick={() => setPagina(actual - 1)}
+                desactivado={actual === 0}
+                rotulo="Miniaturas"
+              />
+            )}
+
+            <ul
+              ref={pista}
+              // `grid-flow-col` llena las filas y sigue hacia la derecha en vez
+              // de hacia abajo. No hay desplazamiento: cada página dibuja solo
+              // sus miniaturas, así que la tira siempre empieza y termina en una
+              // columna entera. Desplazando quedaba una astilla de la columna
+              // anterior en la última página, que se lee como un error.
+              className="grid min-w-0 flex-1 auto-cols-[var(--lado)] grid-flow-col grid-rows-[repeat(2,var(--lado))] gap-[var(--hueco)] overflow-hidden lg:grid-rows-[repeat(3,var(--lado))]"
+            >
+              {visibles.map((pieza, indice) => (
+                <li key={pieza.id}>
+                  <button
+                    type="button"
+                    onClick={() => setAbierta(actual * porPagina + indice + 1)}
+                    aria-label={`Ver ${pieza.titulo ?? pieza.alt} de ${contexto} en grande`}
+                    className="block h-full w-full cursor-zoom-in"
+                  >
+                    <Foto
+                      src={pieza.imagenUrl}
+                      alt={pieza.alt}
+                      ancho={pieza.ancho}
+                      alto={pieza.alto}
+                      proporcionFija={1}
+                      encuadre="recortada"
+                      sizes={SIZES_MINIATURA}
+                      className="h-full w-full"
+                    />
+                  </button>
+                </li>
+              ))}
+            </ul>
+
+            {hayFlechas && (
+              <Paso
+                direccion="siguiente"
+                onClick={() => setPagina(actual + 1)}
+                desactivado={actual >= paginas - 1}
+                rotulo="Miniaturas"
+              />
+            )}
+          </div>
         )}
       </div>
 

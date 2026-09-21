@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Foto } from "./foto";
+import { Paso } from "./paso";
 import type { PiezaAmpliada } from "./piezas";
 
 interface LightboxProps {
@@ -243,24 +244,3 @@ export function Lightbox({ piezas, indice, onCerrar, onCambiar }: LightboxProps)
   );
 }
 
-/** Las flechas: tipografía del sitio, no un icono. */
-function Paso({
-  direccion,
-  onClick,
-}: {
-  direccion: "anterior" | "siguiente";
-  onClick: () => void;
-}) {
-  const esAnterior = direccion === "anterior";
-
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      aria-label={esAnterior ? "Foto anterior" : "Foto siguiente"}
-      className="shrink-0 font-display text-[clamp(1.5rem,2.6vw,2.125rem)] leading-none font-extralight text-label transition-colors hover:text-ink"
-    >
-      {esAnterior ? "‹" : "›"}
-    </button>
-  );
-}
