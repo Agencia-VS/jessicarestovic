@@ -27,8 +27,6 @@ const ALTOS = {
 
 interface FirmaProps {
   lugar?: keyof typeof ALTOS;
-  /** El Inicio usa el nombre como `<h1>`; el resto de las páginas, no. */
-  comoTitulo?: boolean;
   className?: string;
 }
 
@@ -40,12 +38,11 @@ interface FirmaProps {
  * para los navegadores que no lo leen — de ahí el `<picture>` en vez de un
  * `next/image` suelto.
  */
-export function Firma({ lugar = "cabecera", comoTitulo = false, className = "" }: FirmaProps) {
-  const Etiqueta = comoTitulo ? "h1" : "span";
+export function Firma({ lugar = "cabecera", className = "" }: FirmaProps) {
   const alt = `${siteConfig.nombre} — ${siteConfig.rol}`;
 
   return (
-    <Etiqueta className={`block leading-none ${className}`}>
+    <span className={`block leading-none ${className}`}>
       <picture>
         <source srcSet="/firma-jessica.avif" type="image/avif" />
         <Image
@@ -58,15 +55,15 @@ export function Firma({ lugar = "cabecera", comoTitulo = false, className = "" }
           className={`${ALTOS[lugar]} w-auto`}
         />
       </picture>
-    </Etiqueta>
+    </span>
   );
 }
 
 /** La firma como enlace al Inicio, que es lo que hace de marca en la cabecera. */
-export function FirmaEnlace({ lugar = "cabecera", comoTitulo = false }: FirmaProps) {
+export function FirmaEnlace({ lugar = "cabecera" }: FirmaProps) {
   return (
     <Link href="/" className="block shrink-0" aria-label={`${siteConfig.nombre} — Inicio`}>
-      <Firma lugar={lugar} comoTitulo={comoTitulo} />
+      <Firma lugar={lugar} />
     </Link>
   );
 }

@@ -1,7 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { supabaseConfigurado } from "@/lib/entorno";
 import {
-  DEMO_CLASES,
   DEMO_DESTACADAS,
   DEMO_EXPOSICIONES,
   DEMO_OBRAS,
@@ -11,7 +10,6 @@ import { CONFIGURACION_POR_DEFECTO, normalizarPortadas } from "@/lib/site-config
 import { urlImagen } from "@/lib/imagenes-servidor";
 import type { ConfiguracionContenido, PaginaClave } from "@/types/database";
 import type {
-  ClasesContenido,
   Exposicion,
   ExposicionDetalle,
   FotoDeSala,
@@ -383,13 +381,6 @@ const SOBRE_MI_VACIO: SobreMiContenido = {
   retrato_alt: null,
 };
 
-const CLASES_VACIO: ClasesContenido = {
-  titulo: "Clases",
-  introduccion: "",
-  tecnicas: [],
-  nota: null,
-};
-
 async function obtenerPagina<T>(clave: PaginaClave, vacio: T): Promise<T> {
   if (!supabaseConfigurado()) return vacio;
 
@@ -405,10 +396,6 @@ async function obtenerPagina<T>(clave: PaginaClave, vacio: T): Promise<T> {
 
 export function obtenerSobreMi(): Promise<SobreMiContenido> {
   return obtenerPagina("sobre-mi", supabaseConfigurado() ? SOBRE_MI_VACIO : DEMO_SOBRE_MI);
-}
-
-export function obtenerClases(): Promise<ClasesContenido> {
-  return obtenerPagina("clases", supabaseConfigurado() ? CLASES_VACIO : DEMO_CLASES);
 }
 
 /** Datos de contacto, frase y fotos del Inicio. */

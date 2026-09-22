@@ -63,6 +63,10 @@ const nextConfig: NextConfig = {
       { source: "/serie/de-lo-residual", destination: "/exposiciones/de-lo-residual-y-lo-efimero/obras", permanent: true },
       { source: "/serie/espacios-intimos", destination: "/exposiciones/ensambles-al-cubo/obras", permanent: true },
       { source: "/serie/:slug", destination: "/exposiciones", permanent: true },
+      // La sección de Clases se retiró; quien llegue por un enlace viejo
+      // aterriza en Contacto, que es donde ahora se pregunta por talleres.
+      { source: "/clases", destination: "/contacto", permanent: true },
+      { source: "/admin/clases", destination: "/admin", permanent: false },
       // «Trabajos recientes» dejó de ser una página que junta todo y pasó a ser
       // un conjunto dentro de «Trabajos».
       { source: "/trabajos-recientes", destination: "/trabajos", permanent: true },

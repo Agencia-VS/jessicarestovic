@@ -1,5 +1,4 @@
 import type {
-  ClasesContenido,
   ExposicionFotoRow,
   ExposicionRow,
   MensajeRow,
@@ -92,7 +91,6 @@ export interface ObraEnLoteEntrada {
 }
 
 export type {
-  ClasesContenido,
   ExposicionFotoRow,
   MensajeRow,
   SobreMiContenido,

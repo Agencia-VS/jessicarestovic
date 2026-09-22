@@ -10,7 +10,7 @@ export const mensajeSchema = z.object({
   email: texto(200).pipe(z.string().email("Revisa el correo: parece incompleto.")),
   telefono: texto(40).optional().or(z.literal("")),
   mensaje: texto(4000).min(10, "Cuéntame un poco más, con al menos diez caracteres."),
-  origen: z.enum(["contacto", "clases"]),
+  origen: z.literal("contacto"),
 });
 
 export type MensajeEntrada = z.infer<typeof mensajeSchema>;
@@ -66,13 +66,6 @@ export const portadaSchema = z.object({
   alts: z.array(texto(300)).max(CELDAS_PORTADA),
 });
 
-export const clasesSchema = z.object({
-  titulo: texto(120).min(1, "El título no puede quedar vacío."),
-  introduccion: texto(3000).min(1, "Escribe la presentación de los talleres."),
-  /** Una técnica por línea en el formulario. */
-  tecnicas: texto(1200).optional().or(z.literal("")),
-  nota: texto(400).optional().or(z.literal("")),
-});
 
 /**
  * Convierte los errores de Zod en un mapa `campo -> mensaje`, que es lo que

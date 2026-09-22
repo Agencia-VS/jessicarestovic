@@ -13,7 +13,8 @@ interface FormularioContactoProps {
 }
 
 /**
- * El formulario de Contacto y el de Clases son el mismo, cambia el `origen`.
+ * El formulario de Contacto: un solo `origen`, desde que la sección de Clases
+ * se retiró.
  * Así la bandeja del panel muestra de dónde viene cada envío sin duplicar
  * código ni tablas.
  */

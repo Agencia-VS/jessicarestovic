@@ -15,7 +15,7 @@ export default async function MensajesAdminPage() {
         titulo="Mensajes"
         detalle={
           mensajes.length > 0
-            ? `${mensajes.length} en total, ${sinLeer} sin leer. Los de Contacto y los de Clases llegan a la misma bandeja, etiquetados.`
+            ? `${mensajes.length} en total, ${sinLeer} sin leer.`
             : undefined
         }
       />
@@ -25,7 +25,7 @@ export default async function MensajesAdminPage() {
       ) : (
         <EstadoVacio
           titulo="No hay mensajes todavía"
-          detalle="Acá llegan los envíos de los formularios de Contacto y de Clases."
+          detalle="Acá llegan los envíos del formulario de Contacto."
         />
       )}
     </>

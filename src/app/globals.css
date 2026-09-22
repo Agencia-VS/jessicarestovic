@@ -40,11 +40,14 @@
   --color-success: #3f6b52;
   --color-success-soft: #e8f0ea;
 
-  /* Tipografía: un serif editorial para títulos y nombres de obra, un
-     sans-serif neutro para todo el texto de apoyo (§06). La firma manuscrita
-     de Jessica es una imagen, no una fuente. */
+  /* Tipografía: una sola familia en todo el sitio, la del menú.
+     `--font-display` sigue existiendo como el papel de «título» —es lo que
+     nombran las clases de los encabezados— pero ya no es otra familia: el
+     serif editorial se retiró a pedido de Jessica. Dejarlo como token y no
+     borrar veinte clases mantiene el tamaño y el interletrado que cada
+     encabezado tenía afinado. */
   --font-sans: var(--font-public-sans), system-ui, -apple-system, sans-serif;
-  --font-display: var(--font-newsreader), Georgia, serif;
+  --font-display: var(--font-sans);
 
   /* Ancho de columna del mosaico: la foto manda la altura, esto solo fija
      cuántas columnas caben. */
@@ -152,38 +155,3 @@
   column-gap: clamp(1.5rem, 3.4vw, 3.5rem);
 }
 
-@utility mosaico-justificado {
-  display: flex;
-  flex-direction: column;
-  gap: clamp(2rem, 4.5vw, 4.5rem);
-}
-
-@utility mosaico-justificado-fila {
-  display: grid;
-  align-items: start;
-  gap: clamp(1rem, 2.7vw, 2.75rem);
-}
-
-@media (max-width: 40rem) {
-  .mosaico-justificado-fila {
-    display: flex;
-    flex-direction: column;
-    gap: 2rem;
-  }
-}
-
-/* La aparición del formulario de Clases: sube y aparece, una sola vez. */
-@keyframes subir {
-  from {
-    opacity: 0;
-    transform: translateY(12px);
-  }
-  to {
-    opacity: 1;
-    transform: none;
-  }
-}
-
-@utility aparece {
-  animation: subir 520ms cubic-bezier(0.22, 0.61, 0.36, 1) both;
-}

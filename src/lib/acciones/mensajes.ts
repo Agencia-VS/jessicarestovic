@@ -7,7 +7,7 @@ import { erroresPorCampo, mensajeSchema } from "@/lib/validacion";
 import type { Resultado } from "./resultado";
 
 /**
- * Recibe un envío de Contacto o Clases y lo guarda como mensaje.
+ * Recibe un envío del formulario de Contacto y lo guarda como mensaje.
  *
  * Los dos formularios comparten esta acción y se distinguen por el campo
  * `origen`, que es lo que después separa la bandeja del panel (§12: hoy están
@@ -67,9 +67,6 @@ export async function enviarMensaje(
 
   return {
     estado: "ok",
-    aviso:
-      origen === "clases"
-        ? "¡Gracias! Recibí tu interés en los talleres y te escribo pronto."
-        : "¡Gracias! Recibí tu mensaje y te respondo pronto.",
+    aviso: "¡Gracias! Recibí tu mensaje y te respondo pronto.",
   };
 }
