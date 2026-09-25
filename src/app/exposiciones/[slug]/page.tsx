@@ -3,8 +3,7 @@ import { notFound } from "next/navigation";
 import { Pagina, Seccion } from "@/components/site/pagina";
 import { FiltrosExposiciones } from "@/components/site/filtros-exposiciones";
 import { VistasDeSala } from "@/components/site/vistas-de-sala";
-import { FichaDatos } from "@/components/site/ficha-datos";
-import { EnlaceSuave } from "@/components/site/enlace-suave";
+import { Cartela } from "@/components/site/cartela";
 import { EstadoVacio } from "@/components/ui/estado-vacio";
 import { listarExposiciones, obtenerExposicionPorSlug } from "@/lib/data/consultas";
 
@@ -30,9 +29,11 @@ export async function generateMetadata({
 }
 
 /**
- * Una exposición con su propio espacio: la ficha de la muestra, su texto y
- * todas sus vistas de montaje. La fila de arriba sigue siendo el índice de
- * muestras, así se pasa de una a otra sin volver atrás.
+ * Una exposición con su propio espacio: la foto principal con su cartela y
+ * todas sus vistas de montaje.
+ *
+ * En escritorio la fila de muestras sigue arriba, así se pasa de una a otra
+ * sin volver atrás; en el teléfono eso lo hace el desplegable de la cabecera.
  */
 export default async function ExposicionPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
@@ -43,49 +44,40 @@ export default async function ExposicionPage({ params }: { params: Promise<{ slu
 
   if (!exposicion || exposicion.tipo !== "exposicion") notFound();
 
-  const total = exposicion.fotos.length;
+  const cartela = (
+    <Cartela
+      titulo={exposicion.titulo}
+      datos={[
+        { clave: "Lugar", valor: exposicion.lugar },
+        { clave: "Año", valor: exposicion.anio ? String(exposicion.anio) : null },
+      ]}
+      descripcion={exposicion.descripcion}
+    />
+  );
 
   return (
-    <Pagina>
-      <Seccion
-        titulo="Exposiciones"
-        tituloComo="p"
-        conteo={total > 0 ? `${total} ${total === 1 ? "vista de sala" : "vistas de sala"}` : undefined}
-      >
+    <Pagina
+      subindice={{
+        seccion: "Exposiciones",
+        base: "/exposiciones",
+        todos: "Todas",
+        grupos: exposiciones,
+        activo: exposicion.slug,
+      }}
+    >
+      <Seccion titulo="Exposiciones" tituloComo="p">
         <FiltrosExposiciones exposiciones={exposiciones} activo={exposicion.slug} />
 
-        <div className="flex flex-wrap items-start gap-x-[clamp(1.25rem,4vw,4rem)] gap-y-8 pb-[clamp(1.875rem,4vw,3.5rem)]">
-          <div className="flex min-w-0 flex-[1_1_26.25rem] flex-col gap-4">
-            <h1 className="font-display text-[clamp(1.5rem,2.6vw,2.125rem)] leading-tight font-light -tracking-[0.01em]">
-              {exposicion.titulo}
-            </h1>
-            {exposicion.descripcion && (
-              <p className="max-w-[52ch] font-display text-[clamp(1rem,1.5vw,1.25rem)] leading-relaxed font-light text-body text-pretty">
-                {exposicion.descripcion}
-              </p>
-            )}
-          </div>
-
-          <div className="flex min-w-40 flex-[0_1_12.5rem] flex-col gap-[clamp(0.75rem,1.6vw,1.125rem)]">
-            <FichaDatos
-              lineas={[
-                { clave: "Lugar", valor: exposicion.lugar ?? "—" },
-                { clave: "Año", valor: exposicion.anio ? String(exposicion.anio) : "—" },
-              ]}
-            />
-            <EnlaceSuave href={`/exposiciones/${exposicion.slug}/obras`} acentuado>
-              Ver las obras ({exposicion.obrasPublicadas})
-            </EnlaceSuave>
-          </div>
-        </div>
-
-        {total > 0 ? (
-          <VistasDeSala exposicion={exposicion} />
+        {exposicion.fotos.length > 0 ? (
+          <VistasDeSala exposicion={exposicion} cartela={cartela} />
         ) : (
-          <EstadoVacio
-            titulo="Las fotos de esta muestra están pendientes"
-            detalle="Las vistas de sala se suben desde el panel, en la ficha de esta exposición."
-          />
+          <div className="flex flex-col gap-8">
+            {cartela}
+            <EstadoVacio
+              titulo="Las fotos de esta muestra están pendientes"
+              detalle="Las vistas de sala se suben desde el panel, en la ficha de esta exposición."
+            />
+          </div>
         )}
       </Seccion>
     </Pagina>

@@ -1,6 +1,7 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
+import { proporcion } from "@/lib/images";
 import { Foto } from "./foto";
 import { Paso } from "./paso";
 import type { PiezaAmpliada } from "./piezas";
@@ -23,6 +24,9 @@ interface LightboxProps {
  */
 const REPOSO = 120;
 
+/** El centro de la foto: donde se acerca cuando no se tocó un punto preciso. */
+const CENTRO = { x: 0.5, y: 0.5 };
+
 /**
  * Vista ampliada de una foto. Es una capa sobre la página, no una página
  * aparte (§05), así que el visitante no pierde el lugar donde iba.
@@ -36,9 +40,9 @@ const REPOSO = 120;
  * `scroll-snap` es lo que hace que la pista se detenga siempre en una foto y
  * nunca entre dos.
  *
- * Al tocar la foto, se amplía al doble y se puede recorrer arrastrando. Con el
- * zoom puesto la pista deja de desplazarse de lado, para que mirar un detalle
- * no cambie de foto sin querer.
+ * Al tocar la foto, se amplía al doble justo donde se tocó y se puede recorrer
+ * arrastrando. Con el zoom puesto la pista deja de desplazarse de lado, para
+ * que mirar un detalle no cambie de foto sin querer.
  *
  * Recorre solo la secuencia con la que se abrió —las piezas de ese conjunto,
  * las vistas de esa muestra, las tres del Inicio— y acá la proporción es
@@ -49,6 +53,8 @@ export function Lightbox({ piezas, indice, onCerrar, onCambiar }: LightboxProps)
   const abierto = indice !== null;
   const pieza = indice !== null ? piezas[indice] : undefined;
   const pista = useRef<HTMLDivElement>(null);
+  /** El marco de cada foto, que es lo que se recorre con el zoom puesto. */
+  const marcos = useRef<(HTMLDivElement | null)[]>([]);
   /**
    * En qué foto está puesto el zoom, no si está puesto.
    *
@@ -59,6 +65,8 @@ export function Lightbox({ piezas, indice, onCerrar, onCambiar }: LightboxProps)
    */
   const [zoomEn, setZoomEn] = useState<number | null>(null);
   const ampliada = indice !== null && zoomEn === indice;
+  /** Dónde se tocó para acercar, en proporción de la foto. */
+  const puntoDeZoom = useRef(CENTRO);
   /** La primera colocación es instantánea; el resto, suave. */
   const yaColocada = useRef(false);
   const temporizador = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -71,6 +79,43 @@ export function Lightbox({ piezas, indice, onCerrar, onCambiar }: LightboxProps)
     [indice, piezas.length, onCambiar],
   );
 
+  // Al volver a abrir, la foto se ve entera aunque se haya cerrado con zoom.
+  const cerrar = useCallback(() => {
+    setZoomEn(null);
+    onCerrar();
+  }, [onCerrar]);
+
+  /**
+   * Acerca o aleja.
+   *
+   * Antes de acercar, la pista se fija de golpe en la foto que más se ve. Con
+   * el zoom la pista deja de deslizarse, así que tocar a mitad de un paso de
+   * una foto a otra la dejaba congelada entre las dos, con un pedazo de cada
+   * una.
+   */
+  const alternarZoom = (tocado?: { posicion: number; x: number; y: number }) => {
+    if (ampliada) {
+      setZoomEn(null);
+      return;
+    }
+
+    const elemento = pista.current;
+    if (!elemento || indice === null || elemento.clientWidth === 0) return;
+
+    const cercana = Math.min(
+      piezas.length - 1,
+      Math.max(0, Math.round(elemento.scrollLeft / elemento.clientWidth)),
+    );
+    if (temporizador.current) clearTimeout(temporizador.current);
+    elemento.scrollTo({ left: cercana * elemento.clientWidth, behavior: "instant" });
+    if (cercana !== indice) onCambiar(cercana);
+
+    // Si se tocó otra foto —el borde de la vecina, a mitad de un paso— el
+    // punto no le sirve a esta, y se acerca al centro.
+    puntoDeZoom.current = tocado?.posicion === cercana ? tocado : CENTRO;
+    setZoomEn(cercana);
+  };
+
   useEffect(() => {
     if (!abierto) {
       yaColocada.current = false;
@@ -82,7 +127,7 @@ export function Lightbox({ piezas, indice, onCerrar, onCambiar }: LightboxProps)
       // que uno deshace lo último que hizo.
       if (evento.key === "Escape") {
         if (ampliada) setZoomEn(null);
-        else onCerrar();
+        else cerrar();
       }
       if (evento.key === "ArrowRight") irA(1);
       if (evento.key === "ArrowLeft") irA(-1);
@@ -96,7 +141,7 @@ export function Lightbox({ piezas, indice, onCerrar, onCambiar }: LightboxProps)
       document.removeEventListener("keydown", alPresionar);
       document.body.style.overflow = overflowPrevio;
     };
-  }, [abierto, ampliada, irA, onCerrar]);
+  }, [abierto, ampliada, irA, cerrar]);
 
   // El índice manda sobre la pista: al abrir coloca la foto elegida, y cuando
   // se usa una flecha o el teclado, lleva la pista hasta ella.
@@ -112,6 +157,18 @@ export function Lightbox({ piezas, indice, onCerrar, onCambiar }: LightboxProps)
     elemento.scrollTo({ left: objetivo, behavior: yaColocada.current ? "smooth" : "auto" });
     yaColocada.current = true;
   }, [indice, abierto]);
+
+  // Al acercar, lleva la foto ampliada hasta el punto que se tocó. Va antes de
+  // pintar para que no se vea un cuadro con la esquina de la foto.
+  useLayoutEffect(() => {
+    if (!ampliada || indice === null) return;
+    const marco = marcos.current[indice];
+    if (!marco) return;
+
+    const { x, y } = puntoDeZoom.current;
+    marco.scrollLeft = x * marco.scrollWidth - marco.clientWidth / 2;
+    marco.scrollTop = y * marco.scrollHeight - marco.clientHeight / 2;
+  }, [ampliada, indice]);
 
   useEffect(() => () => {
     if (temporizador.current) clearTimeout(temporizador.current);
@@ -143,7 +200,7 @@ export function Lightbox({ piezas, indice, onCerrar, onCambiar }: LightboxProps)
         <div className="flex items-baseline gap-5">
           <button
             type="button"
-            onClick={() => setZoomEn(ampliada ? null : indice)}
+            onClick={() => alternarZoom()}
             aria-pressed={ampliada}
             className="eyebrow border-b border-rule-soft pb-[3px] tracking-[0.18em] transition-colors hover:border-accent hover:text-accent"
           >
@@ -151,7 +208,7 @@ export function Lightbox({ piezas, indice, onCerrar, onCambiar }: LightboxProps)
           </button>
           <button
             type="button"
-            onClick={onCerrar}
+            onClick={cerrar}
             className="eyebrow border-b border-rule-soft pb-[3px] tracking-[0.18em] transition-colors hover:border-accent hover:text-accent"
           >
             Cerrar
@@ -160,7 +217,11 @@ export function Lightbox({ piezas, indice, onCerrar, onCambiar }: LightboxProps)
       </div>
 
       <div className="flex min-h-0 flex-1 items-center gap-[clamp(0.625rem,2vw,1.75rem)] px-[clamp(0.875rem,3vw,2.5rem)]">
-        {piezas.length > 1 && !ampliada && <Paso direccion="anterior" onClick={() => irA(-1)} />}
+        {/* Con el zoom las flechas se esconden pero no se van: si dejaran de
+            ocupar su lugar, la pista se ensancharía y quedaría corrida. */}
+        {piezas.length > 1 && (
+          <Paso direccion="anterior" onClick={() => irA(-1)} oculto={ampliada} />
+        )}
 
         <div
           ref={pista}
@@ -175,7 +236,20 @@ export function Lightbox({ piezas, indice, onCerrar, onCambiar }: LightboxProps)
           {piezas.map((cada, posicion) => (
             <div
               key={cada.id}
-              className={`flex h-full w-full shrink-0 snap-center items-center justify-center ${
+              ref={(marco) => {
+                marcos.current[posicion] = marco;
+              }}
+              // El marco es un contenedor de tamaño: la foto se mide contra él
+              // con `cqw`/`cqh` y entra completa, de ancho o de alto según su
+              // forma. Antes su alto salía de la pantalla y su ancho de su
+              // proporción, así que en el teléfono una foto horizontal medía
+              // el triple del espacio y se veía cortada.
+              //
+              // La foto se centra con márgenes automáticos y no alineando el
+              // marco al centro: así, ampliada, desborda solo hacia la derecha
+              // y hacia abajo, y se puede recorrer entera. Centrada con
+              // `justify-content`, su borde izquierdo quedaba fuera de alcance.
+              className={`flex h-full w-full shrink-0 snap-center [container-type:size] ${
                 ampliada && posicion === indice ? "overflow-auto" : "overflow-hidden"
               }`}
             >
@@ -186,11 +260,21 @@ export function Lightbox({ piezas, indice, onCerrar, onCambiar }: LightboxProps)
                   hasta uno que no se ve arrastraba la pista hasta él. */}
               <button
                 type="button"
-                onClick={() => setZoomEn(ampliada ? null : posicion)}
+                onClick={(evento) => {
+                  const foto = evento.currentTarget.getBoundingClientRect();
+                  alternarZoom({
+                    posicion,
+                    x: (evento.clientX - foto.left) / foto.width,
+                    y: (evento.clientY - foto.top) / foto.height,
+                  });
+                }}
                 tabIndex={posicion === indice ? 0 : -1}
                 aria-hidden={posicion !== indice}
                 aria-label={ampliada ? "Alejar la foto" : "Acercar la foto"}
-                className={`flex shrink-0 items-center justify-center ${
+                // La proporción de la foto, para que su ancho se pueda topar
+                // también por el alto del marco.
+                style={{ "--r": proporcion(cada.ancho, cada.alto) } as React.CSSProperties}
+                className={`m-auto flex shrink-0 items-center justify-center ${
                   ampliada ? "cursor-zoom-out" : "cursor-zoom-in"
                 }`}
               >
@@ -202,13 +286,13 @@ export function Lightbox({ piezas, indice, onCerrar, onCambiar }: LightboxProps)
                   variante="exacta"
                   sizes="(max-width: 48rem) 100vw, 80vw"
                   prioridad={posicion === indice}
-                  // El doble del alto en que la foto entra completa: el
-                  // marco se agranda y el contenedor de arriba, con overflow,
-                  // es el que deja recorrerla.
+                  // Entera, la foto toma el ancho del marco o el que le deja
+                  // su alto, lo que sea menor. Ampliada, exactamente el doble;
+                  // el marco, con overflow, es el que deja recorrerla.
                   className={
                     ampliada && posicion === indice
-                      ? "h-[min(144vh,107.5rem)] w-auto max-w-none shrink-0"
-                      : "h-[min(72vh,53.75rem)] max-h-full w-auto max-w-full shrink-0"
+                      ? "w-[min(200cqw,calc(200cqh*var(--r)))] max-w-none shrink-0"
+                      : "w-[min(100cqw,calc(100cqh*var(--r)))] shrink-0"
                   }
                 />
               </button>
@@ -216,7 +300,9 @@ export function Lightbox({ piezas, indice, onCerrar, onCambiar }: LightboxProps)
           ))}
         </div>
 
-        {piezas.length > 1 && !ampliada && <Paso direccion="siguiente" onClick={() => irA(1)} />}
+        {piezas.length > 1 && (
+          <Paso direccion="siguiente" onClick={() => irA(1)} oculto={ampliada} />
+        )}
       </div>
 
       <div className="flex shrink-0 flex-wrap items-end justify-between gap-4 px-[clamp(1.25rem,4vw,3rem)] pt-[clamp(1rem,2.4vw,1.875rem)] pb-[clamp(1.25rem,3vw,2.375rem)]">
@@ -243,4 +329,3 @@ export function Lightbox({ piezas, indice, onCerrar, onCambiar }: LightboxProps)
     </div>
   );
 }
-

@@ -55,14 +55,17 @@ const nextConfig: NextConfig = {
   },
   async redirects() {
     return [
-      { source: "/serie/ensambles-al-cubo", destination: "/exposiciones/ensambles-al-cubo/obras", permanent: true },
-      { source: "/serie/sur", destination: "/exposiciones/sur/obras", permanent: true },
-      { source: "/serie/de-lo-precario", destination: "/exposiciones/de-lo-precario/obras", permanent: true },
-      { source: "/serie/volumenes", destination: "/exposiciones/volumenes/obras", permanent: true },
-      { source: "/serie/a-partir-de-lo-simple", destination: "/exposiciones/a-partir-de-lo-simple/obras", permanent: true },
-      { source: "/serie/de-lo-residual", destination: "/exposiciones/de-lo-residual-y-lo-efimero/obras", permanent: true },
-      { source: "/serie/espacios-intimos", destination: "/exposiciones/ensambles-al-cubo/obras", permanent: true },
+      { source: "/serie/ensambles-al-cubo", destination: "/exposiciones/ensambles-al-cubo", permanent: true },
+      { source: "/serie/sur", destination: "/exposiciones/sur", permanent: true },
+      { source: "/serie/de-lo-precario", destination: "/exposiciones/de-lo-precario", permanent: true },
+      { source: "/serie/volumenes", destination: "/exposiciones/volumenes", permanent: true },
+      { source: "/serie/a-partir-de-lo-simple", destination: "/exposiciones/a-partir-de-lo-simple", permanent: true },
+      { source: "/serie/de-lo-residual", destination: "/exposiciones/de-lo-residual-y-lo-efimero", permanent: true },
+      { source: "/serie/espacios-intimos", destination: "/exposiciones/ensambles-al-cubo", permanent: true },
       { source: "/serie/:slug", destination: "/exposiciones", permanent: true },
+      // La página de obras de cada muestra se retiró: las obras se ven en la
+      // propia exposición, y ya nada del sitio enlazaba ahí.
+      { source: "/exposiciones/:slug/obras", destination: "/exposiciones/:slug", permanent: true },
       // La sección de Clases se retiró; quien llegue por un enlace viejo
       // aterriza en Contacto, que es donde ahora se pregunta por talleres.
       { source: "/clases", destination: "/contacto", permanent: true },

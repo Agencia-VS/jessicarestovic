@@ -1,22 +1,27 @@
-import { Header } from "./header";
+import { Header, type Subindice } from "./header";
 import { Footer } from "./footer";
 import { obtenerConfiguracion } from "@/lib/data/consultas";
 import { derivarContacto } from "@/lib/site-config";
 
 interface PaginaProps {
   children: React.ReactNode;
+  /**
+   * Las páginas de una sección con grupos —«Exposiciones», «Trabajos»— pasan
+   * sus grupos, y en el teléfono la cabecera los ofrece en un desplegable.
+   */
+  subindice?: Subindice;
 }
 
 /**
  * Envoltura de todas las páginas públicas: cabecera, contenido y pie, con el
  * alto mínimo de pantalla para que el pie no suba en páginas cortas.
  */
-export async function Pagina({ children }: PaginaProps) {
+export async function Pagina({ children, subindice }: PaginaProps) {
   const contacto = derivarContacto(await obtenerConfiguracion());
 
   return (
     <div className="flex min-h-dvh flex-col bg-paper">
-      <Header />
+      <Header contacto={contacto} subindice={subindice} />
       <main className="flex flex-1 flex-col">{children}</main>
       <Footer contacto={contacto} />
     </div>
@@ -41,36 +46,30 @@ export function Titulo({ children }: { children: React.ReactNode }) {
 
 interface SeccionProps {
   titulo: string;
-  /** El conteo que va a la derecha del título: «7 exposiciones». */
-  conteo?: string;
   /** Permite que la etiqueta de sección no compita con el título principal. */
   tituloComo?: "h1" | "p";
   children: React.ReactNode;
 }
 
 /**
- * Una sección: el conteo a la derecha y una línea que separa del contenido.
+ * El marco de una sección: el mismo margen y el mismo aire arriba y abajo en
+ * todas, así el contenido cae siempre en el mismo lugar bajo la cabecera.
  *
- * El nombre de la sección ya no se dibuja. Estaba en un serif enorme —«Trabajos»
+ * El nombre de la sección no se dibuja. Estaba en un serif enorme —«Trabajos»
  * ocupando cuatro centímetros de pantalla— y Jessica pidió limpiar ese espacio:
- * la pestaña activa del menú ya dice dónde está uno, así que el título grande
- * repetía sin aportar.
+ * la pestaña activa del menú ya dice dónde está uno. Por lo mismo no hay
+ * conteos: el sitio no enumera muestras, conjuntos ni obras.
  *
  * Sigue existiendo para quien no ve la pantalla. Cuando la sección es el
  * encabezado de la página va como `<h1>` oculto a la vista —buscadores y
  * lectores de pantalla lo necesitan— y cuando el `<h1>` real está más abajo,
- * como en la ficha de una muestra, no se dibuja nada: un `<p>` invisible sería
- * ruido para el lector de pantalla y nada para el resto.
+ * como en la cartela de una muestra, no se dibuja nada: un `<p>` invisible
+ * sería ruido para el lector de pantalla y nada para el resto.
  */
-export function Seccion({ titulo, conteo, tituloComo = "h1", children }: SeccionProps) {
+export function Seccion({ titulo, tituloComo = "h1", children }: SeccionProps) {
   return (
     <div className="marco gutter pt-[clamp(1.5rem,3.2vw,2.75rem)] pb-[clamp(3.5rem,7vw,6.875rem)]">
       {tituloComo === "h1" && <h1 className="sr-only">{titulo}</h1>}
-      {conteo && (
-        <div className="flex flex-wrap items-baseline justify-end gap-6 pb-[clamp(1rem,2vw,1.625rem)]">
-          <span className="eyebrow text-faint">{conteo}</span>
-        </div>
-      )}
       {children}
     </div>
   );

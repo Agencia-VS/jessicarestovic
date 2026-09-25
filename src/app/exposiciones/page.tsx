@@ -16,23 +16,20 @@ export default async function ExposicionesPage() {
   const exposiciones = await listarExposiciones();
 
   return (
-    <Pagina>
-      <Seccion
-        titulo="Exposiciones"
-        conteo={
-          exposiciones.length > 0
-            ? `${exposiciones.length} ${exposiciones.length === 1 ? "exposición" : "exposiciones"}`
-            : undefined
-        }
-      >
+    <Pagina
+      subindice={{
+        seccion: "Exposiciones",
+        base: "/exposiciones",
+        todos: "Todas",
+        grupos: exposiciones,
+        activo: null,
+      }}
+    >
+      <Seccion titulo="Exposiciones">
         {exposiciones.length > 0 ? (
           <>
             <FiltrosExposiciones exposiciones={exposiciones} activo={null} />
-            <TarjetasDeGrupos
-              grupos={exposiciones}
-              hrefDe={({ slug }) => `/exposiciones/${slug}`}
-              cuenta="vistas"
-            />
+            <TarjetasDeGrupos grupos={exposiciones} hrefDe={({ slug }) => `/exposiciones/${slug}`} />
           </>
         ) : (
           <EstadoVacio

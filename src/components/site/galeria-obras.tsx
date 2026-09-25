@@ -4,19 +4,19 @@ import { piezasDeObras } from "./piezas";
 
 interface GaleriaObrasProps {
   obras: Obra[];
-  /** El nombre del conjunto o de la muestra, para los rótulos accesibles. */
+  /** El nombre del conjunto o del grupo, para los rótulos accesibles. */
   contexto: string;
+  /** El rótulo que va con la foto principal. */
+  cartela?: React.ReactNode;
 }
 
 /**
  * Las obras de un conjunto, con la misma estructura que las vistas de sala:
- * portada grande y miniaturas cuadradas.
+ * portada grande, su cartela y miniaturas cuadradas.
  *
- * Antes eran filas justificadas, donde la proporción de cada foto decidía su
- * ancho. Jessica pidió la retícula pareja; lo que se pierde —ver cada obra en
- * su forma real desde la retícula— se recupera al hacer clic, y a cambio la
- * página se recorre de un vistazo.
+ * El nombre de cada obra no se escribe en la página: aparece al abrirla, en el
+ * visor, junto a su año, técnica y medidas.
  */
-export function GaleriaObras({ obras, contexto }: GaleriaObrasProps) {
-  return <Galeria piezas={piezasDeObras(obras)} conTitulos contexto={contexto} />;
+export function GaleriaObras({ obras, contexto, cartela }: GaleriaObrasProps) {
+  return <Galeria piezas={piezasDeObras(obras)} cartela={cartela} contexto={contexto} />;
 }

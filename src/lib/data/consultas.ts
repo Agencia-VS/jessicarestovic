@@ -311,7 +311,7 @@ export async function obtenerExposicionPorSlug(slug: string): Promise<Exposicion
   return normalizarExposicion(data as unknown as ExposicionCruda, obras ?? []);
 }
 
-/** Una exposición con sus obras publicadas y el agrupado del segundo nivel. */
+/** Un grupo con sus obras publicadas, agrupadas por conjunto. */
 export async function obtenerExposicionDetalle(slug: string): Promise<ExposicionDetalle | null> {
   const exposicion = await obtenerExposicionPorSlug(slug);
   if (!exposicion) return null;

@@ -16,6 +16,12 @@ interface FiltrosExposicionesProps {
  * enlaces, no botones: cada grupo tiene su propia dirección, así se puede
  * compartir y el buscador lo indexa —lo que la maqueta resolvía con estado en
  * el navegador.
+ *
+ * Solo en escritorio. En el teléfono la fila ocupaba tres líneas antes de la
+ * primera foto, y la reemplaza el desplegable de la cabecera.
+ *
+ * Ya no lleva una raya encima: separaba el conteo de la sección, que se
+ * retiró, y sin él quedaban dos rayas seguidas con nada entre medio.
  */
 export function FiltrosExposiciones({
   exposiciones,
@@ -33,7 +39,7 @@ export function FiltrosExposiciones({
   ];
 
   return (
-    <div className="flex flex-wrap gap-x-[clamp(0.75rem,1.6vw,1.625rem)] gap-y-2.5 border-t border-line pt-[clamp(1.125rem,2.2vw,1.75rem)] pb-[clamp(1.875rem,4vw,3.5rem)]">
+    <div className="hidden flex-wrap gap-x-[clamp(0.75rem,1.6vw,1.625rem)] gap-y-2.5 pb-[clamp(1.875rem,4vw,3.5rem)] lg:flex">
       {opciones.map(({ slug, titulo, href }) => {
         const seleccionado = slug === activo;
 
