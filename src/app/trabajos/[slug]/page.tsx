@@ -3,20 +3,6 @@ import { notFound } from "next/navigation";
 import { Pagina } from "@/components/site/pagina";
 import { CuerpoDeObras } from "@/components/site/cuerpo-de-obras";
 import { listarTrabajos, obtenerExposicionDetalle } from "@/lib/data/consultas";
-import { slugsDeGrupos } from "@/lib/supabase/build";
-import { supabaseConfigurado } from "@/lib/entorno";
-import { DEMO_EXPOSICIONES } from "@/lib/data/demo";
-
-export const revalidate = 300;
-
-export async function generateStaticParams() {
-  if (!supabaseConfigurado()) {
-    return DEMO_EXPOSICIONES.filter(({ tipo }) => tipo === "trabajo").map(({ slug }) => ({
-      slug,
-    }));
-  }
-  return (await slugsDeGrupos("trabajo")).map((slug) => ({ slug }));
-}
 
 export async function generateMetadata({
   params,

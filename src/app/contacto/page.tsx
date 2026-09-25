@@ -5,8 +5,6 @@ import { FormularioContacto } from "@/components/site/formulario-contacto";
 import { derivarContacto, siteConfig } from "@/lib/site-config";
 import { obtenerConfiguracion } from "@/lib/data/consultas";
 
-export const revalidate = 300;
-
 export const metadata: Metadata = {
   title: "Contacto",
   description: `Escríbele a ${siteConfig.nombre} por WhatsApp o correo: consultas de obra, exposiciones y talleres.`,
