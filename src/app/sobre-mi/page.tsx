@@ -8,8 +8,6 @@ import { obtenerConfiguracion, obtenerSobreMi } from "@/lib/data/consultas";
 import { urlImagen } from "@/lib/imagenes-servidor";
 import { derivarContacto, siteConfig } from "@/lib/site-config";
 
-export const revalidate = 300;
-
 export const metadata: Metadata = {
   title: "Sobre mí",
   description: `Biografía de ${siteConfig.nombre}, artista visual.`,

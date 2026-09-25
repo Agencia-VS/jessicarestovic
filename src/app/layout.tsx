@@ -23,6 +23,21 @@ const publicSans = Public_Sans({
   display: "swap",
 });
 
+/**
+ * Todas las páginas se arman en cada visita, y se declara acá para que el
+ * build no tenga que adivinarlo.
+ *
+ * Cada consulta pasa por el cliente de Supabase con sesión, que lee las
+ * cookies, así que ninguna página puede servirse precompilada. Sin esta línea
+ * Next lo deducía en el build probando las páginas contra la base, y el
+ * resultado dependía de lo que pasara en ese momento. Las páginas de cada
+ * muestra y de cada conjunto se precompilaban a partir de la lista de slugs;
+ * si esa consulta volvía vacía, o el build no veía las variables de Supabase,
+ * quedaban clasificadas como estáticas y en producción todas respondían 500
+ * al leer las cookies. Por eso tampoco hay `generateStaticParams`.
+ */
+export const dynamic = "force-dynamic";
+
 export const metadata: Metadata = {
   metadataBase: new URL(urlDelSitio()),
   title: {

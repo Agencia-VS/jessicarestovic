@@ -4,8 +4,6 @@ import { obtenerConfiguracion } from "@/lib/data/consultas";
 import { derivarContacto } from "@/lib/site-config";
 import { urlDelSitio } from "@/lib/entorno";
 
-export const revalidate = 300;
-
 export const metadata: Metadata = {
   title: "Privacidad",
   description: `Qué datos recoge ${urlDelSitio()} y para qué se usan.`,

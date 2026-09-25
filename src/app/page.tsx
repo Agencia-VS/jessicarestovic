@@ -4,10 +4,6 @@ import { listarObrasDestacadas, obtenerConfiguracion } from "@/lib/data/consulta
 import { urlImagen } from "@/lib/imagenes-servidor";
 import { CELDAS_PORTADA, siteConfig } from "@/lib/site-config";
 
-// El contenido lo administra Jessica: revalidamos cada 5 minutos para que una
-// obra nueva aparezca sola, sin volver a desplegar.
-export const revalidate = 300;
-
 /**
  * El Inicio es un tríptico de tres fotos y una línea.
  *

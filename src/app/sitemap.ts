@@ -4,6 +4,13 @@ import { navPublica } from "@/lib/site-config";
 import { urlDelSitio } from "@/lib/entorno";
 
 /**
+ * Como las páginas, se arma en cada pedido. Es una ruta aparte y no hereda la
+ * declaración del layout: sin esta línea, un build que no viera Supabase lo
+ * dejaba fijo con los grupos del contenido de referencia.
+ */
+export const dynamic = "force-dynamic";
+
+/**
  * El mapa del sitio incluye las páginas de cada grupo —muestras y conjuntos de
  * trabajo— y las de obras, que no están en el menú: se llega a ellas
  * navegando, pero cada una tiene su dirección y conviene que el buscador las

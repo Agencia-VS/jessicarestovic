@@ -5,8 +5,6 @@ import { TarjetasDeGrupos } from "@/components/site/tarjetas-de-grupos";
 import { EstadoVacio } from "@/components/ui/estado-vacio";
 import { listarTrabajos } from "@/lib/data/consultas";
 
-export const revalidate = 300;
-
 export const metadata: Metadata = {
   title: "Trabajos",
   description:
