@@ -10,11 +10,11 @@ interface GaleriaProps {
   /** El conjunto completo: la primera es la portada, el resto miniaturas. */
   piezas: PiezaAmpliada[];
   /**
-   * Si bajo la portada va su nombre. Las obras lo llevan —cada pieza tiene
-   * título— y las vistas de sala no: ahí el título es «Vista 1 de 7», que no
-   * dice nada que el visor no diga mejor.
+   * El rótulo del grupo: en escritorio va bajo la portada y en el teléfono
+   * sobre ella. Llega armado desde el servidor porque lleva el `<h1>` de la
+   * página.
    */
-  conTitulos?: boolean;
+  cartela?: React.ReactNode;
   /** Para el rótulo accesible de cada botón: «Ver … de esta exposición». */
   contexto: string;
 }
@@ -22,16 +22,22 @@ interface GaleriaProps {
 /** La portada ocupa un tercio del canvas. */
 const SIZES_PORTADA = "(max-width: 64rem) 100vw, 420px";
 
-/** Cada miniatura es un cuadrado de lado fijo. */
-const SIZES_MINIATURA = "(max-width: 64rem) 8rem, 128px";
+/**
+ * Cada miniatura es un cuadrado: un cuarto del ancho en el teléfono, un sexto
+ * en la tableta y 128 px como mucho en la tira de escritorio.
+ */
+const SIZES_MINIATURA = "(max-width: 40rem) 25vw, (max-width: 64rem) 17vw, 128px";
+
+/** Desde dónde la galería es una fila, con la portada y la tira lado a lado. */
+const ESCRITORIO = "(min-width: 64rem)";
 
 /**
  * El lado de cada miniatura y el aire entre ellas.
  *
  * Son variables de CSS y no números sueltos porque de ellas sale también el
- * alto de la tira —dos o tres cuadrados más sus huecos— y con ese alto se topa
- * la portada. Así las dos columnas terminan a la misma altura sin que nadie
- * mida nada a mano.
+ * alto de la tira —tres cuadrados más sus huecos— y con ese alto se topa la
+ * portada. Así las dos columnas terminan a la misma altura sin que nadie mida
+ * nada a mano.
  */
 const MEDIDAS = {
   "--lado": "clamp(4.5rem, 8.5vw, 8rem)",
@@ -39,56 +45,60 @@ const MEDIDAS = {
 } as React.CSSProperties;
 
 /**
- * Una galería: la pintura principal en el primer tercio y, a su lado, las
- * miniaturas cuadradas ocupando los otros dos.
+ * Una galería: la pintura principal, su cartela y las miniaturas cuadradas.
  *
- * Todo en una misma fila. Cuando hay muchas piezas las miniaturas **no**
- * siguen creciendo hacia abajo: la tira llena sus filas y sigue hacia la
- * derecha. Eso mantiene la pintura principal y su conjunto dentro de una sola
- * pantalla, en vez de una retícula que empuja todo lo demás fuera de vista.
+ * En escritorio va todo en una fila: la portada y su cartela en el primer
+ * tercio, y la tira en los otros dos. Cuando hay muchas piezas la tira no
+ * crece hacia abajo: llena tres filas y avanza **con flechas, de página en
+ * página**. El desplazamiento libre no gustó: en un trackpad se pasa de largo
+ * y sin una flecha a la vista nada anuncia que hay más.
  *
- * La tira avanza **con flechas, de página en página**, y no arrastrando. El
- * desplazamiento libre no gustó: en un trackpad se pasa de largo, y sin una
- * flecha a la vista nada anuncia que hay más miniaturas. Con dos botones la
- * tira se lee como lo que es.
- *
- * En el teléfono la fila se parte —la portada arriba, la tira debajo— porque
- * un tercio de 390 px no es una pintura, es una estampilla.
+ * En el teléfono se apila —la cartela, la portada y **todas** las miniaturas
+ * en una grilla— porque ahí lo natural es bajar, no pasar de página. El orden
+ * lo pone la utilidad `galeria` de `globals.css`.
  *
  * Las miniaturas **sí** se recortan al cuadrado, que es la excepción a la
  * regla del sitio de no recortar nunca la obra (§08). Se justifica igual que
- * el tríptico del Inicio: lo que se gana es una tira pareja que la vista
+ * el tríptico del Inicio: lo que se gana es una grilla pareja que la vista
  * recorre sin tropiezos, y la obra completa está a un toque — al hacer clic,
  * el visor la muestra en su proporción exacta.
  */
-export function Galeria({ piezas, conTitulos = false, contexto }: GaleriaProps) {
+export function Galeria({ piezas, cartela, contexto }: GaleriaProps) {
   const [abierta, setAbierta] = useState<number | null>(null);
   const pista = useRef<HTMLUListElement>(null);
   const [pagina, setPagina] = useState(0);
 
   const portada = piezas[0];
   const miniaturas = piezas.slice(1);
+  const total = miniaturas.length;
 
   /**
-   * Cuántas miniaturas entran en una página.
+   * Cuántas miniaturas entran en una página de la tira.
    *
-   * Empieza en «todas» y se corrige al medir. No hay parpadeo porque la tira
-   * recorta lo que sobra, así que en el primer cuadro se ve exactamente la
-   * primera página igual.
+   * Empieza en «todas» y se corrige al medir. No hay parpadeo: en el teléfono
+   * se ven todas de verdad, y en escritorio la tira recorta lo que sobra, así
+   * que el primer cuadro ya es la primera página.
    */
-  const [porPagina, setPorPagina] = useState(miniaturas.length);
+  const [porPagina, setPorPagina] = useState(total);
 
   /**
    * Se mide en vez de calcularse: cuántos cuadrados caben depende del ancho
-   * disponible y de cuántas filas tiene la tira, que cambian con la ventana.
-   * El observador responde también al cambio de tamaño, así que al angostarla
-   * las flechas siguen diciendo la verdad.
+   * disponible, que cambia con la ventana. El observador responde también al
+   * cambio de tamaño —cruzar el ancho de escritorio cambia el de la lista—,
+   * así que al angostarla las flechas siguen diciendo la verdad.
    */
   useEffect(() => {
     const elemento = pista.current;
     if (!elemento) return;
+    const escritorio = window.matchMedia(ESCRITORIO);
 
     const medir = () => {
+      // En el teléfono no hay páginas: se ven todas las miniaturas.
+      if (!escritorio.matches) {
+        setPorPagina(total);
+        return;
+      }
+
       const celda = elemento.querySelector("li");
       if (!celda || elemento.clientWidth === 0) return;
 
@@ -105,11 +115,11 @@ export function Galeria({ piezas, conTitulos = false, contexto }: GaleriaProps) 
     const observador = new ResizeObserver(medir);
     observador.observe(elemento);
     return () => observador.disconnect();
-  }, []);
+  }, [total]);
 
   if (!portada) return null;
 
-  const paginas = Math.max(1, Math.ceil(miniaturas.length / porPagina));
+  const paginas = Math.max(1, Math.ceil(total / Math.max(1, porPagina)));
   // Al ensanchar la ventana caben más y sobran páginas: se acota al vuelo en
   // vez de corregir el estado desde un efecto.
   const actual = Math.min(pagina, paginas - 1);
@@ -118,15 +128,14 @@ export function Galeria({ piezas, conTitulos = false, contexto }: GaleriaProps) 
 
   return (
     <>
-      <div
-        style={MEDIDAS}
-        className="flex flex-col gap-[clamp(1rem,2vw,1.5rem)] lg:grid lg:grid-cols-3 lg:items-start"
-      >
+      <div style={MEDIDAS} className="galeria">
+        {cartela && <div className="mb-2.5 [grid-area:cartela] lg:mb-0">{cartela}</div>}
+
         <button
           type="button"
           onClick={() => setAbierta(0)}
           aria-label={`Ver ${portada.titulo ?? portada.alt} en grande`}
-          className="group flex w-full min-w-0 cursor-zoom-in flex-col gap-3 text-left"
+          className="block w-full min-w-0 cursor-zoom-in [grid-area:portada]"
         >
           <Foto
             src={portada.imagenUrl}
@@ -143,18 +152,10 @@ export function Galeria({ piezas, conTitulos = false, contexto }: GaleriaProps) 
             // pintura principal en 150 px — una estampilla.
             className="w-full max-h-[60vh] lg:max-h-[calc(3*var(--lado)+2*var(--hueco))]"
           />
-          {conTitulos && portada.titulo && (
-            <span className="flex flex-col gap-1">
-              <span className="self-start border-b border-transparent font-display text-[1.0625rem] leading-tight font-light transition-colors group-hover:border-accent">
-                {portada.titulo}
-              </span>
-              {portada.subtitulo && <span className="pie text-faint">{portada.subtitulo}</span>}
-            </span>
-          )}
         </button>
 
-        {miniaturas.length > 0 && (
-          <div className="flex min-w-0 items-center gap-[clamp(0.25rem,1vw,0.75rem)] lg:col-span-2">
+        {total > 0 && (
+          <div className="flex min-w-0 items-center gap-[clamp(0.25rem,1vw,0.75rem)] [grid-area:tira]">
             {hayFlechas && (
               <Paso
                 direccion="anterior"
@@ -166,12 +167,11 @@ export function Galeria({ piezas, conTitulos = false, contexto }: GaleriaProps) 
 
             <ul
               ref={pista}
+              // En el teléfono, una grilla con todas. En escritorio,
               // `grid-flow-col` llena las filas y sigue hacia la derecha en vez
-              // de hacia abajo. No hay desplazamiento: cada página dibuja solo
-              // sus miniaturas, así que la tira siempre empieza y termina en una
-              // columna entera. Desplazando quedaba una astilla de la columna
-              // anterior en la última página, que se lee como un error.
-              className="grid min-w-0 flex-1 auto-cols-[var(--lado)] grid-flow-col grid-rows-[repeat(2,var(--lado))] gap-[var(--hueco)] overflow-hidden lg:grid-rows-[repeat(3,var(--lado))]"
+              // de hacia abajo, y cada página dibuja solo sus miniaturas: así
+              // la tira siempre empieza y termina en una columna entera.
+              className="grid min-w-0 flex-1 grid-cols-4 gap-[var(--hueco)] sm:grid-cols-6 lg:auto-cols-[var(--lado)] lg:grid-flow-col lg:grid-cols-none lg:grid-rows-[repeat(3,var(--lado))] lg:overflow-hidden"
             >
               {visibles.map((pieza, indice) => (
                 <li key={pieza.id}>

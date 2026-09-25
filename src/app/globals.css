@@ -148,6 +148,27 @@
   line-height: 1.5;
 }
 
+@utility galeria {
+  /* La galería de un grupo: su cartela, la foto principal y las miniaturas.
+     En el teléfono se apilan en ese orden —el nombre primero, después la
+     obra—. En escritorio la foto principal y su cartela ocupan el primer
+     tercio y la tira los otros dos, desde la misma línea de arriba. */
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-areas: "cartela" "portada" "tira";
+  row-gap: var(--hueco);
+
+  @media (width >= 64rem) {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-rows: auto 1fr;
+    grid-template-areas:
+      "portada tira tira"
+      "cartela tira tira";
+    gap: 1.5rem;
+    align-items: start;
+  }
+}
+
 @utility mosaico {
   /* La retícula de alturas variables (§06): columnas CSS, para que cada pieza
      conserve su proporción real en vez de calzar en una fila. */

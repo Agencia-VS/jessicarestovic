@@ -130,7 +130,7 @@ export interface NavItem {
  *
  * No hay índice general de obra: se entra por un grupo. «Exposiciones» son los
  * grupos que tuvieron sala y «Trabajos» los que no —«Trabajos recientes»,
- * «Ilustraciones en Acuarela»—, cada uno con su conteo.
+ * «Ilustraciones en Acuarela»—.
  */
 export const navPublica: readonly NavItem[] = [
   // «Inicio» existe porque la firma de la cabecera —que era el enlace a la

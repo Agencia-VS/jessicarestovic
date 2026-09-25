@@ -23,15 +23,16 @@ export default async function TrabajosPage() {
   const trabajos = await listarTrabajos();
 
   return (
-    <Pagina>
-      <Seccion
-        titulo="Trabajos"
-        conteo={
-          trabajos.length > 0
-            ? `${trabajos.length} ${trabajos.length === 1 ? "conjunto" : "conjuntos"}`
-            : undefined
-        }
-      >
+    <Pagina
+      subindice={{
+        seccion: "Trabajos",
+        base: "/trabajos",
+        todos: "Todos",
+        grupos: trabajos,
+        activo: null,
+      }}
+    >
+      <Seccion titulo="Trabajos">
         {trabajos.length > 0 ? (
           <>
             <FiltrosExposiciones
@@ -43,7 +44,6 @@ export default async function TrabajosPage() {
             <TarjetasDeGrupos
               grupos={trabajos}
               hrefDe={({ slug }) => `/trabajos/${slug}`}
-              cuenta="obras"
               conLugar={false}
             />
           </>

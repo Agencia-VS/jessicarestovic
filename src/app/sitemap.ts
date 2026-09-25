@@ -11,10 +11,9 @@ import { urlDelSitio } from "@/lib/entorno";
 export const dynamic = "force-dynamic";
 
 /**
- * El mapa del sitio incluye las páginas de cada grupo —muestras y conjuntos de
- * trabajo— y las de obras, que no están en el menú: se llega a ellas
- * navegando, pero cada una tiene su dirección y conviene que el buscador las
- * encuentre.
+ * El mapa del sitio incluye la página de cada grupo —muestras y conjuntos de
+ * trabajo—, que no están en el menú: se llega a ellas navegando, pero cada una
+ * tiene su dirección y conviene que el buscador las encuentre.
  */
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const ahora = new Date();
@@ -43,12 +42,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       lastModified: actualizado_en ? new Date(actualizado_en) : ahora,
       changeFrequency: "monthly" as const,
       priority: 0.7,
-    })),
-    ...exposiciones.map(({ slug, actualizado_en }) => ({
-      url: `${urlDelSitio()}/exposiciones/${slug}/obras`,
-      lastModified: actualizado_en ? new Date(actualizado_en) : ahora,
-      changeFrequency: "monthly" as const,
-      priority: 0.6,
     })),
     ...trabajos.map(({ slug, actualizado_en }) => ({
       url: `${urlDelSitio()}/trabajos/${slug}`,

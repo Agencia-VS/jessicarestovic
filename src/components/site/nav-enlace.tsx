@@ -8,7 +8,7 @@ import type { NavItem } from "@/lib/site-config";
  * Enlace de la navegación: la sección activa queda en tinta plena con un
  * subrayado del acento; el resto, al 50% hasta que se pasa el cursor.
  *
- * El segundo nivel de obras vive bajo «Exposiciones», por lo que la ruta
+ * La página de cada muestra o conjunto vive bajo su sección, así que la ruta
  * anidada conserva automáticamente la sección activa.
  */
 export function NavEnlace({ href, label }: NavItem) {

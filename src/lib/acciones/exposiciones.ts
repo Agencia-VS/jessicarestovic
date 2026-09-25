@@ -26,7 +26,6 @@ import { seccionDeGrupo } from "@/lib/site-config";
 function revalidarExposiciones(): void {
   revalidatePath("/exposiciones");
   revalidatePath("/exposiciones/[slug]", "page");
-  revalidatePath("/exposiciones/[slug]/obras", "page");
   revalidatePath("/trabajos");
   revalidatePath("/trabajos/[slug]", "page");
   revalidatePath("/admin/exposiciones");

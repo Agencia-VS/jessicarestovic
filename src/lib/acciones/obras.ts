@@ -27,13 +27,12 @@ const VERIFICACIONES_A_LA_VEZ = 8;
  * Rutas que dependen de las obras.
  *
  * Son las dos secciones completas porque una obra puede colgar de una muestra
- * o de un conjunto de trabajo, y el conteo de su tarjeta cambia con ella.
+ * o de un conjunto de trabajo, y la foto de su tarjeta puede cambiar con ella.
  */
 function revalidarObras(): void {
   revalidatePath("/");
   revalidatePath("/exposiciones");
   revalidatePath("/exposiciones/[slug]", "page");
-  revalidatePath("/exposiciones/[slug]/obras", "page");
   revalidatePath("/trabajos");
   revalidatePath("/trabajos/[slug]", "page");
   revalidatePath("/admin/exposiciones");
