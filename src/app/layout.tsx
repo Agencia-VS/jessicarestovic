@@ -38,6 +38,33 @@ const publicSans = Public_Sans({
  */
 export const dynamic = "force-dynamic";
 
+/**
+ * Marca cada foto en cuanto llegó, para que entre con un fundido (`[data-foto]`
+ * en `globals.css`) en vez de pintarse a franjas.
+ *
+ * Es un script en línea, en el `<head>`, porque las fotos llegan antes de que
+ * React tome la página: esperar a la hidratación dejaba la portada escondida,
+ * ya descargada, un segundo de más en el teléfono. Así corre antes de que
+ * exista la primera foto y no se le escapa ninguna, tampoco las que llegan
+ * después al navegar dentro del sitio. Escucha en la fase de captura porque el
+ * `load` de una imagen no sube por el documento.
+ *
+ * Espera a que la foto esté decodificada, así el fundido no arranca en un
+ * cuadro vacío.
+ */
+const MARCAR_FOTOS = `
+document.addEventListener("load", function (evento) {
+  var foto = evento.target.parentNode;
+  if (!foto || !foto.hasAttribute || !foto.hasAttribute("data-foto")) return;
+  var marcar = function () { foto.setAttribute("data-cargada", ""); };
+  var imagen = evento.target;
+  imagen.decode ? imagen.decode().then(marcar, marcar) : marcar();
+}, true);
+`;
+
+/** Sin JavaScript nadie marca las fotos: se muestran tal cual llegan. */
+const SIN_SCRIPT = "[data-foto]{background:none}[data-foto]>img{opacity:1}";
+
 export const metadata: Metadata = {
   metadataBase: new URL(urlDelSitio()),
   title: {
@@ -68,6 +95,12 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       lang={siteConfig.lang}
       className={publicSans.variable}
     >
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: MARCAR_FOTOS }} />
+        <noscript>
+          <style>{SIN_SCRIPT}</style>
+        </noscript>
+      </head>
       <body>
         {children}
         {/*
