@@ -1,4 +1,7 @@
+"use client";
+
 import Image from "next/image";
+import { useState } from "react";
 import { proporcion, proporcionEnMosaico } from "@/lib/images";
 
 interface FotoProps {
@@ -34,7 +37,7 @@ interface FotoProps {
    * `izquierda` se apoya en el margen y la columna se lee alineada.
    */
   anclaje?: "centro" | "izquierda";
-  /** La primera foto visible se carga con prioridad (LCP). */
+  /** La primera foto visible se pide antes que el resto (LCP). */
   prioridad?: boolean;
   /** Las clases que fijan el tamaño del marco: `w-full` en la retícula. */
   className?: string;
@@ -46,28 +49,24 @@ interface FotoProps {
  * El `aspect-ratio` sale de las medidas guardadas al subirla, así el espacio
  * queda reservado antes de que cargue y la página no salta. Nunca se recorta:
  * `object-contain` sobre el mismo fondo del sitio, de modo que el aire de los
- * costados no se ve (§08 «Por qué no se recorta la obra»).
+ * costados no se ve (§08 «Por qué no se recorta la obra»). La proporción queda
+ * también en `--r`, para topar el ancho del marco por su alto
+ * —`calc(alto * var(--r))`— sin que el marco quede más ancho que la foto.
+ *
+ * **Aparece entera.** Mientras llega, el marco muestra el tono del hueco; cuando
+ * terminó de llegar, la foto entra con un fundido. Antes el navegador la iba
+ * pintando a franjas, de arriba abajo, y la obra se veía cortada mientras
+ * cargaba. El fundido lo hace `globals.css` cuando el marco tiene
+ * `data-cargada`, y esa marca la pone el script de `layout.tsx` en cuanto la
+ * foto está lista, aunque React todavía no haya tomado la página.
+ *
+ * **Llega al tamaño en que se ve.** Pasa por el optimizador de imágenes, que
+ * la entrega reducida y en AVIF o WebP: una miniatura pesa kilobytes y no el
+ * original de 3000 px que se descargaba antes para mostrarla a 128. Si el
+ * optimizador falla —estuvo apagado un tiempo porque respondía 400—, la foto
+ * se pide directo a Storage: una foto pesada que se ve vale más que una
+ * liviana que no.
  */
-/**
- * Las fotos remotas —las de Supabase Storage— se sirven sin pasar por el
- * optimizador de imágenes de la plataforma.
- *
- * Es una renuncia deliberada y temporal. El optimizador está rechazando esas
- * URLs con 400 y el navegador, ante un `src` que falla, pinta el texto
- * alternativo: la obra no se ve. Sin optimizar no hay redimensionado ni
- * conversión a AVIF, así que el navegador descarga el archivo tal cual —pero
- * una foto pesada que se ve vale más que una liviana que no.
- *
- * El costo está acotado porque lo que se sube ya viene reducido a 3000 px de
- * lado mayor (`reducir-imagen.ts`), no el archivo de cámara original.
- *
- * `/admin/diagnostico` dice cuál es la causa real; en cuanto se sepa, esto se
- * revierte y el optimizador vuelve.
- */
-function esRemota(src: string): boolean {
-  return src.startsWith("http");
-}
-
 export function Foto({
   src,
   alt,
@@ -81,19 +80,41 @@ export function Foto({
   prioridad = false,
   className = "",
 }: FotoProps) {
+  /** La foto que el optimizador no pudo entregar y se pide tal cual. */
+  const [directa, setDirecta] = useState<string | null>(null);
+
   const ratio =
     proporcionFija ??
     (variante === "mosaico" ? proporcionEnMosaico(ancho, alto) : proporcion(ancho, alto));
 
   return (
-    <div className={`relative ${className}`} style={{ aspectRatio: ratio }}>
+    <div
+      // Otra foto es otro marco: sin la marca de la anterior, vuelve a entrar
+      // con su fundido.
+      key={src}
+      data-foto
+      // El script del layout marca el marco cuando la foto llega, y eso puede
+      // pasar antes de que React tome la página.
+      suppressHydrationWarning
+      className={`relative ${className}`}
+      style={{ aspectRatio: ratio, "--r": ratio } as React.CSSProperties}
+    >
       <Image
         src={src}
         alt={alt}
         fill
         sizes={sizes}
-        priority={prioridad}
-        unoptimized={esRemota(src)}
+        loading={prioridad ? "eager" : undefined}
+        fetchPriority={prioridad ? "high" : undefined}
+        unoptimized={directa === src}
+        onError={() => setDirecta(src)}
+        // Respaldo del script del layout, por si no corrió: sin la marca, la
+        // foto quedaría escondida. `next/image` avisa también de las que
+        // llegaron antes de la hidratación; una rota no tiene ancho.
+        onLoad={(evento) => {
+          const imagen = evento.currentTarget;
+          if (imagen.naturalWidth > 0) imagen.parentElement?.setAttribute("data-cargada", "");
+        }}
         className={`${encuadre === "recortada" ? "object-cover" : "object-contain"} ${
           anclaje === "izquierda" ? "object-left" : ""
         }`}

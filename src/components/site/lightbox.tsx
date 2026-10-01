@@ -1,7 +1,6 @@
 "use client";
 
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
-import { proporcion } from "@/lib/images";
 import { Foto } from "./foto";
 import { Paso } from "./paso";
 import type { PiezaAmpliada } from "./piezas";
@@ -271,9 +270,6 @@ export function Lightbox({ piezas, indice, onCerrar, onCambiar }: LightboxProps)
                 tabIndex={posicion === indice ? 0 : -1}
                 aria-hidden={posicion !== indice}
                 aria-label={ampliada ? "Alejar la foto" : "Acercar la foto"}
-                // La proporción de la foto, para que su ancho se pueda topar
-                // también por el alto del marco.
-                style={{ "--r": proporcion(cada.ancho, cada.alto) } as React.CSSProperties}
                 className={`m-auto flex shrink-0 items-center justify-center ${
                   ampliada ? "cursor-zoom-out" : "cursor-zoom-in"
                 }`}
@@ -284,11 +280,19 @@ export function Lightbox({ piezas, indice, onCerrar, onCambiar }: LightboxProps)
                   ancho={cada.ancho}
                   alto={cada.alto}
                   variante="exacta"
-                  sizes="(max-width: 48rem) 100vw, 80vw"
+                  // Ampliada se ve al doble, así que se pide una versión del
+                  // doble: el optimizador entrega cada foto al tamaño en que
+                  // se ve, y la de tamaño normal, estirada, se vería borrosa.
+                  sizes={
+                    ampliada && posicion === indice
+                      ? "(max-width: 48rem) 200vw, 160vw"
+                      : "(max-width: 48rem) 100vw, 80vw"
+                  }
                   prioridad={posicion === indice}
                   // Entera, la foto toma el ancho del marco o el que le deja
-                  // su alto, lo que sea menor. Ampliada, exactamente el doble;
-                  // el marco, con overflow, es el que deja recorrerla.
+                  // su alto (`--r` es su proporción), lo que sea menor.
+                  // Ampliada, exactamente el doble; el marco, con overflow, es
+                  // el que deja recorrerla.
                   className={
                     ampliada && posicion === indice
                       ? "w-[min(200cqw,calc(200cqh*var(--r)))] max-w-none shrink-0"
