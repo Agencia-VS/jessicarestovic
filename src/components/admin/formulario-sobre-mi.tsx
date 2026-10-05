@@ -76,7 +76,7 @@ export function FormularioSobreMi({ contenido, retratoUrl }: FormularioSobreMiPr
         rows={12}
         defaultValue={contenido.biografia}
         error={errores.biografia}
-        ayuda="Deja una línea en blanco entre párrafos."
+        ayuda="Los saltos de línea se respetan tal cual. Deja una línea en blanco para empezar otro párrafo."
       />
 
       <Area

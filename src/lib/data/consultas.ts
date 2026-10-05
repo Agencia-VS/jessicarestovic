@@ -6,7 +6,7 @@ import {
   DEMO_OBRAS,
   DEMO_SOBRE_MI,
 } from "./demo";
-import { CONFIGURACION_POR_DEFECTO, normalizarPortadas } from "@/lib/site-config";
+import { CONFIGURACION_POR_DEFECTO, normalizarConfiguracion } from "@/lib/site-config";
 import { urlImagen } from "@/lib/imagenes-servidor";
 import type { ConfiguracionContenido, PaginaClave } from "@/types/database";
 import type {
@@ -400,6 +400,5 @@ export function obtenerSobreMi(): Promise<SobreMiContenido> {
 
 /** Datos de contacto, frase y fotos del Inicio. */
 export async function obtenerConfiguracion(): Promise<ConfiguracionContenido> {
-  const contenido = await obtenerPagina("configuracion", CONFIGURACION_POR_DEFECTO);
-  return { ...contenido, portadas: normalizarPortadas(contenido) };
+  return normalizarConfiguracion(await obtenerPagina("configuracion", CONFIGURACION_POR_DEFECTO));
 }

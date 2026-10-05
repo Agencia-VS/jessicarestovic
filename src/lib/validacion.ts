@@ -64,6 +64,15 @@ export const portadaSchema = z.object({
   cita: texto(400).min(1, "La frase de portada no puede quedar vacía."),
   /** Una descripción por celda del tríptico, en el mismo orden. */
   alts: z.array(texto(300)).max(CELDAS_PORTADA),
+  /** Si el Inicio muestra el tríptico o una sola foto grande. */
+  formato: z.enum(["triptico", "grande"], "Elige cómo se ve el Inicio."),
+  grande_alt: texto(300),
+  /** Qué parte de la foto grande se ve: 0 es arriba y 100, abajo. */
+  foco: z.coerce
+    .number("Elige qué parte de la foto se ve.")
+    .int("Elige qué parte de la foto se ve.")
+    .min(0, "Elige qué parte de la foto se ve.")
+    .max(100, "Elige qué parte de la foto se ve."),
 });
 
 

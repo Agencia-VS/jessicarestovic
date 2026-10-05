@@ -47,7 +47,7 @@ export function Cartela({ titulo, datos = [], descripcion, como: Titulo = "h1" }
       )}
 
       {descripcion && (
-        <p className="mt-3.5 hidden max-w-[52ch] text-sm leading-relaxed font-light text-pretty text-body lg:block">
+        <p className="mt-3.5 hidden max-w-[52ch] text-sm leading-relaxed font-light whitespace-pre-line text-pretty text-body lg:block">
           {descripcion}
         </p>
       )}

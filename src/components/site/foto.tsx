@@ -37,6 +37,11 @@ interface FotoProps {
    * `izquierda` se apoya en el margen y la columna se lee alineada.
    */
   anclaje?: "centro" | "izquierda";
+  /**
+   * Qué parte de una foto recortada se ve, de 0 (arriba) a 100 (abajo): la
+   * foto grande del Inicio, que Jessica encuadra desde el panel.
+   */
+  foco?: number;
   /** La primera foto visible se pide antes que el resto (LCP). */
   prioridad?: boolean;
   /** Las clases que fijan el tamaño del marco: `w-full` en la retícula. */
@@ -77,6 +82,7 @@ export function Foto({
   proporcionFija,
   encuadre = "contenida",
   anclaje = "centro",
+  foco,
   prioridad = false,
   className = "",
 }: FotoProps) {
@@ -115,6 +121,7 @@ export function Foto({
           const imagen = evento.currentTarget;
           if (imagen.naturalWidth > 0) imagen.parentElement?.setAttribute("data-cargada", "");
         }}
+        style={foco === undefined ? undefined : { objectPosition: `50% ${foco}%` }}
         className={`${encuadre === "recortada" ? "object-cover" : "object-contain"} ${
           anclaje === "izquierda" ? "object-left" : ""
         }`}

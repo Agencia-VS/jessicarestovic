@@ -64,6 +64,18 @@ export const ESPECS_IMAGEN = {
     pesoMaxBytes: PESO_MAX,
     formatos: ["image/jpeg", "image/png", "image/webp", "image/avif"],
   },
+  portadaGrande: {
+    uso: "Foto grande del Inicio",
+    proporcion:
+      "Horizontal de preferencia: en el computador se ve como una franja ancha, y eliges qué parte",
+    // La franja ocupa todo el canvas, hasta 1296 px de ancho: en una pantalla
+    // retina son unos 2600 px de foto.
+    ladoMayorMin: 2400,
+    anchoMin: null,
+    altoMin: null,
+    pesoMaxBytes: PESO_MAX,
+    formatos: ["image/jpeg", "image/png", "image/webp", "image/avif"],
+  },
   retrato: {
     uso: "Foto de perfil (Sobre mí)",
     proporcion: "Vertical 4:5",

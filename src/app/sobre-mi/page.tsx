@@ -21,9 +21,14 @@ export default async function SobreMiPage() {
   ]);
   const contacto = derivarContacto(config);
 
-  // Un párrafo por línea en blanco, como lo escribe Jessica en el panel.
+  // Un párrafo por cada línea en blanco, y dentro de cada uno los saltos tal
+  // como los escribió Jessica en el panel (`whitespace-pre-line`). El texto
+  // guardado antes de este arreglo trae los saltos como `\r\n` —así los manda
+  // el formulario—, y partir solo por `\n\n` dejaba toda la biografía en un
+  // único párrafo apretado.
   const parrafos = biografia
-    .split(/\n{2,}/)
+    .replace(/\r\n?/g, "\n")
+    .split(/\n\s*\n/)
     .map((parrafo) => parrafo.trim())
     .filter(Boolean);
 
@@ -51,10 +56,10 @@ export default async function SobreMiPage() {
           <Titulo>{titulo}</Titulo>
 
           {parrafos.length > 0 ? (
-            parrafos.map((parrafo) => (
+            parrafos.map((parrafo, indice) => (
               <p
-                key={parrafo.slice(0, 40)}
-                className="max-w-[58ch] font-display text-[clamp(1.0625rem,1.6vw,1.375rem)] leading-[1.7] font-light text-prose text-pretty"
+                key={indice}
+                className="max-w-[58ch] font-display text-[clamp(1.0625rem,1.6vw,1.375rem)] leading-[1.7] font-light whitespace-pre-line text-prose text-pretty"
               >
                 {parrafo}
               </p>

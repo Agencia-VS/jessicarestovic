@@ -18,6 +18,11 @@ interface SubirImagenProps {
   error?: string;
   /** El formulario padre desactiva «Guardar» hasta completar la nueva foto. */
   alCambiarEstado?: (ocupado: boolean) => void;
+  /**
+   * La vista previa de la foto recién elegida, o `null` si no hay una nueva.
+   * El Inicio la usa para encuadrar la foto grande antes de guardarla.
+   */
+  alCambiarVista?: (url: string | null) => void;
 }
 
 interface Medidas {
@@ -43,6 +48,7 @@ export function SubirImagen({
   requerido = false,
   error,
   alCambiarEstado,
+  alCambiarVista,
 }: SubirImagenProps) {
   const inputRef = useRef<HTMLInputElement>(null);
   const version = useRef(0);
@@ -67,6 +73,12 @@ export function SubirImagen({
   useEffect(() => {
     alCambiarEstado?.(preparando || subiendo || (seleccionada && !ruta));
   }, [alCambiarEstado, preparando, ruta, seleccionada, subiendo]);
+
+  // Una subida que falló deja de estar seleccionada: el formulario vuelve a
+  // la foto guardada, y la vista previa también.
+  useEffect(() => {
+    alCambiarVista?.(seleccionada ? previa : null);
+  }, [alCambiarVista, previa, seleccionada]);
 
   const descartarRutaPendiente = () => {
     const anterior = rutaPendiente.current;

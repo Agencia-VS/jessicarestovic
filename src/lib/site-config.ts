@@ -1,5 +1,6 @@
 import type {
   ConfiguracionContenido,
+  ImagenGrande,
   ImagenPortada,
   TipoDeGrupo,
 } from "@/types/database";
@@ -59,6 +60,51 @@ export function normalizarPortadas(contenido: ConfiguracionContenido): ImagenPor
   ];
 }
 
+/** El prefijo de los campos de la foto grande del Inicio. */
+export const CAMPO_GRANDE = "grande";
+
+/**
+ * Qué parte de la foto grande se ve mientras no se elija otra: la de arriba,
+ * que es la que Jessica pidió.
+ */
+export const FOCO_POR_DEFECTO = 0;
+
+/** El foco como un entero entre 0 y 100; lo que no se entienda, al de por defecto. */
+function normalizarFoco(valor: unknown): number {
+  const numero = Number(valor);
+  if (!Number.isFinite(numero)) return FOCO_POR_DEFECTO;
+  return Math.min(100, Math.max(0, Math.round(numero)));
+}
+
+/** La foto grande si el documento trae una con ruta; si no, ninguna. */
+function normalizarGrande(grande: ImagenGrande | null | undefined): ImagenGrande | null {
+  if (!grande || typeof grande.path !== "string" || !grande.path) return null;
+  return {
+    path: grande.path,
+    alt: grande.alt ?? null,
+    ancho: grande.ancho ?? null,
+    alto: grande.alto ?? null,
+    foco: normalizarFoco(grande.foco),
+  };
+}
+
+/**
+ * La configuración como la usa el sitio, venga con la forma que venga.
+ *
+ * La lee igual el sitio que el panel al guardar: así la portada de una sola
+ * foto en claves planas (ver `normalizarPortadas`) y un documento anterior a
+ * la foto grande se leen bien, y quedan con la forma nueva en el primer
+ * guardado.
+ */
+export function normalizarConfiguracion(contenido: ConfiguracionContenido): ConfiguracionContenido {
+  return {
+    ...contenido,
+    portadas: normalizarPortadas(contenido),
+    portada_formato: contenido.portada_formato === "grande" ? "grande" : "triptico",
+    portada_grande: normalizarGrande(contenido.portada_grande),
+  };
+}
+
 /**
  * Valores por defecto de la configuración editable. Se usan mientras no haya
  * base de datos conectada, y como respaldo si un campo quedara vacío.
@@ -70,6 +116,8 @@ export const CONFIGURACION_POR_DEFECTO: ConfiguracionContenido = {
   cita:
     "Un trabajo obsesivo en que el tiempo y el ritmo pausado del hacer es el gestor de espacios íntimos.",
   portadas: [],
+  portada_formato: "triptico",
+  portada_grande: null,
 };
 
 /**
