@@ -9,6 +9,7 @@ import {
   ok,
   SIN_SESION,
   textoONulo,
+  type Cliente,
   type Resultado,
 } from "./comun";
 import {
@@ -18,14 +19,16 @@ import {
   sobreMiSchema,
 } from "@/lib/validacion";
 import {
+  CAMPO_GRANDE,
   campoPortada,
   CELDAS_PORTADA,
   CONFIGURACION_POR_DEFECTO,
-  normalizarPortadas,
+  normalizarConfiguracion,
 } from "@/lib/site-config";
 import { BUCKET_IMAGENES } from "@/lib/images";
 import type {
   ConfiguracionContenido,
+  ImagenGrande,
   ImagenPortada,
   SobreMiContenido,
 } from "@/types/database";
@@ -38,7 +41,7 @@ export async function guardarSobreMi(
 ): Promise<Resultado> {
   const analisis = sobreMiSchema.safeParse({
     titulo: String(formData.get("titulo") ?? ""),
-    biografia: String(formData.get("biografia") ?? ""),
+    biografia: conSaltosSimples(String(formData.get("biografia") ?? "")),
     cita: String(formData.get("cita") ?? ""),
     retrato_alt: String(formData.get("retrato_alt") ?? ""),
   });
@@ -112,24 +115,20 @@ export async function guardarSobreMi(
   return ok("Página «Sobre mí» actualizada.");
 }
 
-async function configuracionActual(
-  supabase: NonNullable<Awaited<ReturnType<typeof clienteConSesion>>>,
-): Promise<ConfiguracionContenido> {
+async function configuracionActual(supabase: Cliente): Promise<ConfiguracionContenido> {
   const { data } = await supabase
     .from("pagina")
     .select("contenido")
     .eq("clave", "configuracion")
     .maybeSingle();
 
-  const contenido: ConfiguracionContenido = {
-    ...CONFIGURACION_POR_DEFECTO,
-    ...((data?.contenido ?? {}) as Partial<ConfiguracionContenido>),
-  };
-
   // Se normaliza también al leer para escribir: así el documento con la forma
   // anterior —una sola portada en claves planas— queda con la forma nueva en el
   // primer guardado, en vez de arrastrar las dos.
-  return { ...contenido, portadas: normalizarPortadas(contenido) };
+  return normalizarConfiguracion({
+    ...CONFIGURACION_POR_DEFECTO,
+    ...((data?.contenido ?? {}) as Partial<ConfiguracionContenido>),
+  });
 }
 
 /**
@@ -143,8 +142,11 @@ function documentoConfiguracion(
   previo: ConfiguracionContenido,
   cambios: Partial<ConfiguracionContenido>,
 ): ConfiguracionContenido {
-  const { email, telefono, instagram, cita, portadas } = { ...previo, ...cambios };
-  return { email, telefono, instagram, cita, portadas };
+  const { email, telefono, instagram, cita, portadas, portada_formato, portada_grande } = {
+    ...previo,
+    ...cambios,
+  };
+  return { email, telefono, instagram, cita, portadas, portada_formato, portada_grande };
 }
 
 /** Guarda los datos de contacto sin tocar la portada. */
@@ -182,12 +184,55 @@ export async function guardarConfiguracion(
 }
 
 /**
+ * Los saltos de línea de un `<textarea>` llegan como `\r\n`: así los manda el
+ * navegador al enviar el formulario. Se guardan como `\n`, que es lo que
+ * espera quien después parte el texto en párrafos.
+ */
+function conSaltosSimples(texto: string): string {
+  return texto.replace(/\r\n?/g, "\n");
+}
+
+/**
+ * La foto nueva de un campo del Inicio, ya comprobada: que haya terminado de
+ * subir, que la ruta sea una de las que se firman para la portada y que el
+ * archivo esté de verdad en Storage. `ruta` es `null` si no eligió otra.
+ *
+ * `nombre` es cómo se llama la foto en el aviso: «La foto 2», «La foto grande».
+ */
+async function fotoNueva(
+  supabase: Cliente,
+  formData: FormData,
+  campo: string,
+  nombre: string,
+): Promise<{ ruta: string | null } | { error: string }> {
+  const ruta = textoONulo(formData.get(`${campo}_path`));
+
+  if (formData.get(`${campo}_seleccionada`) === "1" && !ruta) {
+    return { error: `${nombre} todavía no terminó de subir. Espera a que llegue al 100%.` };
+  }
+  if (!ruta) return { ruta: null };
+  if (!rutaDeImagenValida(ruta, "portadas")) {
+    return { error: `${nombre} no es válida o la subida todavía no terminó.` };
+  }
+
+  const { data: archivo, error } = await supabase.storage.from(BUCKET_IMAGENES).info(ruta);
+  if (error || !archivo) {
+    return { error: `${nombre} no quedó disponible en Storage. Vuelve a subirla.` };
+  }
+  return { ruta };
+}
+
+/**
  * Guarda las fotos y la frase que encabezan el Inicio.
  *
- * Las celdas se recorren en orden y el resultado queda compacto: si Jessica
- * quita la primera de tres, las otras dos corren a la izquierda y el tríptico
- * pasa a ser un díptico. Es la forma que menos sorprende, porque el
- * formulario dibuja las celdas leyendo esa misma lista.
+ * El Inicio es el tríptico o una sola foto grande, según `formato`. Las dos
+ * cosas se guardan siempre, se vea la que se vea: así Jessica puede probar la
+ * foto grande y volver a las tres sin subir nada de nuevo.
+ *
+ * Las celdas del tríptico se recorren en orden y el resultado queda compacto:
+ * si Jessica quita la primera de tres, las otras dos corren a la izquierda y
+ * el tríptico pasa a ser un díptico. Es la forma que menos sorprende, porque
+ * el formulario dibuja las celdas leyendo esa misma lista.
  */
 export async function guardarPortada(
   _previo: Resultado,
@@ -198,6 +243,9 @@ export async function guardarPortada(
     alts: Array.from({ length: CELDAS_PORTADA }, (_, indice) =>
       String(formData.get(`${campoPortada(indice)}_alt`) ?? ""),
     ),
+    formato: String(formData.get("formato") ?? ""),
+    grande_alt: String(formData.get(`${CAMPO_GRANDE}_alt`) ?? ""),
+    foco: String(formData.get(`${CAMPO_GRANDE}_foco`) ?? ""),
   });
 
   if (!analisis.success) {
@@ -208,7 +256,7 @@ export async function guardarPortada(
   if (!supabase) return SIN_SESION;
 
   const previo = await configuracionActual(supabase);
-  const { cita, alts } = analisis.data;
+  const { cita, alts, formato, grande_alt, foco } = analisis.data;
 
   const portadas: ImagenPortada[] = [];
   /** Las que se acaban de subir: se borran si el guardado falla. */
@@ -218,29 +266,10 @@ export async function guardarPortada(
 
   for (let indice = 0; indice < CELDAS_PORTADA; indice += 1) {
     const campo = campoPortada(indice);
-    const posicion = indice + 1;
     const anterior = previo.portadas[indice] ?? null;
-    const nuevaRuta = textoONulo(formData.get(`${campo}_path`));
-
-    if (formData.get(`${campo}_seleccionada`) === "1" && !nuevaRuta) {
-      return fallo(
-        `La foto ${posicion} todavía no terminó de subir. Espera a que llegue al 100%.`,
-      );
-    }
-    if (nuevaRuta && !rutaDeImagenValida(nuevaRuta, "portadas")) {
-      return fallo(`La foto ${posicion} no es válida o la subida todavía no terminó.`);
-    }
-    if (nuevaRuta) {
-      const { data: archivo, error: errorArchivo } = await supabase.storage
-        .from(BUCKET_IMAGENES)
-        .info(nuevaRuta);
-
-      if (errorArchivo || !archivo) {
-        return fallo(
-          `La foto ${posicion} no quedó disponible en Storage. Vuelve a subirla.`,
-        );
-      }
-    }
+    const nueva = await fotoNueva(supabase, formData, campo, `La foto ${indice + 1}`);
+    if ("error" in nueva) return fallo(nueva.error);
+    const nuevaRuta = nueva.ruta;
 
     // «Quitar» gana sobre conservar, pero no sobre una foto nueva: si eligió
     // otra y además dejó marcada la casilla, lo que quiso fue reemplazarla.
@@ -265,12 +294,45 @@ export async function guardarPortada(
     });
   }
 
-  const { error } = await supabase
-    .from("pagina")
-    .upsert(
-      { clave: "configuracion", contenido: documentoConfiguracion(previo, { cita, portadas }) },
-      { onConflict: "clave" },
+  const nuevaGrande = await fotoNueva(supabase, formData, CAMPO_GRANDE, "La foto grande");
+  if ("error" in nuevaGrande) return fallo(nuevaGrande.error);
+
+  const anteriorGrande = previo.portada_grande;
+  let portadaGrande: ImagenGrande | null = null;
+  if (nuevaGrande.ruta) {
+    rutasNuevas.push(nuevaGrande.ruta);
+    if (anteriorGrande && anteriorGrande.path !== nuevaGrande.ruta) {
+      rutasQueSalen.push(anteriorGrande.path);
+    }
+    portadaGrande = {
+      path: nuevaGrande.ruta,
+      alt: grande_alt || null,
+      ancho: enteroONulo(formData.get(`${CAMPO_GRANDE}_ancho`)),
+      alto: enteroONulo(formData.get(`${CAMPO_GRANDE}_alto`)),
+      foco,
+    };
+  } else if (anteriorGrande) {
+    portadaGrande = { ...anteriorGrande, alt: grande_alt || null, foco };
+  }
+
+  if (formato === "grande" && !portadaGrande) {
+    return fallo(
+      "Para que el Inicio muestre una foto grande, primero súbela. O elige «Tres fotos».",
     );
+  }
+
+  const { error } = await supabase.from("pagina").upsert(
+    {
+      clave: "configuracion",
+      contenido: documentoConfiguracion(previo, {
+        cita,
+        portadas,
+        portada_formato: formato,
+        portada_grande: portadaGrande,
+      }),
+    },
+    { onConflict: "clave" },
+  );
 
   if (error) {
     for (const ruta of rutasNuevas) await borrarImagen(supabase, ruta);

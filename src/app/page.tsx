@@ -5,11 +5,12 @@ import { urlImagen } from "@/lib/imagenes-servidor";
 import { CELDAS_PORTADA, siteConfig } from "@/lib/site-config";
 
 /**
- * El Inicio es un tríptico de tres fotos y una línea.
+ * El Inicio es un tríptico de tres fotos —o una sola grande— y una línea.
  *
  * Las fotos que Jessica sube en «Inicio» del panel tienen prioridad. Mientras
  * no haya subido ninguna, el tríptico se arma con las obras marcadas como
- * destacadas, así el Inicio nunca se ve vacío recién montado.
+ * destacadas, así el Inicio nunca se ve vacío recién montado. La foto grande
+ * solo aparece si ella la eligió en el panel.
  */
 export default async function InicioPage() {
   const [destacadas, config] = await Promise.all([
@@ -32,6 +33,15 @@ export default async function InicioPage() {
           alto: obra.imagen_alto,
         }));
 
+  const foto = config.portada_formato === "grande" ? config.portada_grande : null;
+  const grande = foto && {
+    src: urlImagen(foto.path),
+    alt: foto.alt ?? `Obra de ${siteConfig.nombre}`,
+    ancho: foto.ancho,
+    alto: foto.alto,
+    foco: foto.foco,
+  };
+
   return (
     <Pagina>
       {/* El `<h1>` lo aportaba la firma de la cabecera, que se retiró. La
@@ -40,7 +50,7 @@ export default async function InicioPage() {
       <h1 className="sr-only">
         {siteConfig.nombre} — {siteConfig.rol}
       </h1>
-      <Portada imagenes={imagenes} cita={config.cita} />
+      <Portada imagenes={imagenes} grande={grande} cita={config.cita} />
     </Pagina>
   );
 }

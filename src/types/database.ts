@@ -95,11 +95,6 @@ export type SobreMiContenido = {
   retrato_alt: string | null;
 };
 
-/**
- * Datos de contacto y textos que Jessica administra desde «Configuración».
- * El enlace de WhatsApp y la URL de Instagram se derivan de estos valores, así
- * ella completa un solo campo por cosa.
- */
 /** Una de las fotos del tríptico que encabeza el Inicio. */
 export type ImagenPortada = {
   path: string;
@@ -108,6 +103,25 @@ export type ImagenPortada = {
   alto: number | null;
 };
 
+/**
+ * La foto única del Inicio, cuando en vez del tríptico va una sola grande.
+ *
+ * En el computador ocupa el lugar de las tres fotos —una franja ancha—, así
+ * que de la foto se ve solo una parte: `foco` dice cuál, de 0 (la parte de
+ * arriba) a 100 (la de abajo).
+ */
+export type ImagenGrande = ImagenPortada & {
+  foco: number;
+};
+
+/** Cómo se arma el Inicio: el tríptico de tres fotos o una sola grande. */
+export type FormatoPortada = "triptico" | "grande";
+
+/**
+ * Datos de contacto y textos que Jessica administra desde «Configuración».
+ * El enlace de WhatsApp y la URL de Instagram se derivan de estos valores, así
+ * ella completa un solo campo por cosa.
+ */
 export type ConfiguracionContenido = {
   email: string;
   /** Tal como se lee, por ejemplo «+56 9 8747 2258». */
@@ -121,6 +135,13 @@ export type ConfiguracionContenido = {
    * independientes de la obra catalogada: se suben en «Inicio» del panel.
    */
   portadas: ImagenPortada[];
+  /** Qué muestra el Inicio. Mientras no elija otra cosa, el tríptico. */
+  portada_formato: FormatoPortada;
+  /**
+   * La foto grande del Inicio. Se conserva aunque el Inicio muestre el
+   * tríptico: así se puede volver a ella sin subirla de nuevo.
+   */
+  portada_grande: ImagenGrande | null;
 };
 
 /**
