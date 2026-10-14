@@ -1,16 +1,16 @@
-import type { Metadata } from "next";
+import { metadatosPagina } from "@/lib/metadatos";
 import { Pagina, Seccion } from "@/components/site/pagina";
 import { FiltrosExposiciones } from "@/components/site/filtros-exposiciones";
 import { TarjetasDeGrupos } from "@/components/site/tarjetas-de-grupos";
 import { EstadoVacio } from "@/components/ui/estado-vacio";
 import { listarExposiciones } from "@/lib/data/consultas";
 
-export const metadata: Metadata = {
-  title: "Exposiciones",
-  description:
+export const metadata = metadatosPagina({
+  titulo: "Exposiciones",
+  descripcion:
     "Trayectoria de exposiciones de Jessica Restović: muestras individuales y colectivas en Chile y el extranjero.",
-  alternates: { canonical: "/exposiciones" },
-};
+  ruta: "/exposiciones",
+});
 
 export default async function ExposicionesPage() {
   const exposiciones = await listarExposiciones();

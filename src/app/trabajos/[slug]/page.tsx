@@ -1,8 +1,9 @@
 import type { Metadata } from "next";
+import { metadatosPagina } from "@/lib/metadatos";
 import { notFound } from "next/navigation";
 import { Pagina } from "@/components/site/pagina";
 import { CuerpoDeObras } from "@/components/site/cuerpo-de-obras";
-import { listarTrabajos, obtenerExposicionDetalle } from "@/lib/data/consultas";
+import { listarTrabajos, obtenerExposicionDetalle, obtenerExposicionPorSlug } from "@/lib/data/consultas";
 
 export async function generateMetadata({
   params,
@@ -10,15 +11,16 @@ export async function generateMetadata({
   params: Promise<{ slug: string }>;
 }): Promise<Metadata> {
   const { slug } = await params;
-  const trabajo = await obtenerExposicionDetalle(slug);
-  if (!trabajo || trabajo.tipo !== "trabajo") return {};
+  const trabajo = await obtenerExposicionPorSlug(slug);
+  if (!trabajo || trabajo.tipo !== "trabajo") notFound();
 
-  return {
-    title: trabajo.titulo,
-    description:
-      trabajo.descripcion ?? `${trabajo.titulo}, trabajos de Jessica Restović.`,
-    alternates: { canonical: `/trabajos/${slug}` },
-  };
+  return metadatosPagina({
+    titulo: trabajo.titulo,
+    descripcion:
+      trabajo.descripcion?.trim() || `${trabajo.titulo}, trabajos de Jessica Restović.`,
+    ruta: `/trabajos/${trabajo.slug}`,
+    imagen: trabajo.portada,
+  });
 }
 
 /**
