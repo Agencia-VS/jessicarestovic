@@ -42,19 +42,10 @@ const patronesDeImagen = [
 ];
 
 const nextConfig: NextConfig = {
-  env: {
-    /**
-     * El host que conoció el build, horneado para poder leerlo después.
-     *
-     * `remotePatterns` se resuelve al construir, así que desde el sitio corriendo
-     * no hay forma de saber si la variable estaba disponible en ese momento — y
-     * es justo el dato que explica una foto que no se ve. `/admin/diagnostico`
-     * lo muestra. No es secreto: el host aparece en la URL de cada foto.
-     */
-    HOST_IMAGENES_DEL_BUILD: host ?? "",
-  },
   async redirects() {
     return [
+      // El diagnóstico temporal se retiró una vez resuelto el problema de fotos.
+      { source: "/admin/diagnostico", destination: "/admin/trabajos", permanent: false },
       { source: "/serie/ensambles-al-cubo", destination: "/exposiciones/ensambles-al-cubo", permanent: true },
       { source: "/serie/sur", destination: "/exposiciones/sur", permanent: true },
       { source: "/serie/de-lo-precario", destination: "/exposiciones/de-lo-precario", permanent: true },
