@@ -27,9 +27,8 @@ interface FormularioExposicionProps {
  * las vistas de montaje. El resto —título, año, descripción y el interruptor
  * de publicada— es idéntico, así que es un formulario y no dos.
  *
- * Las obras del grupo no están acá sino debajo, en la página: son su propia
- * superficie, con su arrastre y su alta, y no tendría sentido meter una grilla
- * con botones dentro de un `<form>`.
+ * En Trabajos, las obras del conjunto se administran debajo del formulario.
+ * En Exposiciones, las únicas imágenes que se cargan son las fotos de sala.
  */
 export function FormularioExposicion({
   exposicion,
@@ -91,13 +90,13 @@ export function FormularioExposicion({
         ayuda={
           esTrabajo
             ? "Se muestra sobre las obras del conjunto."
-            : "Se muestra al desplegar la exposición en el listado."
+            : "Se muestra junto a las fotos de sala en la página de la exposición."
         }
       />
 
       {!esTrabajo && exposicion && exposicion.fotos.length > 0 && (
         <div className="flex flex-col gap-3">
-          <span className="eyebrow text-muted">Fotos cargadas</span>
+          <span className="eyebrow text-muted">Fotos de sala cargadas</span>
           <ul className="grid grid-cols-2 gap-4 sm:grid-cols-3">
             {exposicion.fotos.map((foto) => (
               <li key={foto.id} className="flex flex-col gap-2">
