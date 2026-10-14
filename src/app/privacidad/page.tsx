@@ -1,14 +1,13 @@
-import type { Metadata } from "next";
+import { metadatosPagina } from "@/lib/metadatos";
 import { Pagina, Titulo } from "@/components/site/pagina";
 import { obtenerConfiguracion } from "@/lib/data/consultas";
 import { derivarContacto } from "@/lib/site-config";
-import { urlDelSitio } from "@/lib/entorno";
 
-export const metadata: Metadata = {
-  title: "Privacidad",
-  description: `Qué datos recoge ${urlDelSitio()} y para qué se usan.`,
-  alternates: { canonical: "/privacidad" },
-};
+export const metadata = metadatosPagina({
+  titulo: "Privacidad",
+  descripcion: "Información sobre los datos del formulario de contacto de Jessica Restović, su uso y cómo solicitar su acceso o eliminación.",
+  ruta: "/privacidad",
+});
 
 /**
  * La auditoría del sitio en Wix anotó que no había datos legales ni política

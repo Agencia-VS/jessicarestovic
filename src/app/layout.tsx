@@ -3,6 +3,7 @@ import { Public_Sans } from "next/font/google";
 import { Analytics } from "@vercel/analytics/next";
 import { siteConfig } from "@/lib/site-config";
 import { urlDelSitio } from "@/lib/entorno";
+import { metadatosPagina } from "@/lib/metadatos";
 import "./globals.css";
 
 /**
@@ -66,22 +67,16 @@ document.addEventListener("load", function (evento) {
 const SIN_SCRIPT = "[data-foto]{background:none}[data-foto]>img{opacity:1}";
 
 export const metadata: Metadata = {
+  ...metadatosPagina({ ruta: "/" }),
   metadataBase: new URL(urlDelSitio()),
   title: {
     default: `${siteConfig.nombre} — ${siteConfig.rol}`,
     template: `%s — ${siteConfig.nombre}`,
   },
-  description: siteConfig.descripcion,
-  openGraph: {
-    type: "website",
-    locale: siteConfig.locale,
-    siteName: siteConfig.nombre,
-    title: `${siteConfig.nombre} — ${siteConfig.rol}`,
-    description: siteConfig.descripcion,
-    url: urlDelSitio(),
-  },
-  twitter: { card: "summary_large_image" },
-  alternates: { canonical: "/" },
+  applicationName: siteConfig.nombre,
+  authors: [{ name: siteConfig.nombre, url: `${urlDelSitio()}/sobre-mi` }],
+  creator: siteConfig.nombre,
+  robots: { index: true, follow: true, "max-image-preview": "large" },
 };
 
 export const viewport: Viewport = {

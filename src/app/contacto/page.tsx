@@ -1,15 +1,15 @@
-import type { Metadata } from "next";
+import { metadatosPagina } from "@/lib/metadatos";
 import { Pagina, Titulo } from "@/components/site/pagina";
 import { CanalesContacto } from "@/components/site/canales-contacto";
 import { FormularioContacto } from "@/components/site/formulario-contacto";
 import { derivarContacto, siteConfig } from "@/lib/site-config";
 import { obtenerConfiguracion } from "@/lib/data/consultas";
 
-export const metadata: Metadata = {
-  title: "Contacto",
-  description: `Escríbele a ${siteConfig.nombre} por WhatsApp o correo: consultas de obra, exposiciones y talleres.`,
-  alternates: { canonical: "/contacto" },
-};
+export const metadata = metadatosPagina({
+  titulo: "Contacto",
+  descripcion: `Escríbele a ${siteConfig.nombre} por WhatsApp o correo: consultas de obra, exposiciones y talleres.`,
+  ruta: "/contacto",
+});
 
 export default async function ContactoPage() {
   const contacto = derivarContacto(
