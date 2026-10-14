@@ -218,7 +218,8 @@ export function SubirFotos({ nombre = "fotos", alCambiarEstado }: SubirFotosProp
       </label>
       <span className="caption text-faint">{ayudaImagen("exposicion")}</span>
       <p className="caption text-faint">
-        Son las fotos del montaje. Las obras se suben en «Trabajos recientes».
+        Estas fotos del montaje se muestran en la galería de la exposición.
+        Para cargar obras individuales, entra a «Trabajos».
       </p>
       {haySubida && <p className="caption text-muted">Subiendo fotos…</p>}
 
