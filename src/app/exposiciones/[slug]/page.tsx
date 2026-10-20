@@ -1,4 +1,3 @@
-import Link from "next/link";
 import type { Metadata } from "next";
 import { metadatosPagina } from "@/lib/metadatos";
 import { notFound } from "next/navigation";
@@ -70,8 +69,6 @@ export default async function ExposicionPage({ params }: { params: Promise<{ slu
     >
       <Seccion titulo="Exposiciones" tituloComo="p">
         <FiltrosExposiciones exposiciones={exposiciones} activo={exposicion.slug} />
-
-      <div className="marco gutter my-5"><Link href={"/contacto?grupo=" + exposicion.id} className="text-sm underline underline-offset-4">Consultar por esta exposición</Link></div>
         {exposicion.fotos.length > 0 ? (
           <VistasDeSala exposicion={exposicion} cartela={cartela} />
         ) : (
