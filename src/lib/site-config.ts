@@ -203,6 +203,7 @@ export const navAdmin: readonly NavItem[] = [
   { href: "/admin/exposiciones", label: "Exposiciones" },
   { href: "/admin/trabajos", label: "Trabajos" },
   { href: "/admin/sobre-mi", label: "Sobre mí" },
-  { href: "/admin/mensajes", label: "Mensajes" },
+  { href: "/admin/estadisticas", label: "Estadísticas" },
+  { href: "/admin/contactos", label: "Contactos" },
   { href: "/admin/configuracion", label: "Configuración" },
 ] as const;

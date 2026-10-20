@@ -24,21 +24,11 @@ ciruela**, reservado para enlaces y estados activos — nunca compitiendo con el
 color real de las obras. Menos interfaz visible, tipografía silenciosa y la
 obra siempre protagonista.
 
-Las obras **nunca se recortan**: cada pieza conserva su proporción real, y es
-la foto la que dicta el alto de su tarjeta. En la retícula hay un tope suave
-(nada más alto que ~2:1 ni más ancho que 3.2:1) para que una pieza alargada no
-se coma una columna entera; en la vista ampliada la proporción es exacta. La
-pared de obras es una retícula justificada: cada fila comparte altura, el
-ancho de cada pieza sigue su proporción real y nada se recorta. Las vistas de
-sala y las portadas conservan columnas CSS de alturas variables.
-
-La **única excepción es el tríptico del Inicio**, y es deliberada: son tres
-cuadrados iguales apenas separados, así que ahí la foto sí se recorta para
-llenar su celda —contenida, una pieza vertical dejaría su cuadrado a medio
-ancho y la fila se vería desparejo—. No esconde nada, porque al tocar
-cualquiera de los tres se abre completa y sin recortar. En el celular se
-apilan en vez de encogerse: tres cuadrados en fila sobre 350 px darían una
-franja de 114 px, donde la obra no se ve.
+Los índices de **Exposiciones y Trabajos** muestran portadas cuadradas iguales,
+con tres columnas en escritorio, dos en tablet y una en móvil. El orden editorial
+se lee de izquierda a derecha y luego pasa a la fila siguiente. En el panel se
+puede arrastrar o usar las flechas y ajustar el encuadre de cada portada.
+Las fotos completas, las galerías interiores y el visor conservan sus proporciones.
 
 **Cualquier foto del sitio se abre en grande al tocarla**, y las flechas —o
 `←`/`→`, o arrastrando en el celular, o `Esc` para cerrar— recorren la
@@ -86,6 +76,16 @@ Los dos comparten tabla, formulario, retícula y visor: lo único que cambia es
 `/trabajos-recientes` redirige a `/trabajos` con un 308: dejó de ser una página
 que juntaba todo y pasó a ser uno de los conjuntos.
 
+## Contacto y estadísticas
+
+El contacto principal prepara una consulta para WhatsApp. El registro de un contacto
+es opcional; recibir novedades requiere otra autorización. La analítica comienza
+solo después de aceptar. El panel incorpora Contactos y Estadísticas.
+
+Para actualizar una instalación existente, aplicar las migraciones 0007 y 0008
+y seguir [la guía de activación](docs/contactos-y-metricas.md). No ejecutar el
+reinicio de la base para esta actualización.
+
 ## Puesta en marcha
 
 ```bash
@@ -111,7 +111,7 @@ exponen. Ver «Variables privadas» más abajo.
 ### 2. Aplicar las migraciones
 
 **La forma más rápida:** abrir el **SQL Editor** del panel de Supabase y pegar
-`supabase/puesta-en-marcha.sql` completo. Junta las seis migraciones en orden
+`supabase/puesta-en-marcha.sql` completo. Junta las ocho migraciones en orden
 y se puede volver a correr sin duplicar contenido ni fallar.
 
 Ese archivo se genera desde las migraciones, así que no se edita a mano:
@@ -137,7 +137,7 @@ supabase db push
 | `0005_medidas_fotos_sala.sql` | Medidas de las fotos de sala y técnicas de Clases con descripción |
 | `0006_conjuntos_de_trabajo.sql` | `exposicion.tipo`, el conjunto «Trabajos recientes» y las obras sin grupo reasignadas a él |
 
-La verificación de sintaxis y orden se hace con `npm run sql`; la aplicación
+La generación del archivo consolidado se hace con `npm run sql`; la aplicación
 contra el proyecto real se debe ejecutar desde el SQL Editor o con el CLI,
 porque este repositorio no incluye credenciales ni un Postgres local.
 

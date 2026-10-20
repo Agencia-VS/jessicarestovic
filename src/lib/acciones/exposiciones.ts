@@ -48,6 +48,8 @@ function leerCampos(formData: FormData, tipo: TipoDeGrupo) {
   const d = analisis.data;
   return {
     datos: {
+      portada_foco_x: Math.min(100, Math.max(0, enteroONulo(formData.get("portada_foco_x")) ?? 50)),
+      portada_foco_y: Math.min(100, Math.max(0, enteroONulo(formData.get("portada_foco_y")) ?? 50)),
       titulo: d.titulo,
       slug: slugify(d.titulo),
       tipo,
@@ -298,13 +300,15 @@ export async function alternarExposicionPublicada(
 }
 
 /** Guarda el orden editorial de una lista de grupos, de muestras o de trabajos. */
-export async function reordenarExposiciones(ids: string[]): Promise<void> {
+export async function reordenarExposiciones(ids: string[], tipo: TipoDeGrupo): Promise<Resultado> {
+  if (!ids.length || ids.length > 2000 || new Set(ids).size !== ids.length ||
+      ids.some((id) => !/^[0-9a-f-]{36}$/i.test(id)) || !["trabajo", "exposicion"].includes(tipo)) {
+    return fallo("La lista no es válida. Recarga el panel.");
+  }
   const supabase = await clienteConSesion();
-  if (!supabase) return;
-
-  await Promise.all(
-    ids.map((id, indice) => supabase.from("exposicion").update({ orden: indice + 1 }).eq("id", id)),
-  );
-
+  if (!supabase) return SIN_SESION;
+  const { error } = await supabase.rpc("reordenar_grupos", { p_ids: ids, p_tipo: tipo });
+  if (error) return fallo("No se guardó el orden. Recarga y vuelve a intentarlo.");
   revalidarExposiciones();
+  return ok("Orden guardado, de izquierda a derecha y fila por fila.");
 }

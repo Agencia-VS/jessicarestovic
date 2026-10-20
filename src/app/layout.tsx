@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Public_Sans } from "next/font/google";
-import { Analytics } from "@vercel/analytics/next";
+import { Preferencias } from "@/components/site/preferencias";
+import { medicionHabilitada, preferenciaActual } from "@/lib/comercial/servidor";
 import { siteConfig } from "@/lib/site-config";
 import { urlDelSitio } from "@/lib/entorno";
 import { metadatosPagina } from "@/lib/metadatos";
@@ -84,7 +85,8 @@ export const viewport: Viewport = {
   colorScheme: "light",
 };
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default async function RootLayout({ children }: { children: React.ReactNode }) {
+  const inicial = await preferenciaActual();
   return (
     <html
       lang={siteConfig.lang}
@@ -97,17 +99,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         </noscript>
       </head>
       <body>
-        {children}
-        {/*
-          El panel de visitas: cuántas personas entran, qué páginas miran y de
-          dónde llegan. Se ve en Vercel, en la pestaña Analytics del proyecto.
-
-          No usa cookies ni identifica a nadie, así que no hace falta pedir
-          consentimiento ni ampliar la página de privacidad. Y no le manda
-          nada a Jessica al teléfono: un aviso por visita serían cientos al
-          día; lo útil es poder mirar el resumen cuando quiera.
-        */}
-        <Analytics />
+        <Preferencias inicial={inicial} habilitada={medicionHabilitada()}>{children}</Preferencias>
       </body>
     </html>
   );
