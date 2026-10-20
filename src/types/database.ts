@@ -1,3 +1,4 @@
+import type { Lead, EventoRow, Consentimiento, Resumen } from "@/lib/comercial/tipos";
 /**
  * Tipos de la base de datos, escritos a mano para que reflejen las migraciones
  * de `supabase/migrations`. Cuando el proyecto de Supabase esté creado se
@@ -43,6 +44,8 @@ export type ObraRow = {
 };
 
 export type ExposicionRow = {
+  portada_foco_x?: number;
+  portada_foco_y?: number;
   id: string;
   titulo: string;
   slug: string;
@@ -175,6 +178,10 @@ type Aplanado<T> = { [K in keyof T]: T[K] };
 export type Database = {
   public: {
     Tables: {
+      contacto_lead: { Row: Lead; Insert: Lead; Update: Partial<Lead>; Relationships: [] };
+      evento_web: { Row: EventoRow; Insert: Omit<EventoRow, "creado_en">; Update: Partial<EventoRow>; Relationships: [] };
+      consentimiento_contacto: { Row: Consentimiento; Insert: Omit<Consentimiento, "id" | "creado_en">; Update: Partial<Consentimiento>; Relationships: [] };
+      preferencia_analitica: { Row: { id: string; aceptada: boolean; version: string; creado_en: string }; Insert: { id: string; aceptada: boolean; version: string }; Update: { aceptada?: boolean }; Relationships: [] };
       obra: {
         Row: ObraRow;
         Insert: Escribible<
@@ -229,7 +236,15 @@ export type Database = {
       };
     };
     Views: Record<never, never>;
-    Functions: Record<never, never>;
+    Functions: {
+      reordenar_grupos: { Args: { p_ids: string[]; p_tipo: string }; Returns: undefined };
+      es_admin_comercial: { Args: Record<string, never>; Returns: boolean };
+      resumen_comercial: { Args: { p_desde: string; p_hasta: string }; Returns: Resumen };
+      permitir_ingreso: { Args: { p_clave: string; p_max: number }; Returns: boolean };
+      registrar_contacto: { Args: { p_id: string; p_nombre: string; p_email: string; p_motivo: string; p_grupo: string | null; p_novedades: boolean; p_baja_hash: string; p_version: string }; Returns: boolean };
+      retirar_novedades: { Args: { p_hash: string; p_version: string }; Returns: undefined };
+      depurar_comercial: { Args: Record<string, never>; Returns: undefined };
+    };
     Enums: { mensaje_origen: MensajeOrigen };
     CompositeTypes: Record<never, never>;
   };

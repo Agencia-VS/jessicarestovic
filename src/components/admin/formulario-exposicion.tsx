@@ -3,6 +3,7 @@
 import { useActionState, useState, useTransition } from "react";
 import { Campo, Area, Interruptor } from "@/components/ui/campo";
 import { Boton, BotonEnlace } from "@/components/ui/boton";
+import { EncuadreTarjeta } from "./encuadre-tarjeta";
 import { SubirFotos } from "./subir-fotos";
 import { Aviso } from "./aviso";
 import { Confirmar } from "./confirmar";
@@ -80,6 +81,8 @@ export function FormularioExposicion({
           error={errores.anio}
         />
       </div>
+
+      {exposicion?.portada && <EncuadreTarjeta exposicion={exposicion} />}
 
       <Area
         etiqueta="Descripción"

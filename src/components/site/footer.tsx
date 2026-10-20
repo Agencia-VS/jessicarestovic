@@ -1,3 +1,4 @@
+import { BotonPreferencias } from "./preferencias";
 import Link from "next/link";
 import { siteConfig, type Contacto } from "@/lib/site-config";
 import { supabaseConfigurado } from "@/lib/entorno";
@@ -35,6 +36,7 @@ export function Footer({ contacto }: { contacto: Contacto }) {
           >
             Privacidad
           </Link>
+          <BotonPreferencias />
           <span className="eyebrow tracking-[0.14em] text-label">
             © {new Date().getFullYear()} {siteConfig.nombre}
           </span>

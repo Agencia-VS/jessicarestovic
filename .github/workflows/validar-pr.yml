@@ -1,0 +1,39 @@
+name: Validar cambios
+on:
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  validar:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_PASSWORD: prueba
+          POSTGRES_DB: pruebas
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm run lint
+      - run: node --experimental-strip-types --test tests/estadisticas.test.mjs
+      - run: npm run build
+      - run: npm run sql && git diff --exit-code -- supabase/puesta-en-marcha.sql
+      - name: Orden, permisos, consentimiento, agregación y retención
+        run: psql -h localhost -U postgres -d pruebas -v ON_ERROR_STOP=1 -f tests/comercial.sql
+        env:
+          PGPASSWORD: prueba

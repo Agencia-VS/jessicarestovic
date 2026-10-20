@@ -42,6 +42,7 @@ interface FotoProps {
    * foto grande del Inicio, que Jessica encuadra desde el panel.
    */
   foco?: number;
+  focoX?: number;
   /** La primera foto visible se pide antes que el resto (LCP). */
   prioridad?: boolean;
   /** Las clases que fijan el tamaño del marco: `w-full` en la retícula. */
@@ -83,6 +84,7 @@ export function Foto({
   encuadre = "contenida",
   anclaje = "centro",
   foco,
+  focoX = 50,
   prioridad = false,
   className = "",
 }: FotoProps) {
@@ -121,7 +123,7 @@ export function Foto({
           const imagen = evento.currentTarget;
           if (imagen.naturalWidth > 0) imagen.parentElement?.setAttribute("data-cargada", "");
         }}
-        style={foco === undefined ? undefined : { objectPosition: `50% ${foco}%` }}
+        style={foco === undefined ? undefined : { objectPosition: `${focoX}% ${foco}%` }}
         className={`${encuadre === "recortada" ? "object-cover" : "object-contain"} ${
           anclaje === "izquierda" ? "object-left" : ""
         }`}

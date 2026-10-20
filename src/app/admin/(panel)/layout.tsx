@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { NavAdmin } from "@/components/admin/nav-admin";
 import { BotonSalir } from "@/components/admin/boton-salir";
-import { contarMensajesSinLeer } from "@/lib/data/consultas";
+
 import { Firma } from "@/components/site/firma";
 import { siteConfig } from "@/lib/site-config";
 
@@ -16,7 +16,7 @@ export const dynamic = "force-dynamic";
  * acceso queda fuera de este grupo, así que no hereda la navegación.
  */
 export default async function PanelLayout({ children }: { children: React.ReactNode }) {
-  const sinLeer = await contarMensajesSinLeer();
+
 
   return (
     <div className="min-h-dvh bg-paper">
@@ -30,7 +30,7 @@ export default async function PanelLayout({ children }: { children: React.ReactN
             <Firma lugar="panel" />
           </Link>
 
-          <NavAdmin sinLeer={sinLeer} />
+          <NavAdmin sinLeer={0} />
 
           <div className="flex flex-wrap items-center gap-x-6 gap-y-2 md:flex-col md:items-start">
             <Link
