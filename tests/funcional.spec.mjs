@@ -154,6 +154,7 @@ test('exposición: editar título y dimensiones de la foto de sala y verlos en l
   await expect(page.getByRole('status')).toContainText('Cambios guardados');
   expect(foto.titulo).toBe('Sala principal');expect(foto.dimensiones).toBe('60 × 80 cm');
   await page.goto(app.base+'/exposiciones/'+grupo.slug);
+  console.log('debug exposición pública', JSON.stringify({main:await page.locator('main').innerText(),fotos:app.estado.fotosSala,llamadas:app.estado.llamadas.filter(l=>l.path==='/rest/v1/exposicion').slice(-3)}));
   await expect(page.getByRole('button',{name:'Ver Sala principal de Expo 1 en grande'})).toBeVisible();
   await page.getByRole('button',{name:'Ver Sala principal de Expo 1 en grande'}).click();
   const nombre=page.locator('.titulo-obra');
