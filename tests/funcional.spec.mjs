@@ -132,7 +132,7 @@ test('encuadre persistente y edición compatible con base sin actualizar',async(
  app.estado.sinMigracion=true;await page.reload();
  await expect(page.getByLabel('Horizontal')).toHaveCount(0);
  await expect(page.getByText(/El encuadre requiere aplicar/)).toBeVisible();
- await page.getByLabel('Título').fill('Título corregido');
+ await page.getByLabel('Título',{exact:true}).fill('Título corregido');
  await page.getByRole('button',{name:'Guardar cambios',exact:true}).click();
  await expect(page.getByRole('status')).toContainText('Cambios guardados');expect(grupo.titulo).toBe('Título corregido');
  app.estado.sinMigracion=false;Object.assign(grupo,original);
