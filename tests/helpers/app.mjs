@@ -7,7 +7,7 @@ import { randomUUID } from 'node:crypto';
 export async function levantarApp({dev=false}={}) {
   const uid='00000000-0000-4000-8000-000000000001';
   const grupos=Array.from({length:9},(_,i)=>({id:`10000000-0000-4000-8000-${String(i+1).padStart(12,'0')}`, titulo:i<6?`Expo ${i+1}`:`Trabajo ${i-5}`,slug:i<6?`expo-${i+1}`:`trabajo-${i-5}`,tipo:i<6?'exposicion':'trabajo',orden:i+1,publicada:true,lugar:null,anio:null,descripcion:null,creado_en:'2026-10-01T12:00:00Z',actualizado_en:'2026-10-01T12:00:00Z',portada_foco_x:50,portada_foco_y:50,fotos:[]}));
-  const estado={grupos,preferencias:new Map(),eventos:new Map(),leads:new Map(),consentimientos:[],llamadas:[],falloOrden:false,sinMigracion:false,falloPublicar:false,demoraOrden:0,demoraEvento:0};
+  const estado={grupos,obras:[],preferencias:new Map(),eventos:new Map(),leads:new Map(),consentimientos:[],llamadas:[],falloOrden:false,sinMigracion:false,falloPublicar:false,demoraOrden:0,demoraEvento:0};
   function usuario(token){try{return JSON.parse(Buffer.from(token.split('.')[1],'base64url'));}catch{return {};}}
   const backend=http.createServer(async(req,res)=>{
     let raw='';for await(const chunk of req)raw+=chunk;
@@ -39,7 +39,18 @@ export async function levantarApp({dev=false}={}) {
       rows=[...rows].sort((a,b)=>a.orden-b.orden);
       return send(object(rows.map(g=>{const copy={...g};if(estado.sinMigracion){delete copy.portada_foco_x;delete copy.portada_foco_y;}return copy;})));
     }
-    if(url.pathname==='/rest/v1/obra'||url.pathname==='/rest/v1/exposicion_foto')return send([]);
+    if(url.pathname==='/rest/v1/obra'){
+      let rows=estado.obras.filter(match);
+      if(req.method==='POST'){
+        const entradas=Array.isArray(body)?body:[body];
+        for(const entrada of entradas)estado.obras.push({...entrada,id:randomUUID(),exposicion:grupos.find(g=>g.id===entrada.exposicion_id)??null,creado_en:new Date().toISOString(),actualizado_en:new Date().toISOString()});
+        return send(null);
+      }
+      if(req.method==='PATCH')for(const obra of rows)Object.assign(obra,body);
+      rows=[...rows].sort((a,b)=>a.orden-b.orden);
+      return send(object(rows));
+    }
+    if(url.pathname==='/rest/v1/exposicion_foto')return send([]);
     if(url.pathname==='/rest/v1/pagina')return send(null);
     if(url.pathname==='/rest/v1/preferencia_analitica'){
       if(req.method==='POST'){estado.preferencias.set(body.id,body);return send(null);}

@@ -6,7 +6,8 @@ import { FiltrosExposiciones } from "@/components/site/filtros-exposiciones";
 import { VistasDeSala } from "@/components/site/vistas-de-sala";
 import { Cartela } from "@/components/site/cartela";
 import { EstadoVacio } from "@/components/ui/estado-vacio";
-import { listarExposiciones, obtenerExposicionPorSlug } from "@/lib/data/consultas";
+import { ObrasDeExposicion } from "@/components/site/obras-de-exposicion";
+import { listarExposiciones, obtenerExposicionDetalle, obtenerExposicionPorSlug } from "@/lib/data/consultas";
 
 export async function generateMetadata({
   params,
@@ -40,7 +41,7 @@ export async function generateMetadata({
 export default async function ExposicionPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
   const [exposicion, exposiciones] = await Promise.all([
-    obtenerExposicionPorSlug(slug),
+    obtenerExposicionDetalle(slug),
     listarExposiciones(),
   ]);
 
@@ -80,6 +81,7 @@ export default async function ExposicionPage({ params }: { params: Promise<{ slu
             />
           </div>
         )}
+        <ObrasDeExposicion exposicion={exposicion} />
       </Seccion>
     </Pagina>
   );

@@ -15,17 +15,23 @@ Se revisó el diff completo del PR 31, los flujos de sus 44 archivos y las depen
 
 Los defectos de actualización visual y de propagación del error de publicación ya existían antes del PR 31. La dependencia nueva de migración y el envío incondicional del encuadre sí se introdujeron en ese PR. La revisión distingue ambas situaciones; las dos debían haberse comprobado antes de presentar el flujo como terminado.
 
+## Obras dentro de exposiciones y tipografía
+
+Las fotos de sala siguen siendo un flujo separado. La ficha de administración de cada exposición ahora incluye sus obras, con acceso a la carga individual o por carpeta y el campo obligatorio «Título» que ya comparten las obras de Trabajos. La página pública muestra ambas colecciones por separado; al ampliar una obra, su título se ve en la misma galería.
+
+La auditoría tipográfica confirmó que la familia del sitio ya era una sola —Public Sans, también en `font-display`— y que los tamaños de apoyo tenían niveles semánticos. La excepción era el título de obra en el visor: 22–32 px, itálico, frente a las cartelas de grupo de 22–28 px y los nombres de tarjetas de 17 px. El nombre de obra queda en 16–18 px, normal y con el mismo `font-sans` del cuerpo, y se retira la descarga de la variante itálica. La prueba de navegador comprueba familia, estilo y tamaño en escritorio y móvil.
+
 ## Pruebas
 
 - `npm test`: fechas, CSV, encuadre, compatibilidad del formulario y errores de las acciones del servidor.
 - `TEST_PR31_BASELINE=true node --test tests/acciones.test.mjs`: comparación opcional con el commit original. Reproduce tres fallos y un caso correcto; su salida fallida es deliberada y no se ejecuta como control de CI.
 - `npm run test:http`, después del build: consentimiento, cookies firmadas, rechazo de origen externo, revocación de cookies antiguas, validación, registros idempotentes y acceso al cron.
-- `npm run test:funcional`, después del build y de `npx playwright install chromium`: aplicación Next real en Chromium, con transporte Supabase simulado y datos aislados. Prueba ratón/táctil y cancelación, flechas, orden al recargar, fallos de guardado, publicación, encuadre, contacto con/sin registro, baja, preferencias, permisos del panel, CSV y grillas 3/2/1. La navegación a WhatsApp se intercepta: no se envían mensajes.
+- `npm run test:funcional`, después del build y de `npx playwright install chromium`: aplicación Next real en Chromium, con transporte Supabase simulado y datos aislados. Prueba ratón/táctil y cancelación, flechas, orden al recargar, fallos de guardado, publicación, encuadre, carga/nombre de obras en exposiciones, tipografía móvil/escritorio, contacto con/sin registro, baja, preferencias, permisos del panel, CSV y grillas 3/2/1. La navegación a WhatsApp se intercepta: no se envían mensajes.
 - `tests/comercial.sql`: funciones y políticas reales en PostgreSQL, incluidas ordenación atómica, listas incompletas/duplicadas, autorizaciones, retención y agregación de más de 1000 eventos. Sigue ejecutándose en GitHub Actions.
 
 Las pruebas de navegador ejercitan la interfaz y las Server Actions reales. El transporte Supabase del navegador es simulado; las pruebas SQL verifican la base por separado. Esto no certifica que la base ni las variables de producción estén configuradas. El CI guarda trazas cuando falla una prueba funcional.
 
-Verificación local: 8 pruebas unitarias/de acciones aprobadas, 9 escenarios de navegador aprobados (8 en la ejecución completa y el caso adicional de WhatsApp en una ejecución dirigida), suite HTTP aprobada, `typecheck`, `lint`, build y consistencia del SQL consolidado aprobados. El script SQL pasó localmente en PGlite; GitHub Actions lo ejecuta contra PostgreSQL 16. La comparación con el commit original produjo los tres fallos esperados.
+Verificación local: 8 pruebas unitarias/de acciones y 10 escenarios de navegador aprobados, suite HTTP aprobada, `typecheck`, `lint`, build y consistencia del SQL consolidado aprobados. El script SQL pasó localmente en PGlite; GitHub Actions lo ejecuta contra PostgreSQL 16. La comparación con el commit original produjo los tres fallos esperados.
 
 ## Comprobación pendiente en la base desplegada
 

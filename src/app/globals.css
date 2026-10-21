@@ -148,6 +148,15 @@
   line-height: 1.5;
 }
 
+@utility titulo-obra {
+  /* Un mismo tamaño legible para el nombre de cada pieza, también en móvil. */
+  font-family: var(--font-sans);
+  font-size: clamp(1rem, 1.35vw, 1.125rem);
+  font-weight: 400;
+  font-style: normal;
+  line-height: 1.35;
+}
+
 @utility galeria {
   /* La galería de un grupo: su cartela, la foto principal y las miniaturas.
      En el teléfono se apilan en ese orden —el nombre primero, después la

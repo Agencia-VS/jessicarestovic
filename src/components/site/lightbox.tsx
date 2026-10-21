@@ -312,7 +312,7 @@ export function Lightbox({ piezas, indice, onCerrar, onCambiar }: LightboxProps)
       <div className="flex shrink-0 flex-wrap items-end justify-between gap-4 px-[clamp(1.25rem,4vw,3rem)] pt-[clamp(1rem,2.4vw,1.875rem)] pb-[clamp(1.25rem,3vw,2.375rem)]">
         <div className="flex min-w-0 flex-col gap-1.5">
           {pieza.titulo && (
-            <span className="font-display text-[clamp(1.375rem,2.4vw,2rem)] leading-[1.15] font-light italic">
+            <span className="titulo-obra">
               {pieza.titulo}
             </span>
           )}

@@ -137,6 +137,30 @@ test('encuadre persistente y edición compatible con base sin actualizar',async(
  app.estado.sinMigracion=false;Object.assign(grupo,original);
 });
 
+test('exposiciones: subir obras con título y verlo en la galería, en la tipografía del sitio',async({page,context})=>{
+ const grupo=app.estado.grupos.find(g=>g.tipo==='exposicion');
+ const obra={id:'60000000-0000-4000-8000-000000000001',titulo:'Luz de invierno',exposicion_id:grupo.id,conjunto:null,anio:2025,tecnica:'Acuarela',dimensiones:null,imagen_path:'/demo/ensambles-01.avif',imagen_alt:'Composición en tonos claros',imagen_ancho:600,imagen_alto:800,destacada:false,publicada:true,orden:1,creado_en:'2026-10-01T12:00:00Z',actualizado_en:'2026-10-01T12:00:00Z',exposicion:{id:grupo.id,titulo:grupo.titulo,slug:grupo.slug,publicada:true}};
+ app.estado.obras.push(obra);
+ try{
+  await app.auth(context);await page.goto(app.base+'/admin/exposiciones/'+grupo.id);
+  await expect(page.getByRole('heading',{name:'Obras de esta exposición'})).toBeVisible();
+  await expect(page.locator('span.eyebrow').filter({hasText:'Fotos de sala'})).toBeVisible();
+  await expect(page.getByRole('link',{name:'Subir una obra'})).toBeVisible();
+  await page.getByRole('link',{name:'Subir una obra'}).click();
+  await expect(page.getByLabel('Título',{exact:true})).toBeVisible();
+  await expect(page.getByLabel('Exposición o conjunto')).toHaveValue(grupo.id);
+  await page.goto(app.base+'/exposiciones/'+grupo.slug);
+  await expect(page.getByRole('heading',{name:'Obras de esta exposición'})).toBeVisible();
+  await page.getByRole('button',{name:'Ver Luz de invierno en grande'}).click();
+  const nombre=page.locator('.titulo-obra');
+  await expect(nombre).toHaveText('Luz de invierno');
+  const estilo=await nombre.evaluate(el=>({familia:getComputedStyle(el).fontFamily,base:getComputedStyle(document.body).fontFamily,tamaño:parseFloat(getComputedStyle(el).fontSize),estilo:getComputedStyle(el).fontStyle}));
+  expect(estilo.familia).toBe(estilo.base);expect(estilo.estilo).toBe('normal');expect(estilo.tamaño).toBeLessThanOrEqual(18);
+  await page.setViewportSize({width:390,height:844});
+  await expect.poll(()=>nombre.evaluate(el=>parseFloat(getComputedStyle(el).fontSize))).toBe(16);
+ }finally{app.estado.obras=app.estado.obras.filter(o=>o.id!==obra.id);}
+});
+
 test('WhatsApp sin registro abre el mensaje elegido sin guardar datos',async({page})=>{
  const antes=app.estado.leads.size;
  await page.route('https://wa.me/**',route=>route.fulfill({contentType:'text/plain',body:'WhatsApp simulado: no se envían mensajes.'}));
