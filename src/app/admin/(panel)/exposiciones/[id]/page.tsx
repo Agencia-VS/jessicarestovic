@@ -1,24 +1,17 @@
 import { notFound } from "next/navigation";
 import { EncabezadoPanel } from "@/components/admin/encabezado-panel";
 import { FormularioExposicion } from "@/components/admin/formulario-exposicion";
-import { ObrasDelGrupo } from "@/components/admin/obras-del-grupo";
-import { listarObrasDeExposicion, obtenerExposicion } from "@/lib/data/consultas";
+import { obtenerExposicion } from "@/lib/data/consultas";
 
 export const metadata = { title: "Editar exposición" };
 
 export default async function EditarExposicionPage({
   params,
-  searchParams,
 }: {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ aviso?: string }>;
 }) {
   const { id } = await params;
-  const [exposicion, obras, { aviso }] = await Promise.all([
-    obtenerExposicion(id),
-    listarObrasDeExposicion(id),
-    searchParams,
-  ]);
+  const exposicion = await obtenerExposicion(id);
 
   // Un conjunto de trabajo se edita en «Trabajos».
   if (!exposicion || exposicion.tipo !== "exposicion") notFound();
@@ -30,7 +23,6 @@ export default async function EditarExposicionPage({
         detalle="Los datos de la muestra y sus fotos de sala. Estas imágenes forman la galería de la exposición."
       />
       <FormularioExposicion exposicion={exposicion} />
-      <ObrasDelGrupo grupo={exposicion} obras={obras} aviso={aviso} />
     </>
   );
 }

@@ -238,6 +238,8 @@ function vistasDe(expo: DefinicionExpo, desde: number): FotoDeSala[] {
     return {
       id: `demo-foto-${expo.slug}-${indice + 1}`,
       exposicion_id: `demo-expo-${expo.slug}`,
+      titulo: null,
+      dimensiones: null,
       imagen_path: `/demo/${bloque.archivo}.avif`,
       imagenUrl: `/demo/${bloque.archivo}.avif`,
       imagen_alt: `Vista de montaje ${indice + 1} de ${expo.titulo} — bloque de referencia, no la sala real`,

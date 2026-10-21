@@ -122,7 +122,8 @@ test('grilla 3/2/1 y orden público consistente con admin',async({page})=>{
 test('encuadre persistente y edición compatible con base sin actualizar',async({page,context})=>{
  const grupo=app.estado.grupos.find(g=>g.tipo==='exposicion');
  const original={...grupo};
- grupo.fotos=[{id:'50000000-0000-4000-8000-000000000001',exposicion_id:grupo.id,imagen_path:'/firma-jessica.png',imagen_alt:'Foto de prueba',imagen_ancho:600,imagen_alto:300,orden:1}];
+ const foto={id:'50000000-0000-4000-8000-000000000001',exposicion_id:grupo.id,titulo:null,dimensiones:null,imagen_path:'/firma-jessica.png',imagen_alt:'Foto de prueba',imagen_ancho:600,imagen_alto:300,orden:1};
+ app.estado.fotosSala.push(foto);
  await app.auth(context);await page.goto(app.base+'/admin/exposiciones/'+grupo.id);
  await page.getByLabel('Horizontal').press('Home');await page.getByLabel('Horizontal').press('ArrowRight');
  await page.getByRole('button',{name:'Guardar cambios',exact:true}).click();
@@ -131,34 +132,60 @@ test('encuadre persistente y edición compatible con base sin actualizar',async(
  app.estado.sinMigracion=true;await page.reload();
  await expect(page.getByLabel('Horizontal')).toHaveCount(0);
  await expect(page.getByText(/El encuadre requiere aplicar/)).toBeVisible();
- await page.getByLabel('Título').fill('Título corregido');
+ await page.getByLabel('Título',{exact:true}).fill('Título corregido');
  await page.getByRole('button',{name:'Guardar cambios',exact:true}).click();
  await expect(page.getByRole('status')).toContainText('Cambios guardados');expect(grupo.titulo).toBe('Título corregido');
  app.estado.sinMigracion=false;Object.assign(grupo,original);
+ app.estado.fotosSala=app.estado.fotosSala.filter(f=>f.id!==foto.id);
 });
 
-test('exposiciones: subir obras con título y verlo en la galería, en la tipografía del sitio',async({page,context})=>{
+test('exposición: editar título y dimensiones de la foto de sala y verlos en la galería',async({page,context})=>{
  const grupo=app.estado.grupos.find(g=>g.tipo==='exposicion');
- const obra={id:'60000000-0000-4000-8000-000000000001',titulo:'Luz de invierno',exposicion_id:grupo.id,conjunto:null,anio:2025,tecnica:'Acuarela',dimensiones:null,imagen_path:'/demo/ensambles-01.avif',imagen_alt:'Composición en tonos claros',imagen_ancho:600,imagen_alto:800,destacada:false,publicada:true,orden:1,creado_en:'2026-10-01T12:00:00Z',actualizado_en:'2026-10-01T12:00:00Z',exposicion:{id:grupo.id,titulo:grupo.titulo,slug:grupo.slug,publicada:true}};
- app.estado.obras.push(obra);
+ const foto={id:'70000000-0000-4000-8000-000000000001',exposicion_id:grupo.id,titulo:null,dimensiones:null,imagen_path:'/demo/ensambles-01.avif',imagen_alt:'Obra abstracta en tonos claros',imagen_ancho:600,imagen_alto:800,orden:0,creado_en:'2026-10-01T12:00:00Z'};
+ app.estado.fotosSala.push(foto);
  try{
   await app.auth(context);await page.goto(app.base+'/admin/exposiciones/'+grupo.id);
-  await expect(page.getByRole('heading',{name:'Obras de esta exposición'})).toBeVisible();
-  await expect(page.locator('span.eyebrow').filter({hasText:'Fotos de sala'})).toBeVisible();
-  await expect(page.getByRole('link',{name:'Subir una obra'})).toBeVisible();
-  await page.getByRole('link',{name:'Subir una obra'}).click();
-  await expect(page.getByLabel('Título',{exact:true})).toBeVisible();
-  await expect(page.getByLabel('Exposición o conjunto')).toHaveValue(grupo.id);
+  await expect(page.getByRole('heading',{name:'Obras de esta exposición'})).toHaveCount(0);
+  await expect(page.getByText('Título de la foto de sala')).toBeVisible();
+  await expect(page.getByText('Dimensiones de la obra (opcional)')).toBeVisible();
+  await page.getByLabel('Título de la foto de sala').fill('Sala principal');
+  await page.getByLabel('Dimensiones de la obra (opcional)').fill('60 × 80 cm');
+  await page.getByRole('button',{name:'Guardar cambios',exact:true}).click();
+  await expect(page.getByRole('status')).toContainText('Cambios guardados');
+  expect(foto.titulo).toBe('Sala principal');expect(foto.dimensiones).toBe('60 × 80 cm');
   await page.goto(app.base+'/exposiciones/'+grupo.slug);
-  await expect(page.getByRole('heading',{name:'Obras de esta exposición'})).toBeVisible();
-  await page.getByRole('button',{name:'Ver Luz de invierno en grande'}).click();
+  await expect(page.getByRole('button',{name:'Ver Sala principal en grande'})).toBeVisible();
+  await page.getByRole('button',{name:'Ver Sala principal en grande'}).click();
   const nombre=page.locator('.titulo-obra');
-  await expect(nombre).toHaveText('Luz de invierno');
+  await expect(nombre).toHaveText('Sala principal');
+  await expect(page.getByText('60 × 80 cm')).toBeVisible();
   const estilo=await nombre.evaluate(el=>({familia:getComputedStyle(el).fontFamily,base:getComputedStyle(document.body).fontFamily,tamaño:parseFloat(getComputedStyle(el).fontSize),estilo:getComputedStyle(el).fontStyle}));
   expect(estilo.familia).toBe(estilo.base);expect(estilo.estilo).toBe('normal');expect(estilo.tamaño).toBeLessThanOrEqual(18);
   await page.setViewportSize({width:390,height:844});
   await expect.poll(()=>nombre.evaluate(el=>parseFloat(getComputedStyle(el).fontSize))).toBe(16);
- }finally{app.estado.obras=app.estado.obras.filter(o=>o.id!==obra.id);}
+ }finally{app.estado.fotosSala=app.estado.fotosSala.filter(f=>f.id!==foto.id);}
+});
+
+test('exposición: subir una foto de sala con su título y dimensiones en el mismo flujo',async({page,context})=>{
+ const grupo=app.estado.grupos.find(g=>g.tipo==='exposicion');
+ await app.auth(context);await page.goto(app.base+'/admin/exposiciones/'+grupo.id);
+ const png=Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+/pZ8AAAAASUVORK5CYII=','base64');
+ await page.locator('input[type=file]').setInputFiles({name:'sala.png',mimeType:'image/png',buffer:png});
+ await expect(page.getByLabel('Título de la foto de sala')).toBeVisible();
+ await page.getByLabel('Título de la foto de sala').fill('Obra en la sala norte');
+ await page.getByLabel('Dimensiones de la obra (opcional)').fill('45 × 60 cm');
+ await page.getByLabel('Descripción accesible (opcional)').fill('Pintura azul colgada en una pared blanca');
+ await expect(page.locator('input[name="fotos_path_0"]')).not.toHaveValue('',{timeout:15000});
+ await page.getByRole('button',{name:'Guardar cambios',exact:true}).click();
+ await expect(page.getByRole('status')).toContainText('Cambios guardados');
+ const foto=app.estado.fotosSala.find(f=>f.exposicion_id===grupo.id);
+ expect(foto?.titulo).toBe('Obra en la sala norte');expect(foto?.dimensiones).toBe('45 × 60 cm');
+ await page.goto(app.base+'/exposiciones/'+grupo.slug);
+ await expect(page.getByRole('button',{name:'Ver Obra en la sala norte en grande'})).toBeVisible();
+ await page.getByRole('button',{name:'Ver Obra en la sala norte en grande'}).click();
+ await expect(page.locator('.titulo-obra')).toHaveText('Obra en la sala norte');
+ await expect(page.getByText('45 × 60 cm')).toBeVisible();
+ app.estado.fotosSala=app.estado.fotosSala.filter(f=>f.exposicion_id!==grupo.id);
 });
 
 test('WhatsApp sin registro abre el mensaje elegido sin guardar datos',async({page})=>{
