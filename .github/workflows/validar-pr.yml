@@ -30,8 +30,17 @@ jobs:
       - run: npm ci
       - run: npm run typecheck
       - run: npm run lint
-      - run: node --experimental-strip-types --test tests/estadisticas.test.mjs
+      - run: npm test
       - run: npm run build
+      - run: npm run test:http
+      - run: npx playwright install --with-deps chromium
+      - run: npm run test:funcional
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: pruebas-funcionales
+          path: test-results/
+          retention-days: 7
       - run: npm run sql && git diff --exit-code -- supabase/puesta-en-marcha.sql
       - name: Orden, permisos, consentimiento, agregación y retención
         run: psql -h localhost -U postgres -d pruebas -v ON_ERROR_STOP=1 -f tests/comercial.sql
