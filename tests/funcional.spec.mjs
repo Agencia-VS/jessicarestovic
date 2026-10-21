@@ -122,7 +122,8 @@ test('grilla 3/2/1 y orden público consistente con admin',async({page})=>{
 test('encuadre persistente y edición compatible con base sin actualizar',async({page,context})=>{
  const grupo=app.estado.grupos.find(g=>g.tipo==='exposicion');
  const original={...grupo};
- grupo.fotos=[{id:'50000000-0000-4000-8000-000000000001',exposicion_id:grupo.id,imagen_path:'/firma-jessica.png',imagen_alt:'Foto de prueba',imagen_ancho:600,imagen_alto:300,orden:1}];
+ const foto={id:'50000000-0000-4000-8000-000000000001',exposicion_id:grupo.id,titulo:null,dimensiones:null,imagen_path:'/firma-jessica.png',imagen_alt:'Foto de prueba',imagen_ancho:600,imagen_alto:300,orden:1};
+ app.estado.fotosSala.push(foto);
  await app.auth(context);await page.goto(app.base+'/admin/exposiciones/'+grupo.id);
  await page.getByLabel('Horizontal').press('Home');await page.getByLabel('Horizontal').press('ArrowRight');
  await page.getByRole('button',{name:'Guardar cambios',exact:true}).click();
@@ -135,6 +136,7 @@ test('encuadre persistente y edición compatible con base sin actualizar',async(
  await page.getByRole('button',{name:'Guardar cambios',exact:true}).click();
  await expect(page.getByRole('status')).toContainText('Cambios guardados');expect(grupo.titulo).toBe('Título corregido');
  app.estado.sinMigracion=false;Object.assign(grupo,original);
+ app.estado.fotosSala=app.estado.fotosSala.filter(f=>f.id!==foto.id);
 });
 
 test('exposición: editar título y dimensiones de la foto de sala y verlos en la galería',async({page,context})=>{
