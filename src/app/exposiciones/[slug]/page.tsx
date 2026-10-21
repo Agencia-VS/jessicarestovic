@@ -1,4 +1,3 @@
-import Link from "next/link";
 import type { Metadata } from "next";
 import { metadatosPagina } from "@/lib/metadatos";
 import { notFound } from "next/navigation";
@@ -7,7 +6,8 @@ import { FiltrosExposiciones } from "@/components/site/filtros-exposiciones";
 import { VistasDeSala } from "@/components/site/vistas-de-sala";
 import { Cartela } from "@/components/site/cartela";
 import { EstadoVacio } from "@/components/ui/estado-vacio";
-import { listarExposiciones, obtenerExposicionPorSlug } from "@/lib/data/consultas";
+import { ObrasDeExposicion } from "@/components/site/obras-de-exposicion";
+import { listarExposiciones, obtenerExposicionDetalle, obtenerExposicionPorSlug } from "@/lib/data/consultas";
 
 export async function generateMetadata({
   params,
@@ -41,7 +41,7 @@ export async function generateMetadata({
 export default async function ExposicionPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
   const [exposicion, exposiciones] = await Promise.all([
-    obtenerExposicionPorSlug(slug),
+    obtenerExposicionDetalle(slug),
     listarExposiciones(),
   ]);
 
@@ -70,8 +70,6 @@ export default async function ExposicionPage({ params }: { params: Promise<{ slu
     >
       <Seccion titulo="Exposiciones" tituloComo="p">
         <FiltrosExposiciones exposiciones={exposiciones} activo={exposicion.slug} />
-
-      <div className="marco gutter my-5"><Link href={"/contacto?grupo=" + exposicion.id} className="text-sm underline underline-offset-4">Consultar por esta exposición</Link></div>
         {exposicion.fotos.length > 0 ? (
           <VistasDeSala exposicion={exposicion} cartela={cartela} />
         ) : (
@@ -83,6 +81,7 @@ export default async function ExposicionPage({ params }: { params: Promise<{ slu
             />
           </div>
         )}
+        <ObrasDeExposicion exposicion={exposicion} />
       </Seccion>
     </Pagina>
   );

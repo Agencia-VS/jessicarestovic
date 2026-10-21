@@ -14,13 +14,13 @@ import "./globals.css";
  * resto. Jessica pidió la del menú para toda la página, así que el serif se
  * fue: una familia menos que descargar y una decisión menos por pantalla.
  *
- * Se piden también los pesos que usaba el serif —200 para los títulos grandes
- * y la itálica del visor— para que nada caiga a una versión sintética.
+ * Se piden los pesos que usan los títulos y el texto. El nombre de obra en el
+ * visor comparte la misma familia sans, sin una variante itálica aparte.
  */
 const publicSans = Public_Sans({
   subsets: ["latin"],
   weight: ["200", "300", "400", "500"],
-  style: ["normal", "italic"],
+  style: "normal",
   variable: "--font-public-sans",
   display: "swap",
 });

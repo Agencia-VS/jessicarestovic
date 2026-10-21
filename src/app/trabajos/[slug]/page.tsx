@@ -1,4 +1,3 @@
-import Link from "next/link";
 import type { Metadata } from "next";
 import { metadatosPagina } from "@/lib/metadatos";
 import { notFound } from "next/navigation";
@@ -50,7 +49,6 @@ export default async function TrabajoPage({ params }: { params: Promise<{ slug: 
         activo: trabajo.slug,
       }}
     >
-      <div className="marco gutter my-5"><Link href={"/contacto?grupo=" + trabajo.id} className="text-sm underline underline-offset-4">Consultar por este trabajo</Link></div>
       <CuerpoDeObras
         titulo={trabajo.titulo}
         descripcion={trabajo.descripcion}

@@ -48,8 +48,11 @@ function leerCampos(formData: FormData, tipo: TipoDeGrupo) {
   const d = analisis.data;
   return {
     datos: {
-      portada_foco_x: Math.min(100, Math.max(0, enteroONulo(formData.get("portada_foco_x")) ?? 50)),
-      portada_foco_y: Math.min(100, Math.max(0, enteroONulo(formData.get("portada_foco_y")) ?? 50)),
+      // No enviar columnas nuevas cuando el formulario no ofrece encuadre.
+      ...(formData.has("portada_foco_x") ? {
+        portada_foco_x: Math.min(100, Math.max(0, enteroONulo(formData.get("portada_foco_x")) ?? 50)),
+        portada_foco_y: Math.min(100, Math.max(0, enteroONulo(formData.get("portada_foco_y")) ?? 50)),
+      } : {}),
       titulo: d.titulo,
       slug: slugify(d.titulo),
       tipo,
@@ -291,12 +294,14 @@ export async function eliminarFoto(fotoId: string): Promise<void> {
 export async function alternarExposicionPublicada(
   id: string,
   publicada: boolean,
-): Promise<void> {
+): Promise<Resultado> {
   const supabase = await clienteConSesion();
-  if (!supabase) return;
+  if (!supabase) return SIN_SESION;
 
-  await supabase.from("exposicion").update({ publicada }).eq("id", id);
+  const { data, error } = await supabase.from("exposicion").update({ publicada }).eq("id", id).select("id").maybeSingle();
+  if (error || !data) return fallo("No se pudo cambiar la publicación. Recarga y vuelve a intentarlo.");
   revalidarExposiciones();
+  return ok(publicada ? "Publicada." : "Oculta.");
 }
 
 /** Guarda el orden editorial de una lista de grupos, de muestras o de trabajos. */
@@ -308,6 +313,9 @@ export async function reordenarExposiciones(ids: string[], tipo: TipoDeGrupo): P
   const supabase = await clienteConSesion();
   if (!supabase) return SIN_SESION;
   const { error } = await supabase.rpc("reordenar_grupos", { p_ids: ids, p_tipo: tipo });
+  if (error?.code === "PGRST202" || error?.code === "42883") {
+    return fallo("El orden no se guardó: falta aplicar la migración 0007_grilla_orden.sql en Supabase. Recargar la página no resuelve esta actualización pendiente.");
+  }
   if (error) return fallo("No se guardó el orden. Recarga y vuelve a intentarlo.");
   revalidarExposiciones();
   return ok("Orden guardado, de izquierda a derecha y fila por fila.");
