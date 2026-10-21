@@ -164,6 +164,8 @@ async function guardarFotos(
 
     fotos.push({
       exposicion_id: exposicionId,
+      titulo: String(formData.get(`foto_titulo_${indice}`) ?? "").trim() || null,
+      dimensiones: String(formData.get(`foto_dimensiones_${indice}`) ?? "").trim() || null,
       imagen_path: path,
       imagen_alt: alt,
       imagen_ancho: enteroONulo(formData.get(`foto_ancho_${indice}`)),
@@ -252,6 +254,28 @@ export async function editarExposicion(
 
     const problemaFotos = await guardarFotos(supabase, id, formData, count ?? 0);
     if (problemaFotos) return fallo(problemaFotos);
+
+    // Actualiza los metadatos de las fotos de sala que ya estaban guardadas.
+    // Solo se aceptan IDs que realmente pertenecen a esta exposición.
+    const { data: fotosActuales } = await supabase
+      .from("exposicion_foto")
+      .select("id")
+      .eq("exposicion_id", id);
+    for (const foto of fotosActuales ?? []) {
+      // Las fotos que se acaban de subir usan foto_titulo_N y
+      // foto_dimensiones_N; no sobrescribirlas con los campos de fotos ya
+      // cargadas (foto_existente_*).
+      if (!formData.has(`foto_existente_titulo_${foto.id}`) &&
+          !formData.has(`foto_existente_dimensiones_${foto.id}`)) continue;
+      const titulo = String(formData.get(`foto_existente_titulo_${foto.id}`) ?? "").trim();
+      const dimensiones = String(formData.get(`foto_existente_dimensiones_${foto.id}`) ?? "").trim();
+      const { error: errorFoto } = await supabase
+        .from("exposicion_foto")
+        .update({ titulo: titulo || null, dimensiones: dimensiones || null })
+        .eq("id", foto.id)
+        .eq("exposicion_id", id);
+      if (errorFoto) return fallo("No pudimos actualizar el título o las dimensiones de una foto de sala.");
+    }
   }
 
   revalidarExposiciones();

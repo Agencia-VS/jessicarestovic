@@ -218,8 +218,7 @@ export function SubirFotos({ nombre = "fotos", alCambiarEstado }: SubirFotosProp
       </label>
       <span className="caption text-faint">{ayudaImagen("exposicion")}</span>
       <p className="caption text-faint">
-        Estas fotos del montaje se muestran en la galería de la exposición.
-        Para cargar obras individuales, entra a «Trabajos».
+        Cada foto queda en la galería de esta exposición. Puedes ponerle título y dimensiones ahora, o editarlos después en esta misma pantalla.
       </p>
       {haySubida && <p className="caption text-muted">Subiendo fotos…</p>}
 
@@ -231,14 +230,34 @@ export function SubirFotos({ nombre = "fotos", alCambiarEstado }: SubirFotosProp
               <img src={item.previa} alt="" className="h-24 w-32 shrink-0 object-cover" />
 
               <div className="flex min-w-0 flex-1 flex-col gap-1.5">
+                <label className="caption text-muted" htmlFor={`foto_titulo_${indice}`}>
+                  Título de la foto de sala
+                </label>
+                <input
+                  id={`foto_titulo_${indice}`}
+                  type="text"
+                  name={`foto_titulo_${indice}`}
+                  placeholder="Ej.: Sala principal"
+                  className="w-full border-b border-line bg-transparent py-2 text-sm placeholder:text-faint focus:border-ink focus:outline-none"
+                />
+                <label className="caption text-muted" htmlFor={`foto_dimensiones_${indice}`}>
+                  Dimensiones de la obra (opcional)
+                </label>
+                <input
+                  id={`foto_dimensiones_${indice}`}
+                  type="text"
+                  name={`foto_dimensiones_${indice}`}
+                  placeholder="Ej.: 60 × 80 cm"
+                  className="w-full border-b border-line bg-transparent py-2 text-sm placeholder:text-faint focus:border-ink focus:outline-none"
+                />
                 <label className="caption text-muted" htmlFor={`foto_alt_${indice}`}>
-                  Descripción de esta foto
+                  Descripción accesible (opcional)
                 </label>
                 <input
                   id={`foto_alt_${indice}`}
                   type="text"
                   name={`foto_alt_${indice}`}
-                  placeholder="Vista de sala, montaje…"
+                  placeholder="Describe brevemente lo que aparece"
                   className="w-full border-b border-line bg-transparent py-2 text-sm placeholder:text-faint focus:border-ink focus:outline-none"
                 />
                 {item.ruta && item.medidas && (

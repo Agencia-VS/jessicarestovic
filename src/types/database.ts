@@ -63,6 +63,8 @@ export type ExposicionRow = {
 export type ExposicionFotoRow = {
   id: string;
   exposicion_id: string;
+  titulo: string | null;
+  dimensiones: string | null;
   imagen_path: string;
   imagen_alt: string;
   /** Medidas reales de la foto, para reservar su espacio sin recortarla. */

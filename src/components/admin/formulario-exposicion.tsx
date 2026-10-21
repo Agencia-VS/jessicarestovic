@@ -102,18 +102,35 @@ export function FormularioExposicion({
       />
 
       {!esTrabajo && exposicion && exposicion.fotos.length > 0 && (
-        <div className="flex flex-col gap-3">
-          <span className="eyebrow text-muted">Fotos de sala cargadas</span>
-          <ul className="grid grid-cols-2 gap-4 sm:grid-cols-3">
+        <div className="flex flex-col gap-4">
+          <div className="flex flex-col gap-1">
+            <span className="eyebrow text-muted">Fotos de sala</span>
+            <p className="caption text-faint">Edita aquí el título y las dimensiones de cada foto. Se muestran al abrirla en la galería.</p>
+          </div>
+          <ul className="flex flex-col gap-6">
             {exposicion.fotos.map((foto) => (
-              <li key={foto.id} className="flex flex-col gap-2">
+              <li key={foto.id} className="grid grid-cols-1 gap-3 border-b border-line pb-5 sm:grid-cols-[10rem_1fr]">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img src={foto.imagenUrl} alt={foto.imagen_alt} className="aspect-3/2 w-full object-cover" />
-                <Confirmar
-                  nombre="esta foto"
-                  etiqueta="Quitar"
-                  accion={() => iniciar(() => eliminarFoto(foto.id))}
-                />
+                <div className="flex min-w-0 flex-col gap-3">
+                  <Campo
+                    etiqueta="Título de la foto de sala"
+                    nombre={`foto_existente_titulo_${foto.id}`}
+                    defaultValue={foto.titulo ?? ""}
+                    placeholder="Ej.: Sala principal"
+                  />
+                  <Campo
+                    etiqueta="Dimensiones de la obra (opcional)"
+                    nombre={`foto_existente_dimensiones_${foto.id}`}
+                    defaultValue={foto.dimensiones ?? ""}
+                    placeholder="Ej.: 60 × 80 cm"
+                  />
+                  <Confirmar
+                    nombre="esta foto"
+                    etiqueta="Quitar foto"
+                    accion={() => iniciar(() => eliminarFoto(foto.id))}
+                  />
+                </div>
               </li>
             ))}
           </ul>
