@@ -138,7 +138,7 @@ export function Portada({ imagenes, grande = null, cita }: PortadaProps) {
       )}
 
       <div className="flex flex-wrap items-baseline justify-between gap-x-[clamp(1rem,3vw,3rem)] gap-y-4">
-        <p className="max-w-[34ch] font-display text-[1.375rem] leading-tight font-light -tracking-[0.01em] text-pretty lg:text-[1.75rem]">
+        <p className="max-w-[34ch] font-display text-[1.0625rem] leading-tight font-light">
           {cita}
         </p>
         <EnlaceSuave href="/exposiciones">Ver exposiciones</EnlaceSuave>
