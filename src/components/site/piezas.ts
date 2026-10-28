@@ -45,8 +45,8 @@ export function piezasDeObras(obras: Obra[]): PiezaAmpliada[] {
 }
 
 /**
- * Las vistas de montaje de una muestra. Acá no hay ficha de obra —una sala no
- * tiene técnica ni medidas—, así que el pie es la muestra y su lugar.
+ * Las fotos de sala de una muestra. Cada una puede tener su propio título y
+ * dimensiones; el contexto de la exposición queda en la línea secundaria.
  */
 export function piezasDeVistas(exposicion: Exposicion): PiezaAmpliada[] {
   const lugar = [exposicion.lugar, exposicion.anio].filter(Boolean).join(" · ");
@@ -57,9 +57,9 @@ export function piezasDeVistas(exposicion: Exposicion): PiezaAmpliada[] {
     alt: foto.imagen_alt,
     ancho: foto.imagen_ancho,
     alto: foto.imagen_alto,
-    titulo: `Vista ${indice + 1} de ${exposicion.fotos.length}`,
+    titulo: foto.titulo ?? `Vista ${indice + 1} de ${exposicion.fotos.length}`,
     subtitulo: [exposicion.titulo, lugar].filter(Boolean).join(" · ") || null,
-    ficha: [],
+    ficha: foto.dimensiones ? [{ clave: "Dimensiones", valor: foto.dimensiones }] : [],
   }));
 }
 

@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { metadatosPagina } from "@/lib/metadatos";
 import { notFound } from "next/navigation";
 import { Pagina, Seccion } from "@/components/site/pagina";
 import { FiltrosExposiciones } from "@/components/site/filtros-exposiciones";
@@ -15,17 +16,18 @@ export async function generateMetadata({
   const { slug } = await params;
   const exposicion = await obtenerExposicionPorSlug(slug);
 
-  if (!exposicion || exposicion.tipo !== "exposicion") return {};
+  if (!exposicion || exposicion.tipo !== "exposicion") notFound();
 
   const lugar = [exposicion.lugar, exposicion.anio].filter(Boolean).join(", ");
 
-  return {
-    title: exposicion.titulo,
-    description:
-      exposicion.descripcion ??
+  return metadatosPagina({
+    titulo: exposicion.titulo,
+    descripcion:
+      exposicion.descripcion?.trim() ||
       `${exposicion.titulo}${lugar ? ` — ${lugar}` : ""}, exposición de Jessica Restović.`,
-    alternates: { canonical: `/exposiciones/${slug}` },
-  };
+    ruta: `/exposiciones/${exposicion.slug}`,
+    imagen: exposicion.portada,
+  });
 }
 
 /**
@@ -37,10 +39,7 @@ export async function generateMetadata({
  */
 export default async function ExposicionPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
-  const [exposicion, exposiciones] = await Promise.all([
-    obtenerExposicionPorSlug(slug),
-    listarExposiciones(),
-  ]);
+  const [exposicion, exposiciones] = await Promise.all([obtenerExposicionPorSlug(slug), listarExposiciones()]);
 
   if (!exposicion || exposicion.tipo !== "exposicion") notFound();
 
@@ -67,7 +66,6 @@ export default async function ExposicionPage({ params }: { params: Promise<{ slu
     >
       <Seccion titulo="Exposiciones" tituloComo="p">
         <FiltrosExposiciones exposiciones={exposiciones} activo={exposicion.slug} />
-
         {exposicion.fotos.length > 0 ? (
           <VistasDeSala exposicion={exposicion} cartela={cartela} />
         ) : (

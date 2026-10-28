@@ -3,7 +3,7 @@ import type { Exposicion } from "@/lib/data/tipos";
 import { Foto, Hueco } from "./foto";
 
 /** Ancho que ocupa una tarjeta del mosaico en cada tamaño de pantalla. */
-const SIZES_MOSAICO = "(max-width: 40rem) 100vw, (max-width: 64rem) 50vw, 330px";
+const SIZES_MOSAICO = "(max-width: 40rem) 100vw, (max-width: 64rem) 50vw, (max-width: 80rem) 33vw, 400px";
 
 interface TarjetasDeGruposProps {
   grupos: Exposicion[];
@@ -26,12 +26,12 @@ interface TarjetasDeGruposProps {
  */
 export function TarjetasDeGrupos({ grupos, hrefDe, conLugar = true }: TarjetasDeGruposProps) {
   return (
-    <div className="mosaico">
+    <div className="grid grid-cols-1 gap-x-8 gap-y-10 sm:grid-cols-2 lg:grid-cols-3">
       {grupos.map((grupo, indice) => {
         const lugar = conLugar ? [grupo.lugar, grupo.anio].filter(Boolean).join(" · ") : "";
 
         return (
-          <figure key={grupo.id} className="mb-[clamp(1.875rem,3.8vw,3.875rem)] break-inside-avoid">
+          <figure key={grupo.id} className="min-w-0">
             <Link href={hrefDe(grupo)} className="group flex flex-col gap-3">
               {grupo.portada ? (
                 <Foto
@@ -41,10 +41,14 @@ export function TarjetasDeGrupos({ grupos, hrefDe, conLugar = true }: TarjetasDe
                   alto={grupo.portada.alto}
                   sizes={SIZES_MOSAICO}
                   prioridad={indice === 0}
+                  proporcionFija={1}
+                  encuadre="recortada"
+                  foco={grupo.portada_foco_y ?? 50}
+                  focoX={grupo.portada_foco_x ?? 50}
                   className="w-full"
                 />
               ) : (
-                <Hueco proporcion={3 / 2} etiqueta={`Sin fotos de ${grupo.titulo} todavía`} />
+                <Hueco proporcion={1} etiqueta={`Sin fotos de ${grupo.titulo} todavía`} />
               )}
 
               <figcaption className="flex flex-col gap-1">

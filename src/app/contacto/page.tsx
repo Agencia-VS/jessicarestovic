@@ -1,17 +1,22 @@
-import type { Metadata } from "next";
+import { urlDelSitio } from "@/lib/entorno";
+import { metadatosPagina } from "@/lib/metadatos";
 import { Pagina, Titulo } from "@/components/site/pagina";
 import { CanalesContacto } from "@/components/site/canales-contacto";
 import { FormularioContacto } from "@/components/site/formulario-contacto";
 import { derivarContacto, siteConfig } from "@/lib/site-config";
-import { obtenerConfiguracion } from "@/lib/data/consultas";
+import { medicionHabilitada } from "@/lib/comercial/servidor";
+import { obtenerConfiguracion, obtenerExposicion } from "@/lib/data/consultas";
 
-export const metadata: Metadata = {
-  title: "Contacto",
-  description: `Escríbele a ${siteConfig.nombre} por WhatsApp o correo: consultas de obra, exposiciones y talleres.`,
-  alternates: { canonical: "/contacto" },
-};
+export const metadata = metadatosPagina({
+  titulo: "Contacto",
+  descripcion: `Escríbele a ${siteConfig.nombre} por WhatsApp o correo: consultas de obra, exposiciones y talleres.`,
+  ruta: "/contacto",
+});
 
-export default async function ContactoPage() {
+export default async function ContactoPage({ searchParams }: { searchParams: Promise<{ grupo?: string }> }) {
+  const { grupo: id } = await searchParams;
+  const seleccionado = id && /^[0-9a-f-]{36}$/i.test(id) ? await obtenerExposicion(id) : null;
+  const grupo = seleccionado?.publicada ? { id: seleccionado.id, titulo: seleccionado.titulo, ruta: urlDelSitio() + "/" + (seleccionado.tipo === "trabajo" ? "trabajos" : "exposiciones") + "/" + seleccionado.slug } : null;
   const contacto = derivarContacto(
     await obtenerConfiguracion(),
     "Hola Jessica, te escribo desde tu sitio por una consulta.",
@@ -26,8 +31,8 @@ export default async function ContactoPage() {
         </div>
 
         <div className="flex min-w-[15.625rem] flex-[0_1_23.75rem] flex-col gap-[clamp(1rem,2vw,1.5rem)]">
-          <h2 className="eyebrow text-faint">Escríbeme</h2>
-          <FormularioContacto origen="contacto" placeholderMensaje="Mensaje" />
+          <h2 className="eyebrow text-faint">Conversemos por WhatsApp</h2>
+          <FormularioContacto whatsappUrl={contacto.whatsappUrl} grupo={grupo} captacion={medicionHabilitada()} />
         </div>
       </div>
     </Pagina>

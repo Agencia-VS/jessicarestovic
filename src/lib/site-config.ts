@@ -130,7 +130,7 @@ export const siteConfig = {
   nombre: "Jessica Restović",
   rol: "Artista visual",
   descripcion:
-    "Obra de Jessica Restović, artista visual: grafito sobre tela, ensambles y volúmenes.",
+    "Explora la obra de Jessica Restović, artista visual: grafito sobre tela, ensambles, volúmenes y acuarelas. Exposiciones, trabajos y trayectoria artística.",
   locale: "es_CL",
   lang: "es",
 } as const;
@@ -203,6 +203,7 @@ export const navAdmin: readonly NavItem[] = [
   { href: "/admin/exposiciones", label: "Exposiciones" },
   { href: "/admin/trabajos", label: "Trabajos" },
   { href: "/admin/sobre-mi", label: "Sobre mí" },
-  { href: "/admin/mensajes", label: "Mensajes" },
+  { href: "/admin/estadisticas", label: "Estadísticas" },
+  { href: "/admin/contactos", label: "Contactos" },
   { href: "/admin/configuracion", label: "Configuración" },
 ] as const;

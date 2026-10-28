@@ -1,16 +1,16 @@
-import type { Metadata } from "next";
+import { metadatosPagina } from "@/lib/metadatos";
 import { Pagina, Seccion } from "@/components/site/pagina";
 import { FiltrosExposiciones } from "@/components/site/filtros-exposiciones";
 import { TarjetasDeGrupos } from "@/components/site/tarjetas-de-grupos";
 import { EstadoVacio } from "@/components/ui/estado-vacio";
 import { listarTrabajos } from "@/lib/data/consultas";
 
-export const metadata: Metadata = {
-  title: "Trabajos",
-  description:
-    "Los conjuntos de trabajo de Jessica Restović: acuarela, ilustración y lo último salido del taller.",
-  alternates: { canonical: "/trabajos" },
-};
+export const metadata = metadatosPagina({
+  titulo: "Trabajos y obras",
+  descripcion:
+    "Descubre los trabajos de Jessica Restović: acuarelas, ilustraciones y obras recientes. Recorre las imágenes y técnicas de cada conjunto.",
+  ruta: "/trabajos",
+});
 
 /**
  * El índice de conjuntos de trabajo: lo que no pasó por una sala.

@@ -8,13 +8,14 @@ interface ConfirmarProps {
   /** La acción de borrado, ya con el id enlazado. */
   accion: () => void;
   etiqueta?: string;
+  disabled?: boolean;
 }
 
 /**
  * Pide confirmación antes de borrar (§07). El botón se convierte en la
  * pregunta, sin abrir una ventana aparte — un paso menos en el celular.
  */
-export function Confirmar({ nombre, accion, etiqueta = "Eliminar" }: ConfirmarProps) {
+export function Confirmar({ nombre, accion, etiqueta = "Eliminar", disabled = false }: ConfirmarProps) {
   const [preguntando, setPreguntando] = useState(false);
 
   if (!preguntando) {
@@ -22,6 +23,7 @@ export function Confirmar({ nombre, accion, etiqueta = "Eliminar" }: ConfirmarPr
       <button
         type="button"
         onClick={() => setPreguntando(true)}
+        disabled={disabled}
         className="caption text-muted transition-colors hover:text-danger"
       >
         {etiqueta}
@@ -39,6 +41,7 @@ export function Confirmar({ nombre, accion, etiqueta = "Eliminar" }: ConfirmarPr
           accion();
         }}
         className="text-danger underline underline-offset-4"
+        disabled={disabled}
       >
         Sí, eliminar
       </button>

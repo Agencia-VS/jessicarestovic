@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import { metadatosPagina } from "@/lib/metadatos";
 import Image from "next/image";
 import { Pagina, Titulo } from "@/components/site/pagina";
 import { Hueco } from "@/components/site/foto";
@@ -8,11 +8,11 @@ import { obtenerConfiguracion, obtenerSobreMi } from "@/lib/data/consultas";
 import { urlImagen } from "@/lib/imagenes-servidor";
 import { derivarContacto, siteConfig } from "@/lib/site-config";
 
-export const metadata: Metadata = {
-  title: "Sobre mí",
-  description: `Biografía de ${siteConfig.nombre}, artista visual.`,
-  alternates: { canonical: "/sobre-mi" },
-};
+export const metadata = metadatosPagina({
+  titulo: "Biografía y trayectoria",
+  descripcion: `Conoce a ${siteConfig.nombre}, artista visual. Biografía, trayectoria y una mirada a los procesos que dan forma a su obra.`,
+  ruta: "/sobre-mi",
+});
 
 export default async function SobreMiPage() {
   const [{ titulo, biografia, retrato_path, retrato_alt }, config] = await Promise.all([

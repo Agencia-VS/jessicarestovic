@@ -48,6 +48,11 @@ function leerCampos(formData: FormData, tipo: TipoDeGrupo) {
   const d = analisis.data;
   return {
     datos: {
+      // No enviar columnas nuevas cuando el formulario no ofrece encuadre.
+      ...(formData.has("portada_foco_x") ? {
+        portada_foco_x: Math.min(100, Math.max(0, enteroONulo(formData.get("portada_foco_x")) ?? 50)),
+        portada_foco_y: Math.min(100, Math.max(0, enteroONulo(formData.get("portada_foco_y")) ?? 50)),
+      } : {}),
       titulo: d.titulo,
       slug: slugify(d.titulo),
       tipo,
@@ -159,6 +164,8 @@ async function guardarFotos(
 
     fotos.push({
       exposicion_id: exposicionId,
+      titulo: String(formData.get(`foto_titulo_${indice}`) ?? "").trim() || null,
+      dimensiones: String(formData.get(`foto_dimensiones_${indice}`) ?? "").trim() || null,
       imagen_path: path,
       imagen_alt: alt,
       imagen_ancho: enteroONulo(formData.get(`foto_ancho_${indice}`)),
@@ -247,6 +254,28 @@ export async function editarExposicion(
 
     const problemaFotos = await guardarFotos(supabase, id, formData, count ?? 0);
     if (problemaFotos) return fallo(problemaFotos);
+
+    // Actualiza los metadatos de las fotos de sala que ya estaban guardadas.
+    // Solo se aceptan IDs que realmente pertenecen a esta exposición.
+    const { data: fotosActuales } = await supabase
+      .from("exposicion_foto")
+      .select("id")
+      .eq("exposicion_id", id);
+    for (const foto of fotosActuales ?? []) {
+      // Las fotos que se acaban de subir usan foto_titulo_N y
+      // foto_dimensiones_N; no sobrescribirlas con los campos de fotos ya
+      // cargadas (foto_existente_*).
+      if (!formData.has(`foto_existente_titulo_${foto.id}`) &&
+          !formData.has(`foto_existente_dimensiones_${foto.id}`)) continue;
+      const titulo = String(formData.get(`foto_existente_titulo_${foto.id}`) ?? "").trim();
+      const dimensiones = String(formData.get(`foto_existente_dimensiones_${foto.id}`) ?? "").trim();
+      const { error: errorFoto } = await supabase
+        .from("exposicion_foto")
+        .update({ titulo: titulo || null, dimensiones: dimensiones || null })
+        .eq("id", foto.id)
+        .eq("exposicion_id", id);
+      if (errorFoto) return fallo("No pudimos actualizar el título o las dimensiones de una foto de sala.");
+    }
   }
 
   revalidarExposiciones();
@@ -289,22 +318,29 @@ export async function eliminarFoto(fotoId: string): Promise<void> {
 export async function alternarExposicionPublicada(
   id: string,
   publicada: boolean,
-): Promise<void> {
+): Promise<Resultado> {
   const supabase = await clienteConSesion();
-  if (!supabase) return;
+  if (!supabase) return SIN_SESION;
 
-  await supabase.from("exposicion").update({ publicada }).eq("id", id);
+  const { data, error } = await supabase.from("exposicion").update({ publicada }).eq("id", id).select("id").maybeSingle();
+  if (error || !data) return fallo("No se pudo cambiar la publicación. Recarga y vuelve a intentarlo.");
   revalidarExposiciones();
+  return ok(publicada ? "Publicada." : "Oculta.");
 }
 
 /** Guarda el orden editorial de una lista de grupos, de muestras o de trabajos. */
-export async function reordenarExposiciones(ids: string[]): Promise<void> {
+export async function reordenarExposiciones(ids: string[], tipo: TipoDeGrupo): Promise<Resultado> {
+  if (!ids.length || ids.length > 2000 || new Set(ids).size !== ids.length ||
+      ids.some((id) => !/^[0-9a-f-]{36}$/i.test(id)) || !["trabajo", "exposicion"].includes(tipo)) {
+    return fallo("La lista no es válida. Recarga el panel.");
+  }
   const supabase = await clienteConSesion();
-  if (!supabase) return;
-
-  await Promise.all(
-    ids.map((id, indice) => supabase.from("exposicion").update({ orden: indice + 1 }).eq("id", id)),
-  );
-
+  if (!supabase) return SIN_SESION;
+  const { error } = await supabase.rpc("reordenar_grupos", { p_ids: ids, p_tipo: tipo });
+  if (error?.code === "PGRST202" || error?.code === "42883") {
+    return fallo("El orden no se guardó: falta aplicar la migración 0007_grilla_orden.sql en Supabase. Recargar la página no resuelve esta actualización pendiente.");
+  }
+  if (error) return fallo("No se guardó el orden. Recarga y vuelve a intentarlo.");
   revalidarExposiciones();
+  return ok("Orden guardado, de izquierda a derecha y fila por fila.");
 }

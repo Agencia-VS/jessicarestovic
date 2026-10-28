@@ -1,8 +1,10 @@
 import type { Metadata, Viewport } from "next";
 import { Public_Sans } from "next/font/google";
-import { Analytics } from "@vercel/analytics/next";
+import { Preferencias } from "@/components/site/preferencias";
+import { medicionHabilitada, preferenciaActual } from "@/lib/comercial/servidor";
 import { siteConfig } from "@/lib/site-config";
 import { urlDelSitio } from "@/lib/entorno";
+import { metadatosPagina } from "@/lib/metadatos";
 import "./globals.css";
 
 /**
@@ -12,13 +14,13 @@ import "./globals.css";
  * resto. Jessica pidió la del menú para toda la página, así que el serif se
  * fue: una familia menos que descargar y una decisión menos por pantalla.
  *
- * Se piden también los pesos que usaba el serif —200 para los títulos grandes
- * y la itálica del visor— para que nada caiga a una versión sintética.
+ * Se piden los pesos que usan los títulos y el texto. El nombre de obra en el
+ * visor comparte la misma familia sans, sin una variante itálica aparte.
  */
 const publicSans = Public_Sans({
   subsets: ["latin"],
   weight: ["200", "300", "400", "500"],
-  style: ["normal", "italic"],
+  style: "normal",
   variable: "--font-public-sans",
   display: "swap",
 });
@@ -66,22 +68,16 @@ document.addEventListener("load", function (evento) {
 const SIN_SCRIPT = "[data-foto]{background:none}[data-foto]>img{opacity:1}";
 
 export const metadata: Metadata = {
+  ...metadatosPagina({ ruta: "/" }),
   metadataBase: new URL(urlDelSitio()),
   title: {
     default: `${siteConfig.nombre} — ${siteConfig.rol}`,
     template: `%s — ${siteConfig.nombre}`,
   },
-  description: siteConfig.descripcion,
-  openGraph: {
-    type: "website",
-    locale: siteConfig.locale,
-    siteName: siteConfig.nombre,
-    title: `${siteConfig.nombre} — ${siteConfig.rol}`,
-    description: siteConfig.descripcion,
-    url: urlDelSitio(),
-  },
-  twitter: { card: "summary_large_image" },
-  alternates: { canonical: "/" },
+  applicationName: siteConfig.nombre,
+  authors: [{ name: siteConfig.nombre, url: `${urlDelSitio()}/sobre-mi` }],
+  creator: siteConfig.nombre,
+  robots: { index: true, follow: true, "max-image-preview": "large" },
 };
 
 export const viewport: Viewport = {
@@ -89,7 +85,8 @@ export const viewport: Viewport = {
   colorScheme: "light",
 };
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default async function RootLayout({ children }: { children: React.ReactNode }) {
+  const inicial = await preferenciaActual();
   return (
     <html
       lang={siteConfig.lang}
@@ -102,17 +99,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         </noscript>
       </head>
       <body>
-        {children}
-        {/*
-          El panel de visitas: cuántas personas entran, qué páginas miran y de
-          dónde llegan. Se ve en Vercel, en la pestaña Analytics del proyecto.
-
-          No usa cookies ni identifica a nadie, así que no hace falta pedir
-          consentimiento ni ampliar la página de privacidad. Y no le manda
-          nada a Jessica al teléfono: un aviso por visita serían cientos al
-          día; lo útil es poder mirar el resumen cuando quiera.
-        */}
-        <Analytics />
+        <Preferencias inicial={inicial} habilitada={medicionHabilitada()}>{children}</Preferencias>
       </body>
     </html>
   );
