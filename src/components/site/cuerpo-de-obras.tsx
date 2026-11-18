@@ -12,6 +12,7 @@ interface CuerpoDeObrasProps {
   grupos: GrupoDeObras[];
   /** Los datos de la cartela, en el orden en que se leen. */
   datos: { clave: string; valor: string | null }[];
+  marcoBlancoMiniaturas: boolean;
   /** El enlace de vuelta al índice de la sección. */
   volver: { href: string; titulo: string };
   vacio: { titulo: string; detalle: string };
@@ -34,6 +35,7 @@ export function CuerpoDeObras({
   descripcion,
   grupos,
   datos,
+  marcoBlancoMiniaturas,
   volver,
   vacio,
 }: CuerpoDeObrasProps) {
@@ -54,6 +56,7 @@ export function CuerpoDeObras({
             <section key={grupo.nombre ?? `sin-conjunto-${indice}`}>
               <GaleriaObras
                 obras={grupo.obras}
+                marcoBlancoMiniaturas={marcoBlancoMiniaturas}
                 contexto={grupo.nombre ?? titulo}
                 cartela={
                   indice === 0 ? (

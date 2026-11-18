@@ -42,6 +42,7 @@ export default async function TrabajoPage({ params }: { params: Promise<{ slug: 
         titulo={trabajo.titulo}
         descripcion={trabajo.descripcion}
         grupos={trabajo.grupos}
+        marcoBlancoMiniaturas={trabajo.seccion === "ilustraciones"}
         datos={[
           { clave: "Técnica", valor: trabajo.tecnica },
           { clave: "Año", valor: trabajo.anio ? String(trabajo.anio) : null },

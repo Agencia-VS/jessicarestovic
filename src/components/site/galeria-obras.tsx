@@ -8,6 +8,7 @@ interface GaleriaObrasProps {
   contexto: string;
   /** El rótulo que va con la foto principal. */
   cartela?: React.ReactNode;
+  marcoBlancoMiniaturas: boolean;
 }
 
 /**

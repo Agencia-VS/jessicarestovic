@@ -22,7 +22,7 @@ export function EncuadreTarjeta({ exposicion }: { exposicion: Exposicion }) {
       <img
         src={exposicion.portada.src}
         alt="Vista previa de la portada"
-        className={`aspect-square w-full max-w-64 ${esTrabajo ? "bg-white object-contain" : "object-cover"}`}
+        className={`aspect-square w-full max-w-64 ${esTrabajo ? "object-contain" : "object-cover"} ${exposicion.seccion === "ilustraciones" ? "bg-white" : ""}`}
         style={esTrabajo ? undefined : { objectPosition: `${x}% ${y}%` }}
       />
       {!esTrabajo && (
