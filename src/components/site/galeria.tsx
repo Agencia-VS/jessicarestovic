@@ -266,6 +266,7 @@ export function Galeria({ piezas, cartela, contexto, miniaturasCompletas = false
                         alto={pieza.alto}
                         proporcionFija={1}
                         encuadre={miniaturasCompletas ? "contenida" : "recortada"}
+                        marcoBlanco={miniaturasCompletas}
                         sizes={SIZES_MINIATURA}
                         className="h-full w-full"
                       />

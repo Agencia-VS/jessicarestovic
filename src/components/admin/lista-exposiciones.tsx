@@ -126,7 +126,7 @@ export function ListaExposiciones({
                 draggable={false}
                 src={expo.portada.src}
                 alt=""
-                className={`h-16 w-16 shrink-0 ${expo.tipo === "trabajo" ? "object-contain" : "object-cover"}`}
+                className={`h-16 w-16 shrink-0 ${expo.tipo === "trabajo" ? "bg-white object-contain" : "object-cover"}`}
                 style={expo.tipo === "trabajo" ? undefined : {
                   objectPosition: `${expo.portada_foco_x ?? 50}% ${expo.portada_foco_y ?? 50}%`,
                 }}

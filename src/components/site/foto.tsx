@@ -45,6 +45,8 @@ interface FotoProps {
   focoX?: number;
   /** La primera foto visible se pide antes que el resto (LCP). */
   prioridad?: boolean;
+  /** Fondo visible alrededor de una obra contenida en su marco. */
+  marcoBlanco?: boolean;
   /** Las clases que fijan el tamaño del marco: `w-full` en la retícula. */
   className?: string;
 }
@@ -86,6 +88,7 @@ export function Foto({
   foco,
   focoX = 50,
   prioridad = false,
+  marcoBlanco = false,
   className = "",
 }: FotoProps) {
   /** La foto que el optimizador no pudo entregar y se pide tal cual. */
@@ -101,6 +104,7 @@ export function Foto({
       // con su fundido.
       key={src}
       data-foto
+      data-marco-blanco={marcoBlanco || undefined}
       // El script del layout marca el marco cuando la foto llega, y eso puede
       // pasar antes de que React tome la página.
       suppressHydrationWarning

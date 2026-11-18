@@ -49,6 +49,7 @@ export function TarjetasDeGrupos({
                   prioridad={indice === 0}
                   proporcionFija={1}
                   encuadre={portadaCompleta ? "contenida" : "recortada"}
+                  marcoBlanco={portadaCompleta}
                   foco={portadaCompleta ? undefined : grupo.portada_foco_y ?? 50}
                   focoX={grupo.portada_foco_x ?? 50}
                   className="w-full"

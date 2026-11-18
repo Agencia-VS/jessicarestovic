@@ -46,7 +46,7 @@ document.addEventListener("load", function (evento) {
 `;
 
 /** Sin JavaScript nadie marca las fotos: se muestran tal cual llegan. */
-const SIN_SCRIPT = "[data-foto]{background:none}[data-foto]>img{opacity:1}";
+const SIN_SCRIPT = "[data-foto]:not([data-marco-blanco]){background:none}[data-foto]>img{opacity:1}";
 
 export const metadata: Metadata = {
   ...metadatosPagina({ ruta: "/" }),
