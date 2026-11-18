@@ -242,9 +242,23 @@ test('trabajos: mostrar portadas por sección, abrir obras completas y conservar
   await expect(obra).toHaveCount(0);
   await expect(contenido.locator('a[href="/trabajos/trabajo-3"]')).toBeVisible();
   await expect(contenido.locator('a[href="/trabajos/trabajo-1"]')).toHaveCount(0);
+  const comprobarMarco = async (imagen) => {
+    await expect(imagen).toHaveCSS('object-fit', 'contain');
+    await expect(imagen).toHaveAttribute('srcset', /_next\/image/);
+    const marco = imagen.locator('..');
+    await expect(marco).toHaveAttribute('data-cargada', '');
+    await expect(marco).toHaveCSS('background-color', 'rgb(255, 255, 255)');
+    const caja = await marco.boundingBox();
+    expect(Math.abs(caja.width - caja.height)).toBeLessThan(0.5);
+    return caja;
+  };
   const portada = tarjeta.getByRole('img', { name: 'Papel azul' });
-  await expect(portada).toHaveCSS('object-fit', 'contain');
-  await expect(portada).toHaveAttribute('srcset', /_next\/image/);
+  for (const ancho of [1280, 390]) {
+    await page.setViewportSize({ width: ancho, height: 900 });
+    const marco = await comprobarMarco(portada);
+    const titulo = await tarjeta.getByText('Tintas y papeles', { exact: true }).boundingBox();
+    expect(Math.abs(marco.x - titulo.x)).toBeLessThan(0.5);
+  }
   await portada.click();
   await expect(page).toHaveURL(/\/trabajos\/tintas-y-papeles$/);
   await expect(obra).toBeVisible();
@@ -253,10 +267,15 @@ test('trabajos: mostrar portadas por sección, abrir obras completas y conservar
     for (const titulo of ['Tinta vertical', 'Tinta horizontal']) {
       const miniatura = page.getByRole('button', { name: `Ver ${titulo} de Tintas y papeles en grande` }).locator('img');
       await expect(miniatura).toBeVisible();
-      await expect(miniatura).toHaveCSS('object-fit', 'contain');
-      await expect(miniatura).toHaveAttribute('srcset', /_next\/image/);
+      await comprobarMarco(miniatura);
     }
   }
+  await obra.click();
+  const visor = page.getByRole('dialog', { name: 'Papel azul, vista ampliada' });
+  const ampliada = await visor.getByRole('img', { name: 'Papel azul' }).boundingBox();
+  expect(ampliada.width / ampliada.height).toBeCloseTo(1800 / 2250, 2);
+  await visor.getByRole('button', { name: 'Cerrar', exact: true }).click();
+
   await page.setViewportSize({ width: 1280, height: 900 });
   await expect(page.getByRole('link', { name: 'Ilustraciones', exact: true })).toHaveAttribute('aria-current', 'page');
 
@@ -276,6 +295,7 @@ test('trabajos: mostrar portadas por sección, abrir obras completas y conservar
   await page.getByRole('dialog').getByRole('link', { name: 'Recientes', exact: true }).click();
   await expect(obra).toHaveCount(0);
   await expect(tarjeta).toContainText('Tintas sobre papel');
+  await comprobarMarco(portada);
   await tarjeta.click();
   await expect(page).toHaveURL(/\/trabajos\/tintas-y-papeles$/);
   await expect(obra).toBeVisible();
