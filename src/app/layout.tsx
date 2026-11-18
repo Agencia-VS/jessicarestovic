@@ -1,29 +1,10 @@
 import type { Metadata, Viewport } from "next";
-import { Public_Sans } from "next/font/google";
 import { Preferencias } from "@/components/site/preferencias";
 import { medicionHabilitada, preferenciaActual } from "@/lib/comercial/servidor";
 import { siteConfig } from "@/lib/site-config";
 import { urlDelSitio } from "@/lib/entorno";
 import { metadatosPagina } from "@/lib/metadatos";
 import "./globals.css";
-
-/**
- * La tipografía del sitio, una sola.
- *
- * Antes convivían un serif editorial para los títulos y este sans para el
- * resto. Jessica pidió la del menú para toda la página, así que el serif se
- * fue: una familia menos que descargar y una decisión menos por pantalla.
- *
- * Se piden los pesos que usan los títulos y el texto. El nombre de obra en el
- * visor comparte la misma familia sans, sin una variante itálica aparte.
- */
-const publicSans = Public_Sans({
-  subsets: ["latin"],
-  weight: ["200", "300", "400", "500"],
-  style: "normal",
-  variable: "--font-public-sans",
-  display: "swap",
-});
 
 /**
  * Todas las páginas se arman en cada visita, y se declara acá para que el
@@ -88,10 +69,7 @@ export const viewport: Viewport = {
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
   const inicial = await preferenciaActual();
   return (
-    <html
-      lang={siteConfig.lang}
-      className={publicSans.variable}
-    >
+    <html lang={siteConfig.lang}>
       <head>
         <script dangerouslySetInnerHTML={{ __html: MARCAR_FOTOS }} />
         <noscript>

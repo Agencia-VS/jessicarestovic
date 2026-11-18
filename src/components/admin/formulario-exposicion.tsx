@@ -92,7 +92,7 @@ export function FormularioExposicion({
       </div>
 
       {exposicion?.portada && (
-        typeof exposicion.portada_foco_x === "number" && typeof exposicion.portada_foco_y === "number"
+        esTrabajo || (typeof exposicion.portada_foco_x === "number" && typeof exposicion.portada_foco_y === "number")
           ? <EncuadreTarjeta exposicion={exposicion} />
           : <p className="caption text-muted">El encuadre requiere aplicar la actualización 0007 de la base de datos. Puedes guardar los demás datos del grupo.</p>
       )}

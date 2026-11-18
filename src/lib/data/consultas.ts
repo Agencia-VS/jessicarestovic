@@ -272,17 +272,8 @@ export function listarTrabajos(soloPublicadas = true): Promise<Exposicion[]> {
   return listarGrupos("trabajo", soloPublicadas);
 }
 
-export async function listarTrabajosConObras(seccion: SeccionTrabajo) {
-  const conjuntos = (await listarTrabajos()).filter((grupo) => grupo.seccion === seccion);
-  const obras = await listarObrasPublicadas(conjuntos.map(({ id }) => id));
-  const porConjunto = new Map<string, Obra[]>();
-  for (const obra of obras) {
-    if (!obra.exposicion_id) continue;
-    const lista = porConjunto.get(obra.exposicion_id);
-    if (lista) lista.push(obra);
-    else porConjunto.set(obra.exposicion_id, [obra]);
-  }
-  return conjuntos.map((grupo) => ({ ...grupo, obras: porConjunto.get(grupo.id) ?? [] }));
+export async function listarTrabajosDeSeccion(seccion: SeccionTrabajo): Promise<Exposicion[]> {
+  return (await listarTrabajos()).filter((grupo) => grupo.seccion === seccion);
 }
 
 export async function obtenerExposicion(id: string): Promise<Exposicion | null> {

@@ -122,7 +122,15 @@ export function ListaExposiciones({
             >↕ <span>{indice + 1}</span></button>
             {expo.portada && (
               // eslint-disable-next-line @next/next/no-img-element
-              <img draggable={false} src={expo.portada.src} alt="" className="h-16 w-16 shrink-0 object-cover" style={{ objectPosition: (expo.portada_foco_x ?? 50) + "% " + (expo.portada_foco_y ?? 50) + "%" }} />
+              <img
+                draggable={false}
+                src={expo.portada.src}
+                alt=""
+                className={`h-16 w-16 shrink-0 ${expo.tipo === "trabajo" ? "object-contain" : "object-cover"}`}
+                style={expo.tipo === "trabajo" ? undefined : {
+                  objectPosition: `${expo.portada_foco_x ?? 50}% ${expo.portada_foco_y ?? 50}%`,
+                }}
+              />
             )}
             <Link href={`${base}/${expo.id}`} className="flex flex-col gap-0.5">
               <span className="text-[1.0625rem] leading-snug">{expo.titulo}</span>

@@ -204,7 +204,7 @@ test('WhatsApp sin registro abre el mensaje elegido sin guardar datos',async({pa
  expect(texto).toContain('obra');expect(app.estado.leads.size).toBe(antes);
 });
 
-test('trabajos: crear, mover, mostrar grillas por sección y conservar el enlace', async ({ page, context }) => {
+test('trabajos: mostrar portadas por sección, abrir obras completas y conservar el enlace al mover', async ({ page, context }) => {
   await app.auth(context);
   await page.goto(app.base + '/admin/trabajos/nuevo');
   await page.getByLabel('Título', { exact: true }).fill('Tintas y papeles');
@@ -214,7 +214,6 @@ test('trabajos: crear, mover, mostrar grillas por sección y conservar el enlace
 
   const grupo = app.estado.grupos.find(g => g.slug === 'tintas-y-papeles');
   expect(grupo?.seccion).toBe('ilustraciones');
-  grupo.portada_foco_y = 20;
   const recientes = page.getByRole('region', { name: 'Recientes' });
   const ilustraciones = page.getByRole('region', { name: 'Ilustraciones' });
   const ordenRecientes = await titulos(recientes);
@@ -222,35 +221,63 @@ test('trabajos: crear, mover, mostrar grillas por sección y conservar el enlace
   await expect(ilustraciones.getByRole('status')).toContainText('Orden guardado');
   expect(await titulos(recientes)).toEqual(ordenRecientes);
 
-  app.estado.obras.push({
-    id: '80000000-0000-4000-8000-000000000001', exposicion_id: grupo.id,
-    titulo: 'Papel azul', imagen_path: '/demo/ensambles-01.avif', imagen_alt: 'Papel azul',
-    publicada: true, orden: 1,
-  });
+  const imagenes = [
+    { titulo: 'Papel azul', archivo: 'ensambles-02', ancho: 1800, alto: 2250 },
+    { titulo: 'Tinta vertical', archivo: 'ensambles-06', ancho: 1800, alto: 2250 },
+    { titulo: 'Tinta horizontal', archivo: 'ensambles-04', ancho: 1800, alto: 1350 },
+  ];
+  for (const [indice, imagen] of imagenes.entries()) {
+    app.estado.obras.push({
+      id: `80000000-0000-4000-8000-00000000000${indice + 1}`,
+      exposicion_id: grupo.id, titulo: imagen.titulo,
+      imagen_path: `/demo/${imagen.archivo}.avif`, imagen_alt: imagen.titulo,
+      imagen_ancho: imagen.ancho, imagen_alto: imagen.alto,
+      publicada: true, orden: indice + 1,
+    });
+  }
+  const contenido = page.getByRole('main');
+  const tarjeta = contenido.locator('a[href="/trabajos/tintas-y-papeles"]');
   const obra = page.getByRole('button', { name: 'Ver Papel azul en grande' });
   await page.goto(app.base + '/ilustraciones');
-  await expect(obra).toBeVisible();
-  await expect(obra.locator('img')).toHaveCSS('object-position', '50% 20%');
-  await expect(page.getByRole('heading', { name: 'Trabajo 3' })).toBeVisible();
-  await expect(page.getByRole('heading', { name: 'Trabajo 1' })).toHaveCount(0);
-  await page.getByRole('link', { name: 'Tintas y papeles' }).click();
+  await expect(obra).toHaveCount(0);
+  await expect(contenido.locator('a[href="/trabajos/trabajo-3"]')).toBeVisible();
+  await expect(contenido.locator('a[href="/trabajos/trabajo-1"]')).toHaveCount(0);
+  const portada = tarjeta.getByRole('img', { name: 'Papel azul' });
+  await expect(portada).toHaveCSS('object-fit', 'contain');
+  await expect(portada).toHaveAttribute('srcset', /_next\/image/);
+  await portada.click();
   await expect(page).toHaveURL(/\/trabajos\/tintas-y-papeles$/);
+  await expect(obra).toBeVisible();
+  for (const ancho of [1280, 390]) {
+    await page.setViewportSize({ width: ancho, height: 900 });
+    for (const titulo of ['Tinta vertical', 'Tinta horizontal']) {
+      const miniatura = page.getByRole('button', { name: `Ver ${titulo} de Tintas y papeles en grande` }).locator('img');
+      await expect(miniatura).toBeVisible();
+      await expect(miniatura).toHaveCSS('object-fit', 'contain');
+      await expect(miniatura).toHaveAttribute('srcset', /_next\/image/);
+    }
+  }
+  await page.setViewportSize({ width: 1280, height: 900 });
   await expect(page.getByRole('link', { name: 'Ilustraciones', exact: true })).toHaveAttribute('aria-current', 'page');
 
   await page.goto(`${app.base}/admin/trabajos/${grupo.id}`);
   await expect(page.getByLabel('Sección', { exact: true })).toHaveValue('ilustraciones');
+  await expect(page.getByRole('img', { name: 'Vista previa de la portada' })).toHaveCSS('object-fit', 'contain');
+  await expect(page.getByRole('slider', { name: 'Horizontal' })).toHaveCount(0);
   await page.getByLabel('Sección', { exact: true }).selectOption('recientes');
   await page.getByLabel('Título', { exact: true }).fill('Tintas sobre papel');
   await page.getByRole('button', { name: 'Guardar cambios' }).click();
   await expect(page.getByRole('status')).toContainText('Cambios guardados');
   await page.goto(app.base + '/ilustraciones');
-  await expect(obra).toHaveCount(0);
+  await expect(tarjeta).toHaveCount(0);
 
   await page.setViewportSize({ width: 390, height: 844 });
   await page.getByRole('button', { name: 'Menú', exact: true }).click();
   await page.getByRole('dialog').getByRole('link', { name: 'Recientes', exact: true }).click();
-  await expect(obra).toBeVisible();
-  await page.getByRole('link', { name: 'Tintas sobre papel' }).click();
+  await expect(obra).toHaveCount(0);
+  await expect(tarjeta).toContainText('Tintas sobre papel');
+  await tarjeta.click();
   await expect(page).toHaveURL(/\/trabajos\/tintas-y-papeles$/);
-  await expect(page.getByRole('main').getByRole('link', { name: /Recientes/ })).toHaveAttribute('href', '/trabajos');
+  await expect(obra).toBeVisible();
+  await expect(contenido.getByRole('link', { name: /Recientes/ })).toHaveAttribute('href', '/trabajos');
 });

@@ -1,5 +1,5 @@
 import { ListadoDeTrabajos } from "@/components/site/listado-de-trabajos";
-import { listarTrabajosConObras } from "@/lib/data/consultas";
+import { listarTrabajosDeSeccion } from "@/lib/data/consultas";
 import { metadatosPagina } from "@/lib/metadatos";
 import { SECCIONES_TRABAJO } from "@/lib/site-config";
 
@@ -12,6 +12,6 @@ export const metadata = metadatosPagina({
 });
 
 export default async function IlustracionesPage() {
-  const conjuntos = await listarTrabajosConObras(seccion);
+  const conjuntos = await listarTrabajosDeSeccion(seccion);
   return <ListadoDeTrabajos seccion={seccion} conjuntos={conjuntos} />;
 }

@@ -6,7 +6,8 @@ permissions:
   contents: read
 jobs:
   validar:
-    runs-on: ubuntu-latest
+    # Playwright 1.56.1 admite Ubuntu 24.04.
+    runs-on: ubuntu-24.04
     timeout-minutes: 15
     services:
       postgres:
