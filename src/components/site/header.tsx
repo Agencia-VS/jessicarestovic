@@ -34,7 +34,11 @@ export interface Subindice {
  * dentro de una sección: el desplegable para saltar a otra muestra o a otro
  * conjunto. En las demás páginas, solo el «+».
  */
-export function Header({ contacto, subindice }: { contacto: Contacto; subindice?: Subindice }) {
+export function Header({ contacto, subindice, seccionActiva }: {
+  contacto: Contacto;
+  subindice?: Subindice;
+  seccionActiva?: string;
+}) {
   return (
     <header className="sticky top-0 z-40 border-b border-line bg-paper/95 backdrop-blur-lg">
       <div className="marco gutter hidden py-[clamp(0.875rem,1.8vw,1.25rem)] lg:block">
@@ -43,7 +47,7 @@ export function Header({ contacto, subindice }: { contacto: Contacto; subindice?
           className="flex flex-wrap items-baseline gap-x-[clamp(0.875rem,2vw,2rem)] gap-y-2"
         >
           {navPublica.map((item) => (
-            <NavEnlace key={item.href} {...item} />
+            <NavEnlace key={item.href} {...item} seccionActiva={seccionActiva} />
           ))}
         </nav>
       </div>
@@ -64,7 +68,11 @@ export function Header({ contacto, subindice }: { contacto: Contacto; subindice?
         ) : (
           <span />
         )}
-        <MenuMovil email={contacto.email} instagramUrl={contacto.instagramUrl} />
+        <MenuMovil
+          email={contacto.email}
+          instagramUrl={contacto.instagramUrl}
+          seccionActiva={seccionActiva}
+        />
       </div>
     </header>
   );

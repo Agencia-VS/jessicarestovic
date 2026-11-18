@@ -3,6 +3,7 @@ import type {
   ImagenGrande,
   ImagenPortada,
   TipoDeGrupo,
+  SeccionTrabajo,
 } from "@/types/database";
 
 /**
@@ -13,6 +14,20 @@ import type {
 /** La sección del panel donde se administra cada tipo de grupo. */
 export function seccionDeGrupo(tipo: TipoDeGrupo): string {
   return tipo === "trabajo" ? "/admin/trabajos" : "/admin/exposiciones";
+}
+
+export const SECCIONES_TRABAJO = {
+  ilustraciones: { href: "/ilustraciones", label: "Ilustraciones" },
+  recientes: { href: "/trabajos", label: "Recientes" },
+} as const satisfies Record<SeccionTrabajo, { href: string; label: string }>;
+
+export const OPCIONES_SECCION_TRABAJO = [
+  { valor: "ilustraciones", etiqueta: SECCIONES_TRABAJO.ilustraciones.label },
+  { valor: "recientes", etiqueta: SECCIONES_TRABAJO.recientes.label },
+] as const;
+
+export function esSeccionTrabajo(valor: unknown): valor is SeccionTrabajo {
+  return typeof valor === "string" && Object.hasOwn(SECCIONES_TRABAJO, valor);
 }
 
 /** Cuántas fotos forman el tríptico del Inicio. */
@@ -173,12 +188,15 @@ export interface NavItem {
   label: string;
 }
 
+export function navActivo(href: string, pathname: string, seccionActiva?: string): boolean {
+  if (seccionActiva) return href === seccionActiva;
+  return pathname === href || (href !== "/" && pathname.startsWith(`${href}/`));
+}
+
 /**
  * Navegación pública.
  *
- * No hay índice general de obra: se entra por un grupo. «Exposiciones» son los
- * grupos que tuvieron sala y «Trabajos» los que no —«Trabajos recientes»,
- * «Ilustraciones en Acuarela»—.
+ * Las muestras tienen su propio índice, y los conjuntos se ven en Ilustraciones o Recientes.
  */
 export const navPublica: readonly NavItem[] = [
   // «Inicio» existe porque la firma de la cabecera —que era el enlace a la
@@ -186,7 +204,8 @@ export const navPublica: readonly NavItem[] = [
   // menú.
   { href: "/", label: "Inicio" },
   { href: "/exposiciones", label: "Exposiciones" },
-  { href: "/trabajos", label: "Trabajos" },
+  SECCIONES_TRABAJO.recientes,
+  SECCIONES_TRABAJO.ilustraciones,
   { href: "/sobre-mi", label: "Sobre mí" },
   { href: "/contacto", label: "Contacto" },
 ] as const;

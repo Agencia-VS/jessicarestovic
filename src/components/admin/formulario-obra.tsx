@@ -10,7 +10,7 @@ import { INICIAL } from "@/lib/acciones/resultado";
 import { crearGrupoRapido } from "@/lib/acciones/exposiciones";
 import { crearObra, editarObra } from "@/lib/acciones/obras";
 import type { Exposicion, Obra } from "@/lib/data/tipos";
-import { seccionDeGrupo } from "@/lib/site-config";
+import { esSeccionTrabajo, OPCIONES_SECCION_TRABAJO, seccionDeGrupo } from "@/lib/site-config";
 
 interface FormularioObraProps {
   /** Todos los grupos, muestras y conjuntos de trabajo, para el desplegable. */
@@ -45,6 +45,7 @@ export function FormularioObra({
   const [conjunto, setConjunto] = useState(obra?.conjunto ?? "");
   const [creandoExposicion, setCreandoExposicion] = useState(false);
   const [tituloExposicion, setTituloExposicion] = useState("");
+  const [seccionNueva, setSeccionNueva] = useState("");
   const [problemaExposicion, setProblemaExposicion] = useState<string | null>(null);
   const [subiendoImagen, setSubiendoImagen] = useState(false);
   const [, iniciar] = useTransition();
@@ -74,9 +75,13 @@ export function FormularioObra({
   };
 
   const crearGrupo = () => {
+    if (!esSeccionTrabajo(seccionNueva)) {
+      setProblemaExposicion("Elige la sección del conjunto.");
+      return;
+    }
     setProblemaExposicion(null);
     iniciar(async () => {
-      const salida = await crearGrupoRapido(tituloExposicion);
+      const salida = await crearGrupoRapido(tituloExposicion, seccionNueva);
       if ("error" in salida) {
         setProblemaExposicion(salida.error);
         return;
@@ -89,6 +94,7 @@ export function FormularioObra({
           titulo: salida.titulo,
           slug: salida.slug,
           tipo: "trabajo",
+          seccion: seccionNueva,
           lugar: null,
           anio: null,
           descripcion: null,
@@ -104,6 +110,7 @@ export function FormularioObra({
       setExposicionElegida(salida.id);
       setConjunto("");
       setTituloExposicion("");
+      setSeccionNueva("");
       setCreandoExposicion(false);
       router.refresh();
     });
@@ -151,6 +158,13 @@ export function FormularioObra({
                 Crear
               </Boton>
             </div>
+            <Select
+              etiqueta="Sección del conjunto nuevo"
+              nombre="seccion_conjunto_nuevo"
+              value={seccionNueva}
+              onChange={(evento) => setSeccionNueva(evento.target.value)}
+              opciones={[{ valor: "", etiqueta: "Elige una sección" }, ...OPCIONES_SECCION_TRABAJO]}
+            />
             <p className="caption text-faint">
               Nace oculto. Complétalo después en Trabajos. Una exposición se
               registra en «Exposiciones», donde están su lugar y sus fotos de sala.

@@ -1,7 +1,7 @@
 "use client";
 
 import { useActionState, useState, useTransition } from "react";
-import { Campo, Area, Interruptor } from "@/components/ui/campo";
+import { Campo, Area, Interruptor, Select } from "@/components/ui/campo";
 import { Boton, BotonEnlace } from "@/components/ui/boton";
 import { EncuadreTarjeta } from "./encuadre-tarjeta";
 import { SubirFotos } from "./subir-fotos";
@@ -9,6 +9,7 @@ import { Aviso } from "./aviso";
 import { Confirmar } from "./confirmar";
 import { INICIAL } from "@/lib/acciones/resultado";
 import { crearExposicion, editarExposicion, eliminarFoto } from "@/lib/acciones/exposiciones";
+import { OPCIONES_SECCION_TRABAJO } from "@/lib/site-config";
 import type { Exposicion, TipoDeGrupo } from "@/lib/data/tipos";
 
 interface FormularioExposicionProps {
@@ -60,8 +61,16 @@ export function FormularioExposicion({
       />
 
       <div className="grid grid-cols-1 gap-7 sm:grid-cols-2">
-        {/* El lugar solo existe si hubo sala. */}
-        {!esTrabajo && (
+        {esTrabajo ? (
+          <Select
+            etiqueta="Sección"
+            nombre="seccion"
+            requerido
+            defaultValue={exposicion?.seccion ?? ""}
+            opciones={[{ valor: "", etiqueta: "Elige una sección" }, ...OPCIONES_SECCION_TRABAJO]}
+            error={errores.seccion}
+          />
+        ) : (
           <Campo
             etiqueta="Lugar"
             nombre="lugar"

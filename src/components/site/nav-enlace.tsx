@@ -2,20 +2,18 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import type { NavItem } from "@/lib/site-config";
+import { navActivo, type NavItem } from "@/lib/site-config";
 
 /**
  * Enlace de la navegación: la sección activa queda en tinta plena con un
  * subrayado del acento; el resto, al 50% hasta que se pasa el cursor.
  *
- * La página de cada muestra o conjunto vive bajo su sección, así que la ruta
- * anidada conserva automáticamente la sección activa.
+ * Las fichas de trabajos indican su sección para conservar sus URLs públicas.
  */
-export function NavEnlace({ href, label }: NavItem) {
+export function NavEnlace({ href, label, seccionActiva }: NavItem & { seccionActiva?: string }) {
   const pathname = usePathname();
 
-  const enSeccion = pathname === href || pathname.startsWith(`${href}/`);
-  const activo = enSeccion;
+  const activo = navActivo(href, pathname, seccionActiva);
 
   return (
     <Link

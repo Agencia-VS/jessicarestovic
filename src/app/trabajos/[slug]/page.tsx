@@ -3,7 +3,8 @@ import { metadatosPagina } from "@/lib/metadatos";
 import { notFound } from "next/navigation";
 import { Pagina } from "@/components/site/pagina";
 import { CuerpoDeObras } from "@/components/site/cuerpo-de-obras";
-import { listarTrabajos, obtenerExposicionDetalle, obtenerExposicionPorSlug } from "@/lib/data/consultas";
+import { SECCIONES_TRABAJO } from "@/lib/site-config";
+import { obtenerExposicionDetalle, obtenerExposicionPorSlug } from "@/lib/data/consultas";
 
 export async function generateMetadata({
   params,
@@ -31,24 +32,12 @@ export async function generateMetadata({
  */
 export default async function TrabajoPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
-  const [trabajo, trabajos] = await Promise.all([
-    obtenerExposicionDetalle(slug),
-    listarTrabajos(),
-  ]);
-
-  // Un slug de exposición no entra por acá: cada tipo tiene su sección.
-  if (!trabajo || trabajo.tipo !== "trabajo") notFound();
+  const trabajo = await obtenerExposicionDetalle(slug);
+  if (!trabajo || trabajo.tipo !== "trabajo" || !trabajo.seccion) notFound();
+  const seccion = SECCIONES_TRABAJO[trabajo.seccion];
 
   return (
-    <Pagina
-      subindice={{
-        seccion: "Trabajos",
-        base: "/trabajos",
-        todos: "Todos",
-        grupos: trabajos,
-        activo: trabajo.slug,
-      }}
-    >
+    <Pagina seccionActiva={seccion.href}>
       <CuerpoDeObras
         titulo={trabajo.titulo}
         descripcion={trabajo.descripcion}
@@ -57,7 +46,7 @@ export default async function TrabajoPage({ params }: { params: Promise<{ slug: 
           { clave: "Técnica", valor: trabajo.tecnica },
           { clave: "Año", valor: trabajo.anio ? String(trabajo.anio) : null },
         ]}
-        volver={{ href: "/trabajos", titulo: "Trabajos" }}
+        volver={{ href: seccion.href, titulo: seccion.label }}
         vacio={{
           titulo: "Este conjunto todavía no tiene obras publicadas",
           detalle: "Las obras se suben desde el panel y se asignan a este conjunto.",

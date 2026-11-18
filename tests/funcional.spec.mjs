@@ -4,31 +4,32 @@ let app;
 test.beforeAll(async()=>{app=await levantarApp({dev:process.env.TEST_DEV==='true'});});
 test.afterAll(async()=>{await app?.close();});
 test.describe.configure({mode:'serial'});
-const filas=page=>page.locator('main li').filter({has:page.locator('button[aria-label^="Subir "]')});
-const titulos=page=>filas(page).locator('a').allTextContents();
+const filas=contenedor=>contenedor.locator('li:has(button[aria-label^="Subir "])');
+const titulos=contenedor=>filas(contenedor).locator('a').allTextContents();
 
 for(const tipo of ['exposiciones','trabajos'])test(`${tipo}: flechas, persistencia, publicar/ocultar y errores`,async({page,context})=>{
  await app.auth(context);await page.goto(app.base+'/admin/'+tipo);
- const inicial=await titulos(page);expect(inicial.length).toBeGreaterThan(2);
- await filas(page).nth(0).getByRole('button',{name:/Bajar /}).click();
- await expect(page.getByRole('status')).toContainText('Orden guardado');
- expect(await titulos(page)).toEqual([inicial[1],inicial[0],...inicial.slice(2)]);
- await page.reload();expect(await titulos(page)).toEqual([inicial[1],inicial[0],...inicial.slice(2)]);
- await filas(page).nth(0).getByRole('button',{name:'● Publicada',exact:true}).click();
- await expect(filas(page).nth(0).getByRole('button',{name:'○ Oculta',exact:true})).toBeVisible();
- await filas(page).nth(0).getByRole('button',{name:'○ Oculta',exact:true}).click();
- await expect(filas(page).nth(0).getByRole('button',{name:'● Publicada',exact:true})).toBeVisible();
- app.estado.falloOrden=true;const antes=await titulos(page);
- await filas(page).nth(0).getByRole('button',{name:/Bajar /}).click();
- await expect(page.getByRole('status')).toContainText('No se guardó');expect(await titulos(page)).toEqual(antes);
+ const lista=tipo==='trabajos'?page.getByRole('region',{name:'Recientes'}):page;
+ const inicial=await titulos(lista);expect(inicial.length).toBeGreaterThan(1);
+ await filas(lista).nth(0).getByRole('button',{name:/Bajar /}).click();
+ await expect(lista.getByRole('status')).toContainText('Orden guardado');
+ expect(await titulos(lista)).toEqual([inicial[1],inicial[0],...inicial.slice(2)]);
+ await page.reload();expect(await titulos(lista)).toEqual([inicial[1],inicial[0],...inicial.slice(2)]);
+ await filas(lista).nth(0).getByRole('button',{name:'● Publicada',exact:true}).click();
+ await expect(filas(lista).nth(0).getByRole('button',{name:'○ Oculta',exact:true})).toBeVisible();
+ await filas(lista).nth(0).getByRole('button',{name:'○ Oculta',exact:true}).click();
+ await expect(filas(lista).nth(0).getByRole('button',{name:'● Publicada',exact:true})).toBeVisible();
+ app.estado.falloOrden=true;const antes=await titulos(lista);
+ await filas(lista).nth(0).getByRole('button',{name:/Bajar /}).click();
+ await expect(lista.getByRole('status')).toContainText('No se guardó');expect(await titulos(lista)).toEqual(antes);
  app.estado.falloOrden=false;app.estado.sinMigracion=true;
- await filas(page).nth(0).getByRole('button',{name:/Bajar /}).click();
- await expect(page.getByRole('status')).toContainText('0007_grilla_orden.sql');expect(await titulos(page)).toEqual(antes);
+ await filas(lista).nth(0).getByRole('button',{name:/Bajar /}).click();
+ await expect(lista.getByRole('status')).toContainText(tipo==='trabajos'?'0010_secciones_de_trabajo.sql':'0007_grilla_orden.sql');expect(await titulos(lista)).toEqual(antes);
  app.estado.sinMigracion=false;
  app.estado.falloPublicar=true;
- await filas(page).nth(0).getByRole('button',{name:'● Publicada',exact:true}).click();
- await expect(page.getByRole('status')).toContainText('No se pudo cambiar');
- await expect(filas(page).nth(0).getByRole('button',{name:'● Publicada',exact:true})).toBeVisible();
+ await filas(lista).nth(0).getByRole('button',{name:'● Publicada',exact:true}).click();
+ await expect(lista.getByRole('status')).toContainText('No se pudo cambiar');
+ await expect(filas(lista).nth(0).getByRole('button',{name:'● Publicada',exact:true})).toBeVisible();
  app.estado.falloPublicar=false;
 });
 
@@ -84,7 +85,7 @@ test('analítica: aceptar, navegar, clic de contacto y revocar',async({page})=>{
  app.estado.eventos.clear();await page.goto(app.base+'/contacto');
  await page.getByRole('button',{name:'Aceptar analítica',exact:true}).click();
  await expect.poll(()=>app.estado.eventos.size).toBe(1);
- await page.getByRole('link',{name:'Trabajos',exact:true}).first().click();
+ await page.getByRole('link',{name:'Recientes',exact:true}).first().click();
  await expect.poll(()=>[...app.estado.eventos.values()].some(e=>e.ruta==='/trabajos')).toBe(true);
  await page.locator('a[href^="mailto:"]:visible').first().click();
  await expect.poll(()=>[...app.estado.eventos.values()].some(e=>e.evento==='email')).toBe(true);
@@ -201,4 +202,55 @@ test('WhatsApp sin registro abre el mensaje elegido sin guardar datos',async({pa
  const texto=new URL(page.url()).searchParams.get('text');
  expect(texto).toContain('María de prueba');expect(texto).toContain('¿Está disponible?');
  expect(texto).toContain('obra');expect(app.estado.leads.size).toBe(antes);
+});
+
+test('trabajos: crear, mover, mostrar grillas por sección y conservar el enlace', async ({ page, context }) => {
+  await app.auth(context);
+  await page.goto(app.base + '/admin/trabajos/nuevo');
+  await page.getByLabel('Título', { exact: true }).fill('Tintas y papeles');
+  await page.getByLabel('Sección', { exact: true }).selectOption('ilustraciones');
+  await page.getByRole('button', { name: 'Crear conjunto' }).click();
+  await expect(page).toHaveURL(/\/admin\/trabajos\?aviso=trabajo-creado$/);
+
+  const grupo = app.estado.grupos.find(g => g.slug === 'tintas-y-papeles');
+  expect(grupo?.seccion).toBe('ilustraciones');
+  grupo.portada_foco_y = 20;
+  const recientes = page.getByRole('region', { name: 'Recientes' });
+  const ilustraciones = page.getByRole('region', { name: 'Ilustraciones' });
+  const ordenRecientes = await titulos(recientes);
+  await filas(ilustraciones).last().getByRole('button', { name: 'Subir Tintas y papeles' }).click();
+  await expect(ilustraciones.getByRole('status')).toContainText('Orden guardado');
+  expect(await titulos(recientes)).toEqual(ordenRecientes);
+
+  app.estado.obras.push({
+    id: '80000000-0000-4000-8000-000000000001', exposicion_id: grupo.id,
+    titulo: 'Papel azul', imagen_path: '/demo/ensambles-01.avif', imagen_alt: 'Papel azul',
+    publicada: true, orden: 1,
+  });
+  const obra = page.getByRole('button', { name: 'Ver Papel azul en grande' });
+  await page.goto(app.base + '/ilustraciones');
+  await expect(obra).toBeVisible();
+  await expect(obra.locator('img')).toHaveCSS('object-position', '50% 20%');
+  await expect(page.getByRole('heading', { name: 'Trabajo 3' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Trabajo 1' })).toHaveCount(0);
+  await page.getByRole('link', { name: 'Tintas y papeles' }).click();
+  await expect(page).toHaveURL(/\/trabajos\/tintas-y-papeles$/);
+  await expect(page.getByRole('link', { name: 'Ilustraciones', exact: true })).toHaveAttribute('aria-current', 'page');
+
+  await page.goto(`${app.base}/admin/trabajos/${grupo.id}`);
+  await expect(page.getByLabel('Sección', { exact: true })).toHaveValue('ilustraciones');
+  await page.getByLabel('Sección', { exact: true }).selectOption('recientes');
+  await page.getByLabel('Título', { exact: true }).fill('Tintas sobre papel');
+  await page.getByRole('button', { name: 'Guardar cambios' }).click();
+  await expect(page.getByRole('status')).toContainText('Cambios guardados');
+  await page.goto(app.base + '/ilustraciones');
+  await expect(obra).toHaveCount(0);
+
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.getByRole('button', { name: 'Menú', exact: true }).click();
+  await page.getByRole('dialog').getByRole('link', { name: 'Recientes', exact: true }).click();
+  await expect(obra).toBeVisible();
+  await page.getByRole('link', { name: 'Tintas sobre papel' }).click();
+  await expect(page).toHaveURL(/\/trabajos\/tintas-y-papeles$/);
+  await expect(page.getByRole('main').getByRole('link', { name: /Recientes/ })).toHaveAttribute('href', '/trabajos');
 });

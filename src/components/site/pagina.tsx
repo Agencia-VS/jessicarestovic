@@ -10,18 +10,19 @@ interface PaginaProps {
    * sus grupos, y en el teléfono la cabecera los ofrece en un desplegable.
    */
   subindice?: Subindice;
+  seccionActiva?: string;
 }
 
 /**
  * Envoltura de todas las páginas públicas: cabecera, contenido y pie, con el
  * alto mínimo de pantalla para que el pie no suba en páginas cortas.
  */
-export async function Pagina({ children, subindice }: PaginaProps) {
+export async function Pagina({ children, subindice, seccionActiva }: PaginaProps) {
   const contacto = derivarContacto(await obtenerConfiguracion());
 
   return (
     <div className="flex min-h-dvh flex-col bg-paper">
-      <Header contacto={contacto} subindice={subindice} />
+      <Header contacto={contacto} subindice={subindice} seccionActiva={seccionActiva} />
       <main className="flex flex-1 flex-col">{children}</main>
       <Footer contacto={contacto} />
     </div>

@@ -12,10 +12,7 @@ interface CuerpoDeObrasProps {
   grupos: GrupoDeObras[];
   /** Los datos de la cartela, en el orden en que se leen. */
   datos: { clave: string; valor: string | null }[];
-  /**
-   * El enlace de vuelta al índice. Solo en escritorio: en el teléfono la
-   * cabecera ya lleva el desplegable de la sección, que también vuelve.
-   */
+  /** El enlace de vuelta al índice de la sección. */
   volver: { href: string; titulo: string };
   vacio: { titulo: string; detalle: string };
 }
@@ -26,7 +23,7 @@ interface CuerpoDeObrasProps {
  * Tiene la forma de la página de una exposición —la foto principal con la
  * cartela, y las miniaturas— y el mismo marco, así que al pasar de una sección
  * a otra el título cae en el mismo lugar. No cuenta piezas ni ofrece saltar al
- * conjunto siguiente: para eso están el índice y el desplegable del teléfono.
+ * conjunto siguiente: para eso está el índice.
  *
  * La cartela del conjunto va con su primera galería. Cada conjunto con nombre
  * es su propia `GaleriaObras`, rotulada con ese nombre, así que las flechas de
@@ -46,7 +43,7 @@ export function CuerpoDeObras({
     <Seccion titulo={titulo} tituloComo="p">
       <Link
         href={volver.href}
-        className="eyebrow mb-[clamp(1.875rem,4vw,3.5rem)] hidden text-faint transition-colors hover:text-ink lg:inline-block"
+        className="eyebrow mb-[clamp(1.875rem,4vw,3.5rem)] inline-block text-faint transition-colors hover:text-ink"
       >
         ← {volver.titulo}
       </Link>

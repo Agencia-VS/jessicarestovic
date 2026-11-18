@@ -15,7 +15,7 @@ function db({rpcError=null,updateError=null}={}){
  const calls=[];const query={update(data){calls.push(data);return query;},eq(){return query;},select(){return query;},maybeSingle:async()=>({data:updateError?null:{id:'test'},error:updateError}),then(resolve){return Promise.resolve({error:updateError}).then(resolve);}};
  globalThis.__dbPrueba={auth:{getUser:async()=>({data:{user:{id:'test'}}})},from:()=>query,rpc:async()=>({error:rpcError})};return calls;
 }
-function form(){const f=new FormData();f.set('titulo','Prueba');f.set('publicada','on');return f;}
+function form(){const f=new FormData();f.set('titulo','Prueba');f.set('publicada','on');f.set('seccion','recientes');return f;}
 test('editar datos sin encuadre no envía columnas de la migración 0007',async()=>{
  const calls=db();await editarExposicion('id','trabajo',{},form());
  assert.equal(Object.hasOwn(calls[0],'portada_foco_x'),false);
