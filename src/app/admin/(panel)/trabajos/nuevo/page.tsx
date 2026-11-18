@@ -8,7 +8,7 @@ export default async function NuevoTrabajoPage() {
     <>
       <EncabezadoPanel
         titulo="Nuevo conjunto"
-        detalle="Solo el nombre es obligatorio. El año y la descripción se pueden completar después."
+        detalle="Indica el nombre y elige la sección. El año y la descripción se pueden completar después."
       />
       <FormularioExposicion tipo="trabajo" />
     </>

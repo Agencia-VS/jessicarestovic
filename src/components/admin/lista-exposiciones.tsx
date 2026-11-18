@@ -29,6 +29,7 @@ export function ListaExposiciones({
   base = "/admin/exposiciones",
   conLugar = true,
 }: ListaExposicionesProps) {
+  const contenedor = useRef<HTMLUListElement>(null);
   const [lista, ordenarOptimista] = useOptimistic(exposiciones, (actual, ids: string[]) => {
     const posiciones = new Map(ids.map((id, i) => [id, i]));
     return [...actual].sort((a, b) =>
@@ -53,7 +54,7 @@ export function ListaExposiciones({
     iniciar(async () => {
       ordenarOptimista(nueva.map((e) => e.id));
       try {
-        const resultado = await reordenarExposiciones(nueva.map((expo) => expo.id), movida.tipo);
+        const resultado = await reordenarExposiciones(nueva.map((expo) => expo.id), movida.tipo, movida.seccion);
         setAviso(resultado.aviso ?? "");
       } catch {
         setAviso("No se pudo guardar. Se recuperó el orden del servidor.");
@@ -67,9 +68,11 @@ export function ListaExposiciones({
     setArrastrada(null);
     setDestino(null);
   };
-  const filaBajo = (evento: PointerEvent<HTMLButtonElement>) =>
-    document.elementFromPoint(evento.clientX, evento.clientY)
-      ?.closest<HTMLElement>("[data-grupo-id]")?.dataset.grupoId;
+  const filaBajo = (evento: PointerEvent<HTMLButtonElement>) => {
+    const fila = document.elementFromPoint(evento.clientX, evento.clientY)
+      ?.closest<HTMLElement>("[data-grupo-id]");
+    return fila && contenedor.current?.contains(fila) ? fila.dataset.grupoId : undefined;
+  };
   const comenzarArrastre = (evento: PointerEvent<HTMLButtonElement>, id: string) => {
     if (guardando || ocupado.current || evento.button !== 0) return;
     evento.currentTarget.setPointerCapture(evento.pointerId);
@@ -96,7 +99,7 @@ export function ListaExposiciones({
     <div>
     <p className="caption mb-4 text-muted">Arrastra desde ↕ o usa las flechas. El orden se lee de izquierda a derecha, fila por fila. Los elementos ocultos no dejan huecos.</p>
     <p role="status" className="caption mb-3">{aviso}</p>
-    <ul className="border-t border-line" aria-busy={guardando}>
+    <ul ref={contenedor} className="border-t border-line" aria-busy={guardando}>
       {lista.map((expo, indice) => (
         <li
           key={expo.id}

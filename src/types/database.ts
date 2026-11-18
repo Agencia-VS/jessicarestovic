@@ -24,6 +24,8 @@ export type PaginaClave = "sobre-mi" | "configuracion";
  */
 export type TipoDeGrupo = "exposicion" | "trabajo";
 
+export type SeccionTrabajo = "ilustraciones" | "recientes";
+
 export type ObraRow = {
   id: string;
   titulo: string;
@@ -51,6 +53,7 @@ export type ExposicionRow = {
   slug: string;
   /** «exposicion» si tuvo sala; «trabajo» si es un conjunto sin muestra. */
   tipo: TipoDeGrupo;
+  seccion: SeccionTrabajo | null;
   lugar: string | null;
   anio: number | null;
   descripcion: string | null;
@@ -205,7 +208,7 @@ export type Database = {
         Row: ExposicionRow;
         Insert: Escribible<
           ExposicionRow,
-          "id" | "tipo" | "publicada" | "orden" | "creado_en" | "actualizado_en"
+          "id" | "tipo" | "seccion" | "publicada" | "orden" | "creado_en" | "actualizado_en"
         >;
         Update: Partial<ExposicionRow>;
         Relationships: [];
@@ -239,7 +242,7 @@ export type Database = {
     };
     Views: Record<never, never>;
     Functions: {
-      reordenar_grupos: { Args: { p_ids: string[]; p_tipo: string }; Returns: undefined };
+      reordenar_grupos: { Args: { p_ids: string[]; p_tipo: string; p_seccion?: SeccionTrabajo }; Returns: undefined };
       es_admin_comercial: { Args: Record<string, never>; Returns: boolean };
       resumen_comercial: { Args: { p_desde: string; p_hasta: string }; Returns: Resumen };
       permitir_ingreso: { Args: { p_clave: string; p_max: number }; Returns: boolean };

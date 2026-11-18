@@ -45,6 +45,7 @@ interface DefinicionExpo {
   piezas: DefinicionPieza[];
   /** Por omisión, una muestra. Los conjuntos de trabajo lo declaran. */
   tipo?: TipoDeGrupo;
+  seccion?: Exposicion["seccion"];
 }
 
 /**
@@ -155,6 +156,7 @@ const EXPOS: DefinicionExpo[] = [
     descripcion: "Lo último salido del taller, todavía sin agrupar.",
     vistas: 0,
     tipo: "trabajo",
+    seccion: "recientes",
     piezas: [
       { titulo: "Sin título I", bloque: "cuadradoII" },
       { titulo: "Sin título II", bloque: "vertical" },
@@ -169,6 +171,7 @@ const EXPOS: DefinicionExpo[] = [
     descripcion: "Trabajo por encargo y ejercicios de taller en acuarela.",
     vistas: 0,
     tipo: "trabajo",
+    seccion: "ilustraciones",
     tecnica: "Acuarela sobre papel",
     piezas: [
       { titulo: "Acuarela I", bloque: "verticalIII" },
@@ -184,6 +187,7 @@ const EXPOSICIONES_BASE = EXPOS.map((expo, indice) => ({
   titulo: expo.titulo,
   slug: expo.slug,
   tipo: expo.tipo ?? ("exposicion" as TipoDeGrupo),
+  seccion: expo.seccion ?? null,
   lugar: expo.lugar,
   anio: expo.anio,
   descripcion: expo.descripcion,

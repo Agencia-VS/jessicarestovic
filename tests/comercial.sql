@@ -10,7 +10,7 @@ create function auth.uid() returns uuid language sql stable as $$
   select nullif(current_setting('request.jwt.claim.sub', true),'')::uuid
 $$;
 grant usage on schema public,auth to anon,authenticated,service_role;
-create table public.exposicion(id uuid primary key, tipo text not null, orden integer not null default 0);
+create table public.exposicion(id uuid primary key, tipo text not null, titulo text not null default '', slug text not null default '', orden integer not null default 0);
 create table public.mensaje(id uuid primary key);
 grant select,update on public.exposicion to authenticated;
 alter table public.exposicion enable row level security;
@@ -22,10 +22,17 @@ create function public.comprobar(ok boolean, detalle text) returns void language
 begin if ok is not true then raise exception 'Prueba fallida: %',detalle; end if; end $$;
 insert into auth.users values('00000000-0000-4000-8000-000000000001'),('00000000-0000-4000-8000-000000000002');
 insert into public.admin_comercial values('00000000-0000-4000-8000-000000000001');
-insert into public.exposicion(id,tipo) values
-('10000000-0000-4000-8000-000000000001','exposicion'),
-('10000000-0000-4000-8000-000000000002','exposicion'),
-('10000000-0000-4000-8000-000000000003','trabajo');
+insert into public.exposicion(id,tipo,titulo,slug) values
+('10000000-0000-4000-8000-000000000001','exposicion','Muestra 1','muestra-1'),
+('10000000-0000-4000-8000-000000000002','exposicion','Muestra 2','muestra-2'),
+('10000000-0000-4000-8000-000000000003','trabajo','Ilustraciones','ilustraciones'),
+('10000000-0000-4000-8000-000000000004','trabajo','Trabajos recientes','trabajos-recientes');
+\ir ../supabase/migrations/0010_secciones_de_trabajo.sql
+select public.comprobar((select seccion='ilustraciones' from public.exposicion where slug='ilustraciones'),'migra Ilustraciones');
+select public.comprobar((select seccion='recientes' from public.exposicion where slug='trabajos-recientes'),'migra Trabajos recientes');
+insert into public.exposicion(id,tipo,titulo,slug,seccion) values
+('10000000-0000-4000-8000-000000000005','trabajo','Tintas','tintas','ilustraciones'),
+('10000000-0000-4000-8000-000000000006','trabajo','Óleos','oleos','recientes');
 
 set local role authenticated;
 select set_config('request.jwt.claim.sub','00000000-0000-4000-8000-000000000001',true);
@@ -46,6 +53,26 @@ do $$ begin
   end;
 end $$;
 select public.comprobar((select orden=1 from public.exposicion where id='10000000-0000-4000-8000-000000000002'),'fallo conserva orden');
+select public.reordenar_grupos(array['10000000-0000-4000-8000-000000000005','10000000-0000-4000-8000-000000000003']::uuid[],'trabajo','ilustraciones');
+select public.comprobar((select orden=2 from public.exposicion where slug='ilustraciones'),'ordena solo Ilustraciones');
+select public.comprobar((select orden=0 from public.exposicion where slug='trabajos-recientes'),'no cambia el orden de Recientes');
+do $$ begin
+  begin
+    perform public.reordenar_grupos(array['10000000-0000-4000-8000-000000000005','10000000-0000-4000-8000-000000000004']::uuid[],'trabajo','ilustraciones');
+    raise exception 'lista mixta aceptada';
+  exception when raise_exception then
+    if sqlerrm='lista mixta aceptada' then raise; end if;
+  end;
+  begin
+    update public.exposicion set seccion=null where slug='tintas';
+    raise exception 'trabajo sin sección aceptado';
+  exception when check_violation then null;
+  end;
+end $$;
+update public.exposicion set seccion='recientes' where slug='tintas';
+select public.comprobar((select orden=2 and seccion='recientes' from public.exposicion where slug='tintas'),'traslada al final de la sección');
+update public.exposicion set seccion='recientes' where slug='tintas';
+select public.comprobar((select orden=2 from public.exposicion where slug='tintas'),'guardar de nuevo mantiene el orden');
 reset role;
 
 set local role service_role;

@@ -54,11 +54,12 @@ de obras con nombre, y hay de dos clases —**la diferencia es si hubo sala**:
 - Una **exposición** se mostró en algún lugar, así que tiene lugar, año y
   vistas de montaje. Vive en «Exposiciones».
 - Un **conjunto de trabajo** no pasó por una sala: «Trabajos recientes»,
-  «Ilustraciones en Acuarela», «Otros trabajos». Vive en «Trabajos», y como no
-  hay montaje que documentar, su tarjeta lleva directo a las obras.
+  «Ilustraciones en Acuarela», «Otros trabajos». Se administra en «Trabajos» y
+  se publica en la sección elegida, «Recientes» o «Ilustraciones».
 
-Los dos comparten tabla, formulario, retícula y visor: lo único que cambia es
-`exposicion.tipo`. Dentro de cualquiera de los dos, un **conjunto con nombre**
+Los dos comparten tabla, formulario, retícula y visor. `exposicion.tipo` los
+identifica y `exposicion.seccion` determina dónde se publica cada conjunto de
+trabajo. Dentro de cualquiera de los dos, un **conjunto con nombre**
 (`obra.conjunto`) subdivide la retícula sin ser otra entidad — así vive
 «Espacios Íntimos» dentro de «Ensambles al Cubo».
 
@@ -68,13 +69,19 @@ Los dos comparten tabla, formulario, retícula y visor: lo único que cambia es
 | `/exposiciones` | Índice de muestras: una imagen por exposición, con su total de vistas |
 | `/exposiciones/[slug]` | Una muestra: ficha, texto y todas sus vistas de montaje |
 | `/exposiciones/[slug]/obras` | Las obras de una muestra, agrupadas por conjunto |
-| `/trabajos` | Índice de conjuntos de trabajo, con su total de obras |
+| `/trabajos` | Conjuntos de Recientes y sus grillas de obras |
+| `/ilustraciones` | Conjuntos de Ilustraciones y sus grillas de obras |
 | `/trabajos/[slug]` | Las obras de un conjunto, agrupadas por conjunto con nombre |
 | `/sobre-mi` · `/clases` · `/contacto` | Biografía, talleres y contacto |
 | `/privacidad` | Qué datos recogen los formularios y para qué |
 
-`/trabajos-recientes` redirige a `/trabajos` con un 308: dejó de ser una página
-que juntaba todo y pasó a ser uno de los conjuntos.
+`/trabajos-recientes` redirige a `/trabajos` con un 308. Las fichas de ambas
+secciones conservan sus direcciones en `/trabajos/[slug]`.
+
+Para habilitar las secciones en una instalación existente, aplica
+[`0010_secciones_de_trabajo.sql`](supabase/migrations/0010_secciones_de_trabajo.sql)
+en Supabase antes de publicar el código. La migración clasifica los conjuntos
+existentes y habilita el orden independiente de cada sección.
 
 ## Contacto y estadísticas
 

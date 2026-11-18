@@ -6,7 +6,7 @@ import { randomUUID } from 'node:crypto';
 
 export async function levantarApp({dev=false}={}) {
   const uid='00000000-0000-4000-8000-000000000001';
-  const grupos=Array.from({length:9},(_,i)=>({id:`10000000-0000-4000-8000-${String(i+1).padStart(12,'0')}`, titulo:i<6?`Expo ${i+1}`:`Trabajo ${i-5}`,slug:i<6?`expo-${i+1}`:`trabajo-${i-5}`,tipo:i<6?'exposicion':'trabajo',orden:i+1,publicada:true,lugar:null,anio:null,descripcion:null,creado_en:'2026-10-01T12:00:00Z',actualizado_en:'2026-10-01T12:00:00Z',portada_foco_x:50,portada_foco_y:50,fotos:[]}));
+  const grupos=Array.from({length:9},(_,i)=>({id:`10000000-0000-4000-8000-${String(i+1).padStart(12,'0')}`, titulo:i<6?`Expo ${i+1}`:`Trabajo ${i-5}`,slug:i<6?`expo-${i+1}`:`trabajo-${i-5}`,tipo:i<6?'exposicion':'trabajo',seccion:i<6?null:i===8?'ilustraciones':'recientes',orden:i+1,publicada:true,lugar:null,anio:null,descripcion:null,creado_en:'2026-10-01T12:00:00Z',actualizado_en:'2026-10-01T12:00:00Z',portada_foco_x:50,portada_foco_y:50,fotos:[]}));
   const estado={grupos,obras:[],fotosSala:[],storage:new Set(),preferencias:new Map(),eventos:new Map(),leads:new Map(),consentimientos:[],llamadas:[],falloOrden:false,sinMigracion:false,falloPublicar:false,demoraOrden:0,demoraEvento:0};
   function usuario(token){try{return JSON.parse(Buffer.from(token.split('.')[1],'base64url'));}catch{return {};}}
   const backend=http.createServer(async(req,res)=>{
@@ -22,7 +22,12 @@ export async function levantarApp({dev=false}={}) {
     if(req.method==='OPTIONS'){res.statusCode=204;return res.end();}
     const send=(data,status=200)=>{res.statusCode=status;res.end(JSON.stringify(data));};
     const object=(rows)=>req.headers.accept?.includes('object+json')?rows[0]??null:rows;
-    const match=(row)=>[...url.searchParams].every(([k,v])=>!v.startsWith('eq.')||String(row[k])===v.slice(3));
+    const match=(row)=>[...url.searchParams].every(([k,v])=>{
+      if(v.startsWith('eq.'))return String(row[k])===v.slice(3);
+      if(v.startsWith('in.('))return v.slice(4,-1).split(',').includes(String(row[k]));
+      return true;
+    });
+    const siguienteOrden=(seccion)=>Math.max(0,...grupos.filter(g=>g.seccion===seccion).map(g=>g.orden))+1;
     if(url.pathname.startsWith('/storage/v1/object/upload/sign/')){
       const path=url.pathname.slice('/storage/v1/object/upload/sign/'.length);
       const [bucket,...rest]=path.split('/');const archivo=`${bucket}/${rest.join('/')}`;
@@ -44,15 +49,27 @@ export async function levantarApp({dev=false}={}) {
       if(estado.demoraOrden)await new Promise(r=>setTimeout(r,estado.demoraOrden));
       if(estado.sinMigracion)return send({code:'PGRST202',message:'Missing function'},404);
       if(estado.falloOrden)return send({code:'P0001',message:'Prueba de fallo'},400);
-      for(const [i,id]of body.p_ids.entries()){const g=grupos.find(g=>g.id===id&&g.tipo===body.p_tipo);if(g)g.orden=i+1;}
+      const lista=grupos.filter(g=>g.tipo===body.p_tipo&&g.seccion===(body.p_seccion??null));
+      if(lista.length!==body.p_ids.length||lista.some(g=>!body.p_ids.includes(g.id)))return send({code:'P0001',message:'La lista cambió'},400);
+      for(const g of lista)g.orden=body.p_ids.indexOf(g.id)+1;
       return send(null);
     }
     if(url.pathname==='/rest/v1/exposicion'){
       let rows=grupos.filter(match);
+      if(req.method==='POST'){
+        const timestamp=new Date().toISOString();
+        const grupo={...body,id:randomUUID(),seccion:body.seccion??null,creado_en:timestamp,actualizado_en:timestamp,fotos:[]};
+        if(grupo.tipo==='trabajo')grupo.orden=siguienteOrden(grupo.seccion);
+        grupos.push(grupo);
+        return send(object([grupo]));
+      }
       if(req.method==='PATCH'){
         if(estado.sinMigracion && ('portada_foco_x' in body || 'portada_foco_y' in body))return send({code:'PGRST204',message:'Missing crop columns'},400);
         if(estado.falloPublicar)return send({code:'42501',message:'Denied'},403);
-        for(const g of rows)Object.assign(g,body);
+        for(const g of rows){
+          if(body.seccion&&body.seccion!==g.seccion)g.orden=siguienteOrden(body.seccion);
+          Object.assign(g,body);
+        }
       }
       rows=[...rows].sort((a,b)=>a.orden-b.orden);
       return send(object(rows.map(g=>{const copy={...g,fotos:estado.fotosSala.filter(f=>f.exposicion_id===g.id)};if(estado.sinMigracion){delete copy.portada_foco_x;delete copy.portada_foco_y;}return copy;})));

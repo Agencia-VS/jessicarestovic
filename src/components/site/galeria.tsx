@@ -17,6 +17,8 @@ interface GaleriaProps {
   cartela?: React.ReactNode;
   /** Para el rótulo accesible de cada botón: «Ver … de esta exposición». */
   contexto: string;
+  prioridad?: boolean;
+  encuadrePortada?: { x: number; y: number };
 }
 
 /** La portada ocupa un tercio del canvas. */
@@ -85,7 +87,7 @@ interface Reparto {
  * recorre sin tropiezos, y la obra completa está a un toque — al hacer clic,
  * el visor la muestra en su proporción exacta.
  */
-export function Galeria({ piezas, cartela, contexto }: GaleriaProps) {
+export function Galeria({ piezas, cartela, contexto, prioridad = true, encuadrePortada }: GaleriaProps) {
   const [abierta, setAbierta] = useState<number | null>(null);
   const [pagina, setPagina] = useState(0);
   const tira = useRef<HTMLDivElement>(null);
@@ -198,8 +200,14 @@ export function Galeria({ piezas, cartela, contexto }: GaleriaProps) {
             alto={portada.alto}
             variante="exacta"
             anclaje="izquierda"
+            {...(encuadrePortada && {
+              proporcionFija: 1,
+              encuadre: "recortada" as const,
+              foco: encuadrePortada.y,
+              focoX: encuadrePortada.x,
+            })}
             sizes={SIZES_PORTADA}
-            prioridad
+            prioridad={prioridad}
             // El tope de escritorio es el alto de la tira: ahí las dos columnas
             // tienen que terminar a la misma altura. En el teléfono, apiladas,
             // toparla así dejaba la pintura principal en 150 px — una

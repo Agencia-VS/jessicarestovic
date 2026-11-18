@@ -34,6 +34,7 @@ function revalidarObras(): void {
   revalidatePath("/exposiciones");
   revalidatePath("/exposiciones/[slug]", "page");
   revalidatePath("/trabajos");
+  revalidatePath("/ilustraciones");
   revalidatePath("/trabajos/[slug]", "page");
   revalidatePath("/admin/exposiciones");
   revalidatePath("/admin/(panel)/exposiciones/[id]", "page");

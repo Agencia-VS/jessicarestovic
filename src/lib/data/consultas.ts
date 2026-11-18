@@ -8,7 +8,7 @@ import {
 } from "./demo";
 import { CONFIGURACION_POR_DEFECTO, normalizarConfiguracion } from "@/lib/site-config";
 import { urlImagen } from "@/lib/imagenes-servidor";
-import type { ConfiguracionContenido, PaginaClave } from "@/types/database";
+import type { ConfiguracionContenido, PaginaClave, SeccionTrabajo } from "@/types/database";
 import type {
   Exposicion,
   ExposicionDetalle,
@@ -92,19 +92,27 @@ function normalizarExposicion(
         }
       : null;
 
-  return { ...cruda, fotos, obrasPublicadas: obras.length, portada };
+  // Conserva la lectura del sitio entre el despliegue y la migración.
+  const seccion = cruda.tipo === "trabajo" ? cruda.seccion ?? (
+    ["ilustraciones", "ilustraciones-en-acuarela"].includes(cruda.slug) ||
+    cruda.titulo.trim().toLowerCase() === "ilustraciones" ? "ilustraciones" : "recientes"
+  ) : null;
+
+  return { ...cruda, seccion, fotos, obrasPublicadas: obras.length, portada };
 }
 
 // --- Obras -----------------------------------------------------------------
 
-export async function listarObrasPublicadas(): Promise<Obra[]> {
-  if (!supabaseConfigurado()) return DEMO_OBRAS;
+export async function listarObrasPublicadas(ids?: string[]): Promise<Obra[]> {
+  if (ids?.length === 0) return [];
+  if (!supabaseConfigurado()) {
+    return ids ? DEMO_OBRAS.filter((obra) => obra.exposicion_id && ids.includes(obra.exposicion_id)) : DEMO_OBRAS;
+  }
   const supabase = await createClient();
 
-  const { data } = await supabase
-    .from("obra")
-    .select(SELECT_OBRA)
-    .eq("publicada", true)
+  let consulta = supabase.from("obra").select(SELECT_OBRA).eq("publicada", true);
+  if (ids) consulta = consulta.in("exposicion_id", ids);
+  const { data } = await consulta
     .order("exposicion_id", { nullsFirst: true })
     .order("orden")
     .order("creado_en");
@@ -232,7 +240,7 @@ export async function listarGrupos(
   if (soloPublicadas) consulta = consulta.eq("publicada", true);
 
   const [{ data: grupos }, { data: obras }] = await Promise.all([
-    consulta.order("orden").order("creado_en", { ascending: false }),
+    consulta.order("orden").order("creado_en", { ascending: false }).order("id"),
     supabase
       .from("obra")
       .select(SELECT_OBRA_DE_TARJETA)
@@ -262,6 +270,19 @@ export function listarExposiciones(soloPublicadas = true): Promise<Exposicion[]>
 /** Los conjuntos de trabajo: los grupos que no pasaron por una sala. */
 export function listarTrabajos(soloPublicadas = true): Promise<Exposicion[]> {
   return listarGrupos("trabajo", soloPublicadas);
+}
+
+export async function listarTrabajosConObras(seccion: SeccionTrabajo) {
+  const conjuntos = (await listarTrabajos()).filter((grupo) => grupo.seccion === seccion);
+  const obras = await listarObrasPublicadas(conjuntos.map(({ id }) => id));
+  const porConjunto = new Map<string, Obra[]>();
+  for (const obra of obras) {
+    if (!obra.exposicion_id) continue;
+    const lista = porConjunto.get(obra.exposicion_id);
+    if (lista) lista.push(obra);
+    else porConjunto.set(obra.exposicion_id, [obra]);
+  }
+  return conjuntos.map((grupo) => ({ ...grupo, obras: porConjunto.get(grupo.id) ?? [] }));
 }
 
 export async function obtenerExposicion(id: string): Promise<Exposicion | null> {
@@ -316,9 +337,7 @@ export async function obtenerExposicionDetalle(slug: string): Promise<Exposicion
   const exposicion = await obtenerExposicionPorSlug(slug);
   if (!exposicion) return null;
 
-  const obras = (await listarObrasPublicadas())
-    .filter((obra) => obra.exposicion_id === exposicion.id)
-    .sort((a, b) => a.orden - b.orden || a.creado_en.localeCompare(b.creado_en));
+  const obras = await listarObrasPublicadas([exposicion.id]);
 
   return {
     ...exposicion,

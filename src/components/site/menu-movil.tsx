@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
-import { navPublica } from "@/lib/site-config";
+import { navActivo, navPublica } from "@/lib/site-config";
 
 /**
  * El menú del teléfono: un «+» de trazo fino que abre la navegación a
@@ -16,7 +16,11 @@ import { navPublica } from "@/lib/site-config";
  * dibuja por encima de todo aunque la cabecera tenga `backdrop-filter`, que a
  * una capa `fixed` común la dejaría encerrada dentro de la cabecera.
  */
-export function MenuMovil({ email, instagramUrl }: { email: string; instagramUrl: string }) {
+export function MenuMovil({ email, instagramUrl, seccionActiva }: {
+  email: string;
+  instagramUrl: string;
+  seccionActiva?: string;
+}) {
   const dialogo = useRef<HTMLDialogElement>(null);
   const [abierto, setAbierto] = useState(false);
   const pathname = usePathname();
@@ -85,9 +89,7 @@ export function MenuMovil({ email, instagramUrl }: { email: string; instagramUrl
 
           <nav aria-label="Navegación principal" className="gutter flex flex-col gap-1.5 pt-12">
             {navPublica.map(({ href, label }) => {
-              // Igual que en la cabecera de escritorio: el Inicio solo en su
-              // propia dirección; una sección, también en sus páginas internas.
-              const activo = pathname === href || (href !== "/" && pathname.startsWith(`${href}/`));
+              const activo = navActivo(href, pathname, seccionActiva);
 
               return (
                 <Link

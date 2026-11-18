@@ -17,16 +17,14 @@ import {
 import { erroresPorCampo, exposicionSchema, slugify } from "@/lib/validacion";
 import { rutaDeImagenValida } from "@/lib/subida-directa";
 import type { TipoDeGrupo } from "@/types/database";
-import { seccionDeGrupo } from "@/lib/site-config";
+import { esSeccionTrabajo, seccionDeGrupo } from "@/lib/site-config";
 
-/**
- * Los dos índices y las dos páginas de detalle: exposiciones y conjuntos de
- * trabajo comparten tabla, así que un cambio puede tocar cualquiera de los dos.
- */
+/** Actualiza los índices públicos y el panel después de guardar un grupo. */
 function revalidarExposiciones(): void {
   revalidatePath("/exposiciones");
   revalidatePath("/exposiciones/[slug]", "page");
   revalidatePath("/trabajos");
+  revalidatePath("/ilustraciones");
   revalidatePath("/trabajos/[slug]", "page");
   revalidatePath("/admin/exposiciones");
   revalidatePath("/admin/(panel)/exposiciones/[id]", "page");
@@ -35,6 +33,8 @@ function revalidarExposiciones(): void {
 }
 
 function leerCampos(formData: FormData, tipo: TipoDeGrupo) {
+  const valorSeccion = formData.get("seccion");
+  const seccion = esSeccionTrabajo(valorSeccion) ? valorSeccion : null;
   const analisis = exposicionSchema.safeParse({
     titulo: String(formData.get("titulo") ?? ""),
     lugar: String(formData.get("lugar") ?? ""),
@@ -44,6 +44,10 @@ function leerCampos(formData: FormData, tipo: TipoDeGrupo) {
   });
 
   if (!analisis.success) return { errores: erroresPorCampo(analisis.error) } as const;
+
+  if (tipo === "trabajo" && !seccion) {
+    return { errores: { seccion: "Elige la sección del conjunto." } } as const;
+  }
 
   const d = analisis.data;
   return {
@@ -56,6 +60,7 @@ function leerCampos(formData: FormData, tipo: TipoDeGrupo) {
       titulo: d.titulo,
       slug: slugify(d.titulo),
       tipo,
+      ...(tipo === "trabajo" ? { seccion } : {}),
       // Un conjunto de trabajo no tuvo sala: su formulario no muestra el campo
       // y el dato no se guarda ni por accidente.
       lugar: tipo === "trabajo" ? null : d.lugar ? d.lugar : null,
@@ -66,19 +71,14 @@ function leerCampos(formData: FormData, tipo: TipoDeGrupo) {
   } as const;
 }
 
-/**
- * El final de la lista editorial de su tipo. Se cuenta por tipo porque cada
- * pestaña ordena su propia lista: mezclarlos dejaría huecos en los números sin
- * cambiar nada de lo que se ve.
- */
-async function siguienteOrden(
+/** Los conjuntos reciben su orden en la base de datos al guardar la sección. */
+async function siguienteOrdenExposicion(
   supabase: NonNullable<Awaited<ReturnType<typeof clienteConSesion>>>,
-  tipo: TipoDeGrupo,
 ): Promise<number> {
   const { data } = await supabase
     .from("exposicion")
     .select("orden")
-    .eq("tipo", tipo)
+    .eq("tipo", "exposicion")
     .order("orden", { ascending: false })
     .limit(1)
     .maybeSingle();
@@ -86,7 +86,7 @@ async function siguienteOrden(
 }
 
 /**
- * Alta rápida desde el formulario de obra y desde la subida por carpeta.
+ * Alta rápida desde el formulario de obra.
  *
  * Crea un **conjunto de trabajo**, no una muestra: es la entidad liviana —sin
  * lugar, año ni vistas de sala— y es lo que se necesita al vuelo mientras se
@@ -95,9 +95,11 @@ async function siguienteOrden(
  */
 export async function crearGrupoRapido(
   titulo: string,
+  seccion: string,
 ): Promise<{ id: string; titulo: string; slug: string } | { error: string }> {
   const limpio = titulo.trim();
   if (limpio.length < 2) return { error: "El conjunto necesita un nombre." };
+  if (!esSeccionTrabajo(seccion)) return { error: "Elige la sección del conjunto." };
 
   const supabase = await clienteConSesion();
   if (!supabase) return { error: "Tu sesión expiró. Vuelve a entrar." };
@@ -109,8 +111,8 @@ export async function crearGrupoRapido(
       titulo: limpio,
       slug,
       tipo: "trabajo",
+      seccion,
       publicada: false,
-      orden: await siguienteOrden(supabase, "trabajo"),
     })
     .select("id")
     .single();
@@ -201,7 +203,10 @@ export async function crearExposicion(
 
   const { data, error } = await supabase
     .from("exposicion")
-    .insert({ ...campos.datos, orden: await siguienteOrden(supabase, tipo) })
+    .insert({
+      ...campos.datos,
+      ...(esTrabajo ? {} : { orden: await siguienteOrdenExposicion(supabase) }),
+    })
     .select("id")
     .single();
 
@@ -237,8 +242,15 @@ export async function editarExposicion(
   const supabase = await clienteConSesion();
   if (!supabase) return SIN_SESION;
 
-  const { error } = await supabase.from("exposicion").update(campos.datos).eq("id", id);
-  if (error) {
+  const { slug, ...datos } = campos.datos;
+  const { data, error } = await supabase
+    .from("exposicion")
+    .update(tipo === "trabajo" ? datos : { ...datos, slug })
+    .eq("id", id)
+    .eq("tipo", tipo)
+    .select("id")
+    .maybeSingle();
+  if (error || !data) {
     return fallo(
       tipo === "trabajo"
         ? "No pudimos guardar los cambios del conjunto."
@@ -329,16 +341,26 @@ export async function alternarExposicionPublicada(
 }
 
 /** Guarda el orden editorial de una lista de grupos, de muestras o de trabajos. */
-export async function reordenarExposiciones(ids: string[], tipo: TipoDeGrupo): Promise<Resultado> {
+export async function reordenarExposiciones(
+  ids: string[],
+  tipo: TipoDeGrupo,
+  seccion: string | null = null,
+): Promise<Resultado> {
   if (!ids.length || ids.length > 2000 || new Set(ids).size !== ids.length ||
-      ids.some((id) => !/^[0-9a-f-]{36}$/i.test(id)) || !["trabajo", "exposicion"].includes(tipo)) {
+      ids.some((id) => !/^[0-9a-f-]{36}$/i.test(id)) || !["trabajo", "exposicion"].includes(tipo) ||
+      (tipo === "trabajo" ? !esSeccionTrabajo(seccion) : seccion !== null)) {
     return fallo("La lista no es válida. Recarga el panel.");
   }
   const supabase = await clienteConSesion();
   if (!supabase) return SIN_SESION;
-  const { error } = await supabase.rpc("reordenar_grupos", { p_ids: ids, p_tipo: tipo });
+  const { error } = await supabase.rpc("reordenar_grupos", {
+    p_ids: ids,
+    p_tipo: tipo,
+    ...(esSeccionTrabajo(seccion) ? { p_seccion: seccion } : {}),
+  });
   if (error?.code === "PGRST202" || error?.code === "42883") {
-    return fallo("El orden no se guardó: falta aplicar la migración 0007_grilla_orden.sql en Supabase. Recargar la página no resuelve esta actualización pendiente.");
+    const migracion = tipo === "trabajo" ? "0010_secciones_de_trabajo.sql" : "0007_grilla_orden.sql";
+    return fallo(`El orden no se guardó: falta aplicar la migración ${migracion} en Supabase.`);
   }
   if (error) return fallo("No se guardó el orden. Recarga y vuelve a intentarlo.");
   revalidarExposiciones();

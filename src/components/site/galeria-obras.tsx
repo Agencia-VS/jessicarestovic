@@ -8,6 +8,8 @@ interface GaleriaObrasProps {
   contexto: string;
   /** El rótulo que va con la foto principal. */
   cartela?: React.ReactNode;
+  prioridad?: boolean;
+  encuadrePortada?: { x: number; y: number };
 }
 
 /**
@@ -17,6 +19,6 @@ interface GaleriaObrasProps {
  * El nombre de cada obra no se escribe en la página: aparece al abrirla, en el
  * visor, junto a su año, técnica y medidas.
  */
-export function GaleriaObras({ obras, contexto, cartela }: GaleriaObrasProps) {
-  return <Galeria piezas={piezasDeObras(obras)} cartela={cartela} contexto={contexto} />;
+export function GaleriaObras({ obras, ...galeria }: GaleriaObrasProps) {
+  return <Galeria piezas={piezasDeObras(obras)} {...galeria} />;
 }
