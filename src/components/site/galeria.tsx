@@ -18,6 +18,7 @@ interface GaleriaProps {
   /** Para el rótulo accesible de cada botón: «Ver … de esta exposición». */
   contexto: string;
   miniaturasCompletas?: boolean;
+  marcoBlancoMiniaturas?: boolean;
 }
 
 /** La portada ocupa un tercio del canvas. */
@@ -83,7 +84,13 @@ interface Reparto {
  * Las miniaturas conservan la grilla cuadrada. En las galerías de obras, cada
  * imagen cabe completa en su celda. En las vistas de sala, la foto llena la celda.
  */
-export function Galeria({ piezas, cartela, contexto, miniaturasCompletas = false }: GaleriaProps) {
+export function Galeria({
+  piezas,
+  cartela,
+  contexto,
+  miniaturasCompletas = false,
+  marcoBlancoMiniaturas = false,
+}: GaleriaProps) {
   const [abierta, setAbierta] = useState<number | null>(null);
   const [pagina, setPagina] = useState(0);
   const tira = useRef<HTMLDivElement>(null);
@@ -266,7 +273,7 @@ export function Galeria({ piezas, cartela, contexto, miniaturasCompletas = false
                         alto={pieza.alto}
                         proporcionFija={1}
                         encuadre={miniaturasCompletas ? "contenida" : "recortada"}
-                        marcoBlanco={miniaturasCompletas}
+                        marcoBlanco={marcoBlancoMiniaturas}
                         sizes={SIZES_MINIATURA}
                         className="h-full w-full"
                       />

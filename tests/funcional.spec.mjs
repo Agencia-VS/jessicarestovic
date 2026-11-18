@@ -242,12 +242,12 @@ test('trabajos: mostrar portadas por sección, abrir obras completas y conservar
   await expect(obra).toHaveCount(0);
   await expect(contenido.locator('a[href="/trabajos/trabajo-3"]')).toBeVisible();
   await expect(contenido.locator('a[href="/trabajos/trabajo-1"]')).toHaveCount(0);
-  const comprobarMarco = async (imagen) => {
+  const comprobarMarco = async (imagen, fondo = 'rgb(255, 255, 255)') => {
     await expect(imagen).toHaveCSS('object-fit', 'contain');
     await expect(imagen).toHaveAttribute('srcset', /_next\/image/);
     const marco = imagen.locator('..');
     await expect(marco).toHaveAttribute('data-cargada', '');
-    await expect(marco).toHaveCSS('background-color', 'rgb(255, 255, 255)');
+    await expect(marco).toHaveCSS('background-color', fondo);
     const caja = await marco.boundingBox();
     expect(Math.abs(caja.width - caja.height)).toBeLessThan(0.5);
     return caja;
@@ -295,9 +295,14 @@ test('trabajos: mostrar portadas por sección, abrir obras completas y conservar
   await page.getByRole('dialog').getByRole('link', { name: 'Recientes', exact: true }).click();
   await expect(obra).toHaveCount(0);
   await expect(tarjeta).toContainText('Tintas sobre papel');
-  await comprobarMarco(portada);
+  const transparente = 'rgba(0, 0, 0, 0)';
+  await comprobarMarco(portada, transparente);
   await tarjeta.click();
   await expect(page).toHaveURL(/\/trabajos\/tintas-y-papeles$/);
   await expect(obra).toBeVisible();
+  for (const titulo of ['Tinta vertical', 'Tinta horizontal']) {
+    const miniatura = page.getByRole('button', { name: `Ver ${titulo} de Tintas sobre papel en grande` }).locator('img');
+    await comprobarMarco(miniatura, transparente);
+  }
   await expect(contenido.getByRole('link', { name: /Recientes/ })).toHaveAttribute('href', '/trabajos');
 });
