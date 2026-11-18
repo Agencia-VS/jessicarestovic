@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@import "@fontsource-variable/public-sans";
 
 /* ---------------------------------------------------------------------------
    Paleta del canvas de diseño: crudo, grafito y un solo acento ciruela.
@@ -46,7 +47,7 @@
      serif editorial se retiró a pedido de Jessica. Dejarlo como token y no
      borrar veinte clases mantiene el tamaño y el interletrado que cada
      encabezado tenía afinado. */
-  --font-sans: var(--font-public-sans), system-ui, -apple-system, sans-serif;
+  --font-sans: "Public Sans Variable", system-ui, -apple-system, sans-serif;
   --font-display: var(--font-sans);
 
   /* Ancho de columna del mosaico: la foto manda la altura, esto solo fija
