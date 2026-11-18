@@ -69,8 +69,8 @@ trabajo. Dentro de cualquiera de los dos, un **conjunto con nombre**
 | `/exposiciones` | Índice de muestras: una imagen por exposición, con su total de vistas |
 | `/exposiciones/[slug]` | Una muestra: ficha, texto y todas sus vistas de montaje |
 | `/exposiciones/[slug]/obras` | Las obras de una muestra, agrupadas por conjunto |
-| `/trabajos` | Conjuntos de Recientes y sus grillas de obras |
-| `/ilustraciones` | Conjuntos de Ilustraciones y sus grillas de obras |
+| `/trabajos` | Portadas de los conjuntos de Recientes |
+| `/ilustraciones` | Portadas de los conjuntos de Ilustraciones |
 | `/trabajos/[slug]` | Las obras de un conjunto, agrupadas por conjunto con nombre |
 | `/sobre-mi` · `/clases` · `/contacto` | Biografía, talleres y contacto |
 | `/privacidad` | Qué datos recogen los formularios y para qué |

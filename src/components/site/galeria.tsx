@@ -17,8 +17,7 @@ interface GaleriaProps {
   cartela?: React.ReactNode;
   /** Para el rótulo accesible de cada botón: «Ver … de esta exposición». */
   contexto: string;
-  prioridad?: boolean;
-  encuadrePortada?: { x: number; y: number };
+  miniaturasCompletas?: boolean;
 }
 
 /** La portada ocupa un tercio del canvas. */
@@ -81,13 +80,10 @@ interface Reparto {
  * en una grilla— porque ahí lo natural es bajar, no pasar de página. El orden
  * lo pone la utilidad `galeria` de `globals.css`.
  *
- * Las miniaturas **sí** se recortan al cuadrado, que es la excepción a la
- * regla del sitio de no recortar nunca la obra (§08). Se justifica igual que
- * el tríptico del Inicio: lo que se gana es una grilla pareja que la vista
- * recorre sin tropiezos, y la obra completa está a un toque — al hacer clic,
- * el visor la muestra en su proporción exacta.
+ * Las miniaturas conservan la grilla cuadrada. En las galerías de obras, cada
+ * imagen cabe completa en su celda. En las vistas de sala, la foto llena la celda.
  */
-export function Galeria({ piezas, cartela, contexto, prioridad = true, encuadrePortada }: GaleriaProps) {
+export function Galeria({ piezas, cartela, contexto, miniaturasCompletas = false }: GaleriaProps) {
   const [abierta, setAbierta] = useState<number | null>(null);
   const [pagina, setPagina] = useState(0);
   const tira = useRef<HTMLDivElement>(null);
@@ -200,14 +196,8 @@ export function Galeria({ piezas, cartela, contexto, prioridad = true, encuadreP
             alto={portada.alto}
             variante="exacta"
             anclaje="izquierda"
-            {...(encuadrePortada && {
-              proporcionFija: 1,
-              encuadre: "recortada" as const,
-              foco: encuadrePortada.y,
-              focoX: encuadrePortada.x,
-            })}
             sizes={SIZES_PORTADA}
-            prioridad={prioridad}
+            prioridad
             // El tope de escritorio es el alto de la tira: ahí las dos columnas
             // tienen que terminar a la misma altura. En el teléfono, apiladas,
             // toparla así dejaba la pintura principal en 150 px — una
@@ -275,7 +265,7 @@ export function Galeria({ piezas, cartela, contexto, prioridad = true, encuadreP
                         ancho={pieza.ancho}
                         alto={pieza.alto}
                         proporcionFija={1}
-                        encuadre="recortada"
+                        encuadre={miniaturasCompletas ? "contenida" : "recortada"}
                         sizes={SIZES_MINIATURA}
                         className="h-full w-full"
                       />

@@ -11,6 +11,7 @@ interface TarjetasDeGruposProps {
   hrefDe: (grupo: Exposicion) => string;
   /** Los conjuntos de trabajo no tienen lugar ni año que mostrar. */
   conLugar?: boolean;
+  portadaCompleta?: boolean;
 }
 
 /**
@@ -24,7 +25,12 @@ interface TarjetasDeGruposProps {
  * Bajo el nombre va el lugar y el año de una muestra, si los tiene, y nada
  * más: la tarjeta no cuenta fotos ni obras, porque el sitio no enumera.
  */
-export function TarjetasDeGrupos({ grupos, hrefDe, conLugar = true }: TarjetasDeGruposProps) {
+export function TarjetasDeGrupos({
+  grupos,
+  hrefDe,
+  conLugar = true,
+  portadaCompleta = false,
+}: TarjetasDeGruposProps) {
   return (
     <div className="grid grid-cols-1 gap-x-8 gap-y-10 sm:grid-cols-2 lg:grid-cols-3">
       {grupos.map((grupo, indice) => {
@@ -42,8 +48,8 @@ export function TarjetasDeGrupos({ grupos, hrefDe, conLugar = true }: TarjetasDe
                   sizes={SIZES_MOSAICO}
                   prioridad={indice === 0}
                   proporcionFija={1}
-                  encuadre="recortada"
-                  foco={grupo.portada_foco_y ?? 50}
+                  encuadre={portadaCompleta ? "contenida" : "recortada"}
+                  foco={portadaCompleta ? undefined : grupo.portada_foco_y ?? 50}
                   focoX={grupo.portada_foco_x ?? 50}
                   className="w-full"
                 />

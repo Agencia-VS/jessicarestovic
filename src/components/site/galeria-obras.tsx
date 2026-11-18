@@ -8,8 +8,6 @@ interface GaleriaObrasProps {
   contexto: string;
   /** El rótulo que va con la foto principal. */
   cartela?: React.ReactNode;
-  prioridad?: boolean;
-  encuadrePortada?: { x: number; y: number };
 }
 
 /**
@@ -20,5 +18,5 @@ interface GaleriaObrasProps {
  * visor, junto a su año, técnica y medidas.
  */
 export function GaleriaObras({ obras, ...galeria }: GaleriaObrasProps) {
-  return <Galeria piezas={piezasDeObras(obras)} {...galeria} />;
+  return <Galeria piezas={piezasDeObras(obras)} {...galeria} miniaturasCompletas />;
 }
